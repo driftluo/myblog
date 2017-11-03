@@ -15,6 +15,15 @@ pub struct Posts {
     pub modify_time: NaiveDateTime,
 }
 
+#[derive(Queryable, Debug, Clone, Deserialize, Serialize)]
+pub struct ArticleList {
+    pub id: i32,
+    pub title: String,
+    pub published: bool,
+    pub create_time: NaiveDateTime,
+    pub modify_time: NaiveDateTime,
+}
+
 #[derive(Insertable, Debug, Clone, Deserialize, Serialize)]
 #[table_name = "posts"]
 pub struct NewPost {
