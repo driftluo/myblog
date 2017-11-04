@@ -21,7 +21,7 @@ pub mod article;
 pub mod models;
 
 pub(crate) use schema::posts;
-pub use models::{ NewPost, Posts, ArticleList };
+pub(crate) use models::{ NewPost, Posts, ArticleList, ModifyPublish, EditArticle };
 pub use article::Article;
 
 use std::env;
