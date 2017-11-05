@@ -1,5 +1,5 @@
-use super::super::posts::dsl::posts as all_posts;
-use super::super::posts;
+use super::super::articles::dsl::articles as all_articles;
+use super::super::{ articles, tags, article_tag_relation};
 use super::super::PgConnection;
 
 use chrono::NaiveDateTime;
@@ -7,18 +7,19 @@ use diesel;
 use diesel::{ FilterDsl, ExpressionMethods, ExecuteDsl, LoadDsl, SelectDsl, OrderDsl, LimitDsl };
 
 #[derive(Queryable, Debug, Clone, Deserialize, Serialize)]
-pub struct Posts {
+pub struct Articles {
     pub id: i32,
     pub title: String,
     pub content: String,
     pub published: bool,
+    pub tags: Option<Vec<String>>,
     pub create_time: NaiveDateTime,
     pub modify_time: NaiveDateTime,
 }
 
-impl Posts {
+impl Articles {
     pub fn delete_with_id(conn: &PgConnection, id: i32) -> Result<usize, String> {
-        let res = diesel::delete(all_posts.filter(posts::id.eq(id)))
+        let res = diesel::delete(all_articles.filter(articles::id.eq(id)))
             .execute(conn);
         match res {
             Ok(data) => Ok(data),
@@ -26,12 +27,9 @@ impl Posts {
         }
     }
 
-    pub fn query_posts(conn: &PgConnection, id: i32, admin: bool) -> Result<Vec<Posts>, String> {
-        let res = if admin {
-                all_posts.filter(posts::id.eq(id)).load::<Posts>(conn)
-        } else {
-                all_posts.filter(posts::id.eq(id)).filter(posts::published.eq(true)).load::<Posts>(conn)
-        };
+    pub fn query_article(conn: &PgConnection, id: i32, admin: bool) -> Result<Vec<Articles>, String> {
+        let res = diesel::sql_query(format!("select * from article_with_tag where id={} and published={}", id, admin))
+            .load::<Articles>(conn);
 
         match res {
             Ok(data) => Ok(data),
@@ -39,9 +37,9 @@ impl Posts {
         }
     }
 
-    pub fn edit_posts(conn: &PgConnection, data: EditArticle) -> Result<usize, String> {
-        let res = diesel::update(all_posts.filter(posts::id.eq(data.id)))
-            .set((posts::title.eq(data.title), posts::content.eq(data.content)))
+    pub fn edit_article(conn: &PgConnection, data: EditArticle) -> Result<usize, String> {
+        let res = diesel::update(all_articles.filter(articles::id.eq(data.id)))
+            .set((articles::title.eq(data.title), articles::content.eq(data.content)))
             .execute(conn);
         match res {
             Ok(data) => Ok(data),
@@ -49,9 +47,9 @@ impl Posts {
         }
     }
 
-    pub fn publish_posts(conn: &PgConnection, data: ModifyPublish) -> Result<usize, String> {
-        let res = diesel::update(all_posts.filter(posts::id.eq(data.id)))
-            .set(posts::published.eq(data.publish))
+    pub fn publish_article(conn: &PgConnection, data: ModifyPublish) -> Result<usize, String> {
+        let res = diesel::update(all_articles.filter(articles::id.eq(data.id)))
+            .set(articles::published.eq(data.publish))
             .execute(conn);
         match res {
             Ok(data) => Ok(data),
@@ -72,16 +70,16 @@ pub struct ArticleList {
 impl ArticleList {
     pub fn query_list_article(conn: &PgConnection, limit: i64, admin: bool) -> Result<Vec<ArticleList>, String> {
         let res = if admin {
-                all_posts
-                .select((posts::id, posts::title, posts::published, posts::create_time, posts::modify_time))
-                .order(posts::create_time.desc())
+                all_articles
+                .select((articles::id, articles::title, articles::published, articles::create_time, articles::modify_time))
+                .order(articles::create_time.desc())
                 .limit(limit)
                 .load::<ArticleList>(conn)
         } else {
-            all_posts
-                .select((posts::id, posts::title, posts::published, posts::create_time, posts::modify_time))
-                .filter(posts::published.eq(true))
-                .order(posts::create_time.desc())
+            all_articles
+                .select((articles::id, articles::title, articles::published, articles::create_time, articles::modify_time))
+                .filter(articles::published.eq(true))
+                .order(articles::create_time.desc())
                 .limit(limit)
                 .load::<ArticleList>(conn)
         };
@@ -94,15 +92,15 @@ impl ArticleList {
 }
 
 #[derive(Insertable, Debug, Clone, Deserialize, Serialize)]
-#[table_name = "posts"]
-pub struct NewPost {
+#[table_name = "articles"]
+pub struct NewArticle {
     pub title: String,
     pub content: String,
 }
 
-impl NewPost {
+impl NewArticle {
     pub fn new(title: String, content: String) -> Self {
-        NewPost {
+        NewArticle {
             title,
             content
         }
@@ -110,7 +108,7 @@ impl NewPost {
 
     pub fn insert(&self, conn: &PgConnection) -> bool {
         diesel::insert(self)
-            .into(posts::table)
+            .into(articles::table)
             .execute(conn)
             .is_ok()
     }

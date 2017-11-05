@@ -17,12 +17,13 @@ extern crate sapper_std;
 
 
 pub mod schema;
-pub mod article;
+pub mod blog_article;
 pub mod models;
 
-pub(crate) use schema::posts;
-pub(crate) use models::{ NewPost, Posts, ArticleList, ModifyPublish, EditArticle };
-pub use article::Article;
+pub(crate) use schema::{ articles, users, tags, article_tag_relation };
+pub(crate) use models::{ NewArticle, Articles, ArticleList, ModifyPublish, EditArticle };
+pub(crate) use models::{ UserInfo, Users, NewUser, ChangePassword };
+pub use blog_article::Article;
 
 use std::env;
 use diesel::pg::PgConnection;

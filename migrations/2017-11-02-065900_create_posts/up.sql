@@ -1,5 +1,5 @@
 -- Your SQL goes here
-Create table posts (
+Create table articles (
     id serial primary key ,
     title varchar not null,
     content text not null,
@@ -21,4 +21,4 @@ $$ language 'plpgsql';
 -- trigger
 
 Create Trigger update_posts_modify_time before update
-on posts for each row execute procedure update_modified_column();
+on articles for each row execute procedure update_modified_column();

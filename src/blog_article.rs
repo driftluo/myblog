@@ -2,16 +2,16 @@ use sapper::{ SapperModule, SapperRouter, Response, Request, Result };
 use sapper_std::{ PathParams, QueryParams, JsonParams };
 use serde_json;
 
-use { EditArticle, ModifyPublish, Posts, NewPost, ArticleList, establish_connection };
+use { EditArticle, ModifyPublish, Articles, NewArticle, ArticleList, establish_connection };
 
 pub struct Article;
 
 impl Article {
     fn create_article(req: &mut Request) -> Result<Response> {
-        let body: NewPost = get_json_params!(req);
+        let body: NewArticle = get_json_params!(req);
         let conn = establish_connection();
 
-        if NewPost::new(body.title, body.content).insert(&conn) {
+        if body.insert(&conn) {
             res_json!(json!({"status": true}))
         } else {
             res_json!(json!({"status": false}))
@@ -23,7 +23,7 @@ impl Article {
         let article_id: i32 = t_param!(params, "id").clone().parse().unwrap();
         let conn = establish_connection();
 
-        let res = match Posts::delete_with_id(&conn, article_id) {
+        let res = match Articles::delete_with_id(&conn, article_id) {
             Ok(num_deleted) => {
                 json!({
                     "status": true,
@@ -45,7 +45,7 @@ impl Article {
         let article_id = t_param_parse!(params, "id", i32);
         let conn = establish_connection();
 
-        let res = match Posts::query_posts(&conn, article_id, true) {
+        let res = match Articles::query_article(&conn, article_id, true) {
             Ok(data) => {
                 json!({
                     "status": true,
@@ -67,7 +67,7 @@ impl Article {
         let article_id = t_param_parse!(params, "id", i32);
         let conn = establish_connection();
 
-        let res = match Posts::query_posts(&conn, article_id, false) {
+        let res = match Articles::query_article(&conn, article_id, false) {
             Ok(data) => {
                 json!({
                     "status": true,
@@ -132,7 +132,7 @@ impl Article {
 
         let conn = establish_connection();
 
-        let res = match Posts::edit_posts(&conn, body) {
+        let res = match Articles::edit_article(&conn, body) {
             Ok(num_update) => {
                  json!({
                     "status": true,
@@ -155,7 +155,7 @@ impl Article {
 
         let conn = establish_connection();
 
-        let res = match Posts::publish_posts(&conn, body) {
+        let res = match Articles::publish_article(&conn, body) {
             Ok(num_update) => {
                 json!({
                     "status": true,
