@@ -1,5 +1,6 @@
 use super::super::articles::dsl::articles as all_articles;
-use super::super::{ articles, tags, article_tag_relation};
+use super::super::{ articles, article_with_tag };
+use super::super::article_with_tag::dsl::article_with_tag as all_article_with_tag;
 use super::super::PgConnection;
 
 use chrono::NaiveDateTime;
@@ -28,8 +29,14 @@ impl Articles {
     }
 
     pub fn query_article(conn: &PgConnection, id: i32, admin: bool) -> Result<Vec<Articles>, String> {
-        let res = diesel::sql_query(format!("select * from article_with_tag where id={} and published={}", id, admin))
-            .load::<Articles>(conn);
+        let res = if admin {
+            all_article_with_tag.filter(article_with_tag::id.eq(id))
+                .load::<Articles>(conn)
+        } else {
+            all_article_with_tag.filter(article_with_tag::id.eq(id))
+                .filter(article_with_tag::published.eq(true))
+                .load::<Articles>(conn)
+        };
 
         match res {
             Ok(data) => Ok(data),
