@@ -4,9 +4,9 @@ use super::super::users::dsl::users as all_users;
 use super::super::PgConnection;
 use chrono::NaiveDateTime;
 use diesel;
-use diesel::{ FilterDsl, ExpressionMethods, ExecuteDsl, LoadDsl };
+use diesel::{ FilterDsl, ExpressionMethods, ExecuteDsl, LoadDsl, SelectDsl, FindDsl };
 
-use super::super::{ md5_encode, random_string };
+use super::super::{ sha3_256_encode, random_string };
 
 #[derive(Queryable, Debug, Clone, Deserialize, Serialize)]
 pub struct Users {
@@ -18,6 +18,27 @@ pub struct Users {
     pub say: Option<String>,
     pub email: String,
     pub create_time: NaiveDateTime
+}
+
+impl Users {
+    pub fn delete(conn: &PgConnection, id: i32) -> Result<usize, String> {
+        let res = diesel::delete(all_users.find(id))
+            .execute(conn);
+        match res {
+            Ok(data) => Ok(data),
+            Err(err) => Err(format!("{}", err))
+        }
+    }
+
+    pub fn edit_user(conn: &PgConnection, data: EditUser) -> Result<usize, String> {
+        let res = diesel::update(all_users.filter(users::id.eq(data.id)))
+            .set((users::nickname.eq(data.nickname), users::say.eq(data.say), users::email.eq(data.email)))
+            .execute(conn);
+        match res {
+            Ok(num_update) => Ok(num_update),
+            Err(err) => Err(format!("{}", err))
+        }
+    }
 }
 
 #[derive(Insertable, Debug, Clone, Deserialize, Serialize)]
@@ -70,6 +91,19 @@ pub struct UserInfo {
     pub create_time: NaiveDateTime
 }
 
+impl UserInfo {
+    pub fn view_user(conn: &PgConnection, id: i32) -> Result<Self, String> {
+        let res = all_users
+            .select((users::id, users::account, users::nickname, users::say, users::email, users::create_time))
+            .find(id)
+            .get_result::<UserInfo>(conn);
+        match res {
+            Ok(data) => Ok(data),
+            Err(err) => Err(format!("{}", err))
+        }
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ChangePassword {
     pub id: i32,
@@ -80,7 +114,7 @@ pub struct ChangePassword {
 impl ChangePassword {
     pub fn change_password(&self, conn: &PgConnection) -> Result<usize, String> {
         let salt = random_string(6);
-        let password = md5_encode(self.new_password.to_owned() + &salt);
+        let password = sha3_256_encode(self.new_password.to_owned() + &salt);
         let res =  diesel::update(all_users.filter(users::id.eq(self.id)))
             .set((users::password.eq(&password), users::salt.eq(&salt)))
             .execute(conn);
@@ -109,5 +143,4 @@ pub struct EditUser {
     pub nickname: String,
     pub say: String,
     pub email: String,
-    pub create_time: NaiveDateTime
 }
