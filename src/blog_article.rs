@@ -1,4 +1,4 @@
-use sapper::{ SapperModule, SapperRouter, Response, Request, Result };
+use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult };
 use sapper_std::{ PathParams, QueryParams, JsonParams };
 use serde_json;
 
@@ -7,7 +7,7 @@ use { EditArticle, ModifyPublish, Articles, NewArticle, ArticleList, establish_c
 pub struct Article;
 
 impl Article {
-    fn create_article(req: &mut Request) -> Result<Response> {
+    fn create_article(req: &mut Request) -> SapperResult<Response> {
         let body: NewArticle = get_json_params!(req);
         let conn = establish_connection();
 
@@ -18,7 +18,7 @@ impl Article {
         }
     }
 
-    fn delete_article(req: &mut Request) -> Result<Response> {
+    fn delete_article(req: &mut Request) -> SapperResult<Response> {
         let params = get_path_params!(req);
         let article_id: i32 = t_param!(params, "id").clone().parse().unwrap();
         let conn = establish_connection();
@@ -40,7 +40,7 @@ impl Article {
         res_json!(res)
     }
 
-    fn admin_view_article(req: &mut Request) -> Result<Response> {
+    fn admin_view_article(req: &mut Request) -> SapperResult<Response> {
         let params = get_query_params!(req);
         let article_id = t_param_parse!(params, "id", i32);
         let conn = establish_connection();
@@ -62,7 +62,7 @@ impl Article {
         res_json!(res)
     }
 
-    fn view_article(req: &mut Request) -> Result<Response> {
+    fn view_article(req: &mut Request) -> SapperResult<Response> {
         let params = get_query_params!(req);
         let article_id = t_param_parse!(params, "id", i32);
         let conn = establish_connection();
@@ -84,7 +84,7 @@ impl Article {
         res_json!(res)
     }
 
-    fn admin_list_all_article(req: &mut Request) -> Result<Response> {
+    fn admin_list_all_article(req: &mut Request) -> SapperResult<Response> {
         let params = get_query_params!(req);
         let limit = t_param_parse!(params, "limit", i64);
         let conn = establish_connection();
@@ -105,7 +105,7 @@ impl Article {
         res_json!(res)
     }
 
-    fn list_all_article(req: &mut Request) -> Result<Response> {
+    fn list_all_article(req: &mut Request) -> SapperResult<Response> {
         let params = get_query_params!(req);
         let limit = t_param_parse!(params, "limit", i64);
         let conn = establish_connection();
@@ -126,7 +126,7 @@ impl Article {
         res_json!(res)
     }
 
-    fn edit_article(req: &mut Request) -> Result<Response> {
+    fn edit_article(req: &mut Request) -> SapperResult<Response> {
 
         let body: EditArticle = get_json_params!(req);
 
@@ -149,7 +149,7 @@ impl Article {
         res_json!(res)
     }
 
-    fn update_publish(req: &mut Request) -> Result<Response> {
+    fn update_publish(req: &mut Request) -> SapperResult<Response> {
 
         let body: ModifyPublish = get_json_params!(req);
 
@@ -174,15 +174,15 @@ impl Article {
 }
 
 impl SapperModule for Article {
-    fn before(&self, _req: &mut Request) -> Result<()> {
+    fn before(&self, _req: &mut Request) -> SapperResult<()> {
         Ok(())
     }
 
-    fn after(&self, _req: &Request, _res: &mut Response) -> Result<()> {
+    fn after(&self, _req: &Request, _res: &mut Response) -> SapperResult<()> {
         Ok(())
     }
 
-    fn router(&self, router: &mut SapperRouter) -> Result<()> {
+    fn router(&self, router: &mut SapperRouter) -> SapperResult<()> {
         // http get /article/admin/view id==4
         router.get("/article/admin/view", Article::admin_view_article);
 

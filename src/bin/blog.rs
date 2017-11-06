@@ -3,7 +3,7 @@ extern crate blog;
 extern crate sapper_std;
 
 use sapper::{ SapperApp, SapperAppShell, Request, Response, Result };
-use blog::Article;
+use blog::{ Article, User };
 
 struct MyApp;
 
@@ -25,6 +25,7 @@ fn main() {
         .port(8888)
         .with_shell(Box::new(MyApp))
         .add_module(Box::new(Article))
+        .add_module(Box::new(User))
         .static_service(false);
 
     println!("Start listen on {}", "127.0.0.1:8888");

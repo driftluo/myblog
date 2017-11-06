@@ -14,16 +14,22 @@ extern crate serde;
 extern crate sapper;
 #[macro_use]
 extern crate sapper_std;
+extern crate rand;
+extern crate tiny_keccak;
 
 
 pub mod schema;
-pub mod blog_article;
 pub mod models;
+pub mod blog_article;
+pub mod blog_user;
+pub mod util;
 
-pub(crate) use schema::{ articles, users, tags, article_tag_relation };
+pub(crate) use schema::{ articles, users, article_with_tag, tags, article_tag_relation };
 pub(crate) use models::{ NewArticle, Articles, ArticleList, ModifyPublish, EditArticle };
-pub(crate) use models::{ UserInfo, Users, NewUser, ChangePassword };
+pub(crate) use models::{ UserInfo, Users, NewUser, ChangePassword, RegisteredUser, EditUser };
+pub(crate) use util::{ sha3_256_encode, random_string };
 pub use blog_article::Article;
+pub use blog_user::User;
 
 use std::env;
 use diesel::pg::PgConnection;
