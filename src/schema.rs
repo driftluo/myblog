@@ -6,7 +6,8 @@ table! {
         title -> Varchar,
         content -> Text,
         published -> Bool,
-        tags -> Nullable<Array<Text>>,
+        tags_id -> Array<Nullable<Int4>>,
+        tags -> Array<Nullable<Text>>,
         create_time -> Timestamp,
         modify_time -> Timestamp,
     }

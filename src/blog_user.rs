@@ -29,7 +29,7 @@ impl User {
         let res = if !body.verification(&conn) {
             json!({
                 "status": false,
-                "error": format!("fno this user, id: {}", body.id)
+                "error": format!("no this user, id: {}", body.id)
             })
         } else {
             match body.change_password(&conn) {
@@ -126,11 +126,20 @@ impl SapperModule for User {
     }
 
     fn router(&self, router: &mut SapperRouter) -> SapperResult<()> {
-        // http :8888/user/view id==1
+        // http get :8888/user/view id==1
         router.get("/user/view", User::view_user);
+
+        // http post :8888/user/new account="k1234" password="1234" nickname="漂流" email="441594700@qq.com" say=""
         router.post("/user/new", User::create_user);
+
+        // http post :8888/user/change_pwd id:=1 old_password=1234 new_password=12345
         router.post("/user/change_pwd", User::change_pwd);
+
+        // http post :8888/user/delete/2
         router.post("/user/delete/:id", User::delete_user);
+
+        // http post :8888/user/edit id:=1 nickname="漂流"
+        // say="仍需共生命的慷慨与繁华相爱，即使岁月以刻薄与荒芜相欺。" email=441594700@qq.com
         router.post("/user/edit", User::edit_user);
         Ok(())
     }
