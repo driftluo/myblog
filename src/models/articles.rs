@@ -2,6 +2,7 @@ use super::super::articles::dsl::articles as all_articles;
 use super::super::{ articles, article_with_tag };
 use super::super::article_with_tag::dsl::article_with_tag as all_article_with_tag;
 use super::super::PgConnection;
+use super::Relations;
 
 use chrono::NaiveDateTime;
 use diesel;
@@ -13,15 +14,17 @@ pub struct Articles {
     pub title: String,
     pub content: String,
     pub published: bool,
-    pub tags: Option<Vec<String>>,
+    pub tags_id: Vec<Option<i32>>,
+    pub tags: Vec<Option<String>>,
     pub create_time: NaiveDateTime,
     pub modify_time: NaiveDateTime,
 }
 
 impl Articles {
     pub fn delete_with_id(conn: &PgConnection, id: i32) -> Result<usize, String> {
+        Relations::delete_all(conn, id, "article");
         let res = diesel::delete(all_articles.filter(articles::id.eq(id)))
-            .execute(conn);
+        .execute(conn);
         match res {
             Ok(data) => Ok(data),
             Err(err) => Err(format!("{}", err))

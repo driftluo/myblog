@@ -128,7 +128,7 @@ impl ChangePassword {
         let old_user = all_users.filter(users::id.eq(self.id)).get_result::<Users>(conn);
         match old_user {
             Ok(old) => {
-                if old.password == self.old_password {
+                if old.password == sha3_256_encode(self.old_password.to_owned() + &old.salt) {
                     true
                 } else { false }
             }
