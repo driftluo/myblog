@@ -16,4 +16,4 @@ Create table article_tag_relation (
  from articles a
  left join article_tag_relation b on a.id=b.article_id
  left join tags c on b.tag_id=c.id
- group by a.id, a.title, a.content, a.published, a.create_time, a.modify_time
+ group by a.id, a.title, a.content, a.published, a.create_time, a.modify_time;

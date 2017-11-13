@@ -2,7 +2,8 @@ use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperRes
 use sapper_std::{ PathParams, QueryParams, JsonParams };
 use serde_json;
 
-use { EditArticle, ModifyPublish, Articles, NewArticle, ArticleList, establish_connection };
+use super::super::{ EditArticle, ModifyPublish, Articles,
+                    NewArticle, ArticleList, establish_connection };
 
 pub struct Article;
 
@@ -87,8 +88,9 @@ impl Article {
     fn admin_list_all_article(req: &mut Request) -> SapperResult<Response> {
         let params = get_query_params!(req);
         let limit = t_param_parse!(params, "limit", i64);
+        let offset = t_param_parse!(params, "offset", i64);
         let conn = establish_connection();
-        let res = match ArticleList::query_list_article(&conn, limit,true) {
+        let res = match ArticleList::query_list_article(&conn, limit, offset, true) {
             Ok(data) => {
                 json!({
                     "status": true,
@@ -108,8 +110,9 @@ impl Article {
     fn list_all_article(req: &mut Request) -> SapperResult<Response> {
         let params = get_query_params!(req);
         let limit = t_param_parse!(params, "limit", i64);
+        let offset = t_param_parse!(params, "offset", i64);
         let conn = establish_connection();
-        let res = match ArticleList::query_list_article(&conn, limit,false) {
+        let res = match ArticleList::query_list_article(&conn, limit, offset, false) {
             Ok(data) => {
                 json!({
                     "status": true,

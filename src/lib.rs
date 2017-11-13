@@ -21,19 +21,19 @@ extern crate tiny_keccak;
 pub mod schema;
 pub mod models;
 pub mod util;
-pub mod blog_article;
-pub mod blog_user;
-pub mod blog_tag;
+pub mod api;
+pub mod web;
 
 pub(crate) use schema::{ articles, users, article_with_tag, tags, article_tag_relation };
 pub(crate) use models::{ NewArticle, Articles, ArticleList, ModifyPublish, EditArticle };
 pub(crate) use models::{ UserInfo, Users, NewUser, ChangePassword, RegisteredUser, EditUser };
 pub(crate) use models::{ RelationTag, Relations };
-pub(crate) use models::{ NewTag, Tags };
+pub(crate) use models::{ NewTag, Tags, TagCount };
 pub(crate) use util::{ sha3_256_encode, random_string };
-pub use blog_article::Article;
-pub use blog_user::User;
-pub use blog_tag::Tag;
+pub use api::Article;
+pub use api::User;
+pub use api::Tag;
+pub use web::ArticleWeb;
 
 use std::env;
 use diesel::pg::PgConnection;

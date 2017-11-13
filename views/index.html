@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title  %}
+driftluo's blog
+{% endblock title %}
+
+{% block body %}
+<nav class="navbar navbar-inverse navbar-fixed-top my-navbar" role="navigation">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="#">Blog</a>
+        </div>
+        <div>
+            <ul class="nav navbar-nav navbar-right">
+                <li ><a href="#">Home</a></li>
+                <li><a href="#">Blog List</a></li>
+                <li><a href="#">About</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+<div class="container col-sm-12 col-md-8 col-xs-8">
+
+</div>
+<div class="container col-sm-12 col-md-4 col-xs-4 my-tag">
+    <ul>
+        {% if tags%}
+            {% for tag in tags %}
+            <li data-id={{ tag.id }} class="list-unstyled"><a href="#">{{ tag.tag }}</a>&nbsp;<span class="badge">{{ tag.count }}</span></li>
+            {% endfor %}
+        {% endif %}
+    </ul>
+</div>
+{% endblock body %}

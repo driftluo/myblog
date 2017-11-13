@@ -2,7 +2,7 @@
 
 Create table users (
   id serial primary key,
-  account VARCHAR NOT NULL,
+  account VARCHAR unique NOT NULL,
   password VARCHAR NOT NULL,
   salt VARCHAR NOT NULL,
   nickname VARCHAR NOT NULL,
