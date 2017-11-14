@@ -1,0 +1,56 @@
+.my-navbar {
+    opacity: 0.25
+}
+
+.my-navbar a {
+    background: transparent !important;
+    color: #fff !important
+}
+
+.my-navbar a:hover {
+    color: #ec0629 !important;
+    background: transparent;
+    outline: 0
+}
+
+.my-navbar a {
+    transition: color 0.5s ease-in-out;
+}
+
+/*-webkit-transition ;-moz-transition*/
+.top-nav {
+    background: #070606;
+    opacity: 0.75
+}
+
+.my-tag a {
+    background-color: #1f8699;
+    font-weight: bold;
+    color: #fff !important;
+    padding: 4px;
+    border-radius: 10px;
+    text-decoration: none;
+}
+
+.my-tag a:hover {
+    background-color: #2d2f99;
+    font-weight: bold;
+    outline: 0
+}
+
+.post-meta {
+    color: #777;
+    font-size: 15px;
+    font-style: italic;
+    margin-top: 0;
+}
+
+div.col-md-8 a {
+    text-decoration: none;
+    color: black;
+}
+
+div.col-md-8 a:hover {
+    color: #337ab7;
+    transition: color 0.25s ease-in-out;
+}

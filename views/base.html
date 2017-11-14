@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="Keywords" content="blog, 个人博客"/>
+    <meta name="Description" content="个人博客"/>
+    <meta name="author" content="driftluo"/>
+    <meta name="viewport" content="width=device-width,user-scalable=no" />
+    <link rel="icon" type="image/jpg" href="/images/head.jpg" />
+    <title>{% block title %}{% endblock title %}</title>
+    <script src="http://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="/js/moment.js"></script>
+    <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet"/>
+    {% block css %}{% endblock css %}
+</head>
+<body>
+<header>
+    <div class="img">
+    <img src="/images/img_5.JPG" class="img-responsive img-rounded"/><br>
+    <p class="text-right">--- 摄于 2017 年 9 月 亚丁·牛奶海</p>
+    </div>
+</header>
+<div class="container">{% block body %}{% endblock body %}</div>
+<footer class="container">
+    <hr>
+    <p class="text-center">Copyright © Luo Chao 2017-</p>
+</footer>
+{% block script%} {% endblock script%}
+</body>
+</html>

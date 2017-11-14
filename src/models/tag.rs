@@ -4,6 +4,7 @@ use super::super::PgConnection;
 use super::Relations;
 
 use diesel;
+use diesel::expression::sql;
 use diesel::{ ExecuteDsl, ExpressionMethods, FilterDsl, LoadDsl };
 
 #[derive(Queryable, Debug, Clone, Deserialize, Serialize)]
@@ -39,6 +40,24 @@ impl Tags {
         let res = diesel::update(all_tags.filter(tags::id.eq(&self.id)))
             .set(tags::tag.eq(&self.tag))
             .execute(conn);
+        match res {
+            Ok(data) => Ok(data),
+            Err(err) => Err(format!("{}", err))
+        }
+    }
+}
+
+#[derive(Queryable, Debug, Clone, Deserialize, Serialize)]
+pub struct TagCount {
+    id: i32,
+    tag: String,
+    count: i64
+}
+
+impl TagCount {
+    pub fn view_tag_count(conn: &PgConnection) -> Result<Vec<Self>, String> {
+        let query = sql::<(diesel::types::Integer, diesel::types::Text ,diesel::types::BigInt)>("select b.id, b.tag, count(*) from article_tag_relation a join tags b on a.tag_id=b.id group by b.id, b.tag");
+        let res = query.load::<Self>(conn);
         match res {
             Ok(data) => Ok(data),
             Err(err) => Err(format!("{}", err))

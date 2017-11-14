@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}
+driftluo's blog
+{% endblock title %}
+
+{% block css %}
+<link href="/css/index.css" rel="stylesheet"/>
+{% endblock css %}
+
+{% block body %}
+<nav class="navbar navbar-inverse navbar-fixed-top my-navbar" role="navigation">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="#">Blog</a>
+        </div>
+        <div>
+            <ul class="nav navbar-nav navbar-right">
+                <li ><a href="#">Home</a></li>
+                <li><a href="#">Blog List</a></li>
+                <li><a href="#">About</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+<div class="container col-sm-12 col-md-8 col-xs-8">
+
+</div>
+<div class="container col-sm-12 col-md-4 col-xs-4 my-tag">
+    <ul>
+        {% if tags%}
+            {% for tag in tags %}
+            <li data-id={{ tag.id }} class="list-unstyled"><button class="btn btn-primary" type="button">{{ tag.tag }}&nbsp;<span class="badge">{{ tag.count }}</span></button></li>
+            {% endfor %}
+        {% endif %}
+    </ul>
+</div>
+{% endblock body %}
+
+{% block script %}
+<script src="/js/index.js"></script>
+{% endblock script%}

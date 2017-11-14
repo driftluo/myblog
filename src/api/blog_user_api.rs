@@ -2,7 +2,7 @@ use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperRes
 use serde_json;
 use sapper_std::{ JsonParams, QueryParams, PathParams };
 
-use { random_string, sha3_256_encode, establish_connection,
+use super::super::{ random_string, sha3_256_encode, establish_connection,
       UserInfo, Users, NewUser, ChangePassword, RegisteredUser, EditUser };
 
 pub struct User;

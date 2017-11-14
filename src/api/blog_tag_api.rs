@@ -2,7 +2,7 @@ use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperRes
 use sapper_std::{ PathParams, JsonParams };
 use serde_json;
 
-use super::{ establish_connection, NewTag, RelationTag, Tags, Relations };
+use super::super::{ establish_connection, NewTag, RelationTag, Tags, Relations, TagCount };
 
 pub struct Tag;
 
@@ -63,7 +63,7 @@ impl Tag {
 
     fn view_tag(_req: &mut Request) -> SapperResult<Response> {
         let conn = establish_connection();
-        let res = match Tags::view_list_tag(&conn) {
+        let res = match TagCount::view_tag_count(&conn) {
             Ok(data) => {
                 json!({
                     "status": true,

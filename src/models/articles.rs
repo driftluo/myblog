@@ -6,7 +6,8 @@ use super::Relations;
 
 use chrono::NaiveDateTime;
 use diesel;
-use diesel::{ FilterDsl, ExpressionMethods, ExecuteDsl, LoadDsl, SelectDsl, OrderDsl, LimitDsl };
+use diesel::{ FilterDsl, ExpressionMethods, ExecuteDsl, LoadDsl,
+              SelectDsl, OrderDsl, LimitDsl, OffsetDsl };
 
 #[derive(Queryable, Debug, Clone, Deserialize, Serialize)]
 pub struct Articles {
@@ -78,12 +79,13 @@ pub struct ArticleList {
 }
 
 impl ArticleList {
-    pub fn query_list_article(conn: &PgConnection, limit: i64, admin: bool) -> Result<Vec<ArticleList>, String> {
+    pub fn query_list_article(conn: &PgConnection, limit: i64, offset: i64, admin: bool) -> Result<Vec<ArticleList>, String> {
         let res = if admin {
                 all_articles
                 .select((articles::id, articles::title, articles::published, articles::create_time, articles::modify_time))
                 .order(articles::create_time.desc())
                 .limit(limit)
+                .offset(offset)
                 .load::<ArticleList>(conn)
         } else {
             all_articles
@@ -91,6 +93,7 @@ impl ArticleList {
                 .filter(articles::published.eq(true))
                 .order(articles::create_time.desc())
                 .limit(limit)
+                .offset(offset)
                 .load::<ArticleList>(conn)
         };
 
