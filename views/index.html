@@ -1,8 +1,12 @@
 {% extends "base.html" %}
 
-{% block title  %}
+{% block title %}
 driftluo's blog
 {% endblock title %}
+
+{% block css %}
+<link href="/css/index.css" rel="stylesheet"/>
+{% endblock css %}
 
 {% block body %}
 <nav class="navbar navbar-inverse navbar-fixed-top my-navbar" role="navigation">
@@ -26,9 +30,13 @@ driftluo's blog
     <ul>
         {% if tags%}
             {% for tag in tags %}
-            <li data-id={{ tag.id }} class="list-unstyled"><a href="#">{{ tag.tag }}</a>&nbsp;<span class="badge">{{ tag.count }}</span></li>
+            <li data-id={{ tag.id }} class="list-unstyled"><button class="btn btn-primary" type="button">{{ tag.tag }}&nbsp;<span class="badge">{{ tag.count }}</span></button></li>
             {% endfor %}
         {% endif %}
     </ul>
 </div>
 {% endblock body %}
+
+{% block script %}
+<script src="/js/index.js"></script>
+{% endblock script%}

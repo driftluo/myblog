@@ -6,51 +6,12 @@
     <meta name="Description" content="个人博客"/>
     <meta name="author" content="driftluo"/>
     <meta name="viewport" content="width=device-width,user-scalable=no" />
-    <link rel="icon" type="image/png" href="/images/head.jpg">
+    <link rel="icon" type="image/jpg" href="/images/head.jpg" />
     <title>{% block title %}{% endblock title %}</title>
     <script src="http://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="/js/moment.js"></script>
     <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet"/>
-    <style>
-        .my-navbar {
-            opacity: 0.25
-        }
-
-        .my-navbar a {
-            background: transparent !important;
-            color: #fff !important
-        }
-
-        .my-navbar a:hover {
-            color: #ec0629 !important;
-            background: transparent;
-            outline: 0
-        }
-
-        .my-navbar a {
-            transition: color 0.5s ease-in-out;
-        }
-
-        /*-webkit-transition ;-moz-transition*/
-        .top-nav {
-            background: #070606;
-            opacity: 0.75
-        }
-
-        .my-tag a {
-            background-color: #1f8699;
-            font-weight:bold;
-            color: #fff !important;
-            padding:4px;
-            border-radius:10px;
-            text-decoration:none;
-        }
-
-        .my-tag a:hover {
-            background-color: #2d2f99;
-            font-weight:bold;
-            outline: 0
-        }
-    </style>
+    {% block css %}{% endblock css %}
 </head>
 <body>
 <header>
@@ -61,18 +22,9 @@
 </header>
 <div class="container">{% block body %}{% endblock body %}</div>
 <footer class="container">
-    <br>
+    <hr>
     <p class="text-center">Copyright © Luo Chao 2017-</p>
 </footer>
+{% block script%} {% endblock script%}
 </body>
-<script>
-    $(window).scroll(function () {
-        "use strict";
-        if ($(".navbar").offset().top > 50) {
-            $(".navbar-fixed-top").addClass("top-nav");
-        } else {
-            $(".navbar-fixed-top").removeClass("top-nav");
-        }
-    })
-</script>
 </html>
