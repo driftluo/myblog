@@ -27,10 +27,10 @@ pub mod web;
 
 pub(crate) use schema::{ articles, users, article_with_tag, tags, article_tag_relation };
 pub(crate) use models::{ NewArticle, Articles, ArticleList, ModifyPublish, EditArticle };
-pub(crate) use models::{ UserInfo, Users, NewUser, ChangePassword, RegisteredUser, EditUser };
+pub(crate) use models::{ UserInfo, Users, NewUser, ChangePassword, RegisteredUser, EditUser, LoginUser };
 pub(crate) use models::{ RelationTag, Relations };
 pub(crate) use models::{ NewTag, Tags, TagCount };
-pub(crate) use util::{ sha3_256_encode, random_string, markdown_render };
+pub(crate) use util::{ sha3_256_encode, random_string, markdown_render, get_password };
 pub use api::Article;
 pub use api::User;
 pub use api::Tag;

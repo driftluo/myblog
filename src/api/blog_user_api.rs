@@ -3,7 +3,7 @@ use serde_json;
 use sapper_std::{ JsonParams, QueryParams, PathParams };
 
 use super::super::{ random_string, sha3_256_encode, establish_connection,
-      UserInfo, Users, NewUser, ChangePassword, RegisteredUser, EditUser };
+      UserInfo, Users, NewUser, ChangePassword, RegisteredUser, EditUser, LoginUser };
 
 pub struct User;
 
@@ -19,7 +19,7 @@ impl User {
         if new_user.insert(&conn) {
             res_json!(json!({"status": true}))
         } else {
-            res_json!(json!({"status": true}))
+            res_json!(json!({"status": false}))
         }
     }
 
@@ -114,6 +114,17 @@ impl User {
         };
         res_json!(res)
     }
+
+    fn login(req: &mut Request) -> SapperResult<Response> {
+        let body: LoginUser = get_json_params!(req);
+        let conn = establish_connection();
+
+        if body.verification(&conn) {
+            res_json!(json!({"status": true}))
+        } else {
+            res_json!(json!({"status": false}))
+        }
+    }
 }
 
 impl SapperModule for User {
@@ -141,6 +152,9 @@ impl SapperModule for User {
         // http post :8888/user/edit id:=1 nickname="漂流"
         // say="仍需共生命的慷慨与繁华相爱，即使岁月以刻薄与荒芜相欺。" email=441594700@qq.com
         router.post("/user/edit", User::edit_user);
+
+        // http post :8888/user/login account=admin password=admin
+        router.post("/user/login", User::login);
         Ok(())
     }
 }

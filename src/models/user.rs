@@ -6,7 +6,7 @@ use chrono::NaiveDateTime;
 use diesel;
 use diesel::{ FilterDsl, ExpressionMethods, ExecuteDsl, LoadDsl, SelectDsl, FindDsl };
 
-use super::super::{ sha3_256_encode, random_string };
+use super::super::{ sha3_256_encode, random_string, get_password };
 
 #[derive(Queryable, Debug, Clone, Deserialize, Serialize)]
 pub struct Users {
@@ -14,6 +14,7 @@ pub struct Users {
     pub account: String,
     pub password: String,
     pub salt: String,
+    pub groups: i16,
     pub nickname: String,
     pub say: Option<String>,
     pub email: String,
@@ -56,7 +57,7 @@ impl NewUser {
     pub fn new(reg: RegisteredUser, salt: String) -> Self {
         NewUser {
             account: reg.account,
-            password: reg.password,
+            password: get_password(&reg.password),
             salt,
             nickname: reg.nickname,
             say: reg.say,
@@ -114,8 +115,8 @@ pub struct ChangePassword {
 impl ChangePassword {
     pub fn change_password(&self, conn: &PgConnection) -> Result<usize, String> {
         let salt = random_string(6);
-        let password = sha3_256_encode(self.new_password.to_owned() + &salt);
-        let res =  diesel::update(all_users.filter(users::id.eq(self.id)))
+        let password = sha3_256_encode(get_password(&self.new_password) + &salt);
+        let res = diesel::update(all_users.filter(users::id.eq(self.id)))
             .set((users::password.eq(&password), users::salt.eq(&salt)))
             .execute(conn);
         match res {
@@ -128,7 +129,7 @@ impl ChangePassword {
         let old_user = all_users.filter(users::id.eq(self.id)).get_result::<Users>(conn);
         match old_user {
             Ok(old) => {
-                if old.password == sha3_256_encode(self.old_password.to_owned() + &old.salt) {
+                if old.password == sha3_256_encode(get_password(&self.old_password) + &old.salt) {
                     true
                 } else { false }
             }
@@ -143,4 +144,36 @@ pub struct EditUser {
     pub nickname: String,
     pub say: String,
     pub email: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct LoginUser {
+    account: String,
+    password: String
+}
+
+impl LoginUser {
+    pub fn verification(&self, conn: &PgConnection) -> bool {
+        let res = all_users.filter(users::account.eq(self.account.to_owned())).get_result::<Users>(conn);
+        match res {
+            Ok(data) => {
+                if data.password == sha3_256_encode(get_password(&self.password) + &data.salt) {
+                    match data.groups {
+                        0 => {
+                            true
+                        }
+                        _ => {
+                            true
+                        }
+                    }
+                } else {
+                    false
+                }
+            }
+            Err(err) => {
+                println!("{}", err);
+                false
+            }
+        }
+    }
 }
