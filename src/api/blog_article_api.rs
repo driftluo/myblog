@@ -198,7 +198,7 @@ impl SapperModule for Article {
         // http get /article/view_all limit==5
         router.get("/article/view_all", Article::list_all_article);
 
-        // http post /article/new title=something content=something
+        // http post /article/new title=something raw_content=something
         router.post("/article/new", Article::create_article);
 
         // http post /article/publish id:=5 published:=true
@@ -207,7 +207,7 @@ impl SapperModule for Article {
         // http post /article/delete/3
         router.post("/article/delete/:id", Article::delete_article);
 
-        // http post /article/edit id:=1 title=something content=something
+        // http post /article/edit id:=1 title=something raw_content=something
         router.post("/article/edit", Article::edit_article);
         Ok(())
     }

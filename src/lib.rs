@@ -16,6 +16,7 @@ extern crate sapper;
 extern crate sapper_std;
 extern crate rand;
 extern crate tiny_keccak;
+extern crate comrak;
 
 
 pub mod schema;
@@ -29,7 +30,7 @@ pub(crate) use models::{ NewArticle, Articles, ArticleList, ModifyPublish, EditA
 pub(crate) use models::{ UserInfo, Users, NewUser, ChangePassword, RegisteredUser, EditUser };
 pub(crate) use models::{ RelationTag, Relations };
 pub(crate) use models::{ NewTag, Tags, TagCount };
-pub(crate) use util::{ sha3_256_encode, random_string };
+pub(crate) use util::{ sha3_256_encode, random_string, markdown_render };
 pub use api::Article;
 pub use api::User;
 pub use api::Tag;

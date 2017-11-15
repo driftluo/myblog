@@ -2,6 +2,7 @@
 Create table articles (
     id serial primary key ,
     title varchar not null,
+    raw_content text not null,
     content text not null,
     published bool not null default false,
     create_time timestamp not null default current_timestamp,

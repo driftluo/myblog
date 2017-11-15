@@ -2,6 +2,12 @@
 // Record the status of the request asynchronously again
 function Command() {
     this.command = true;
+    this.change = function() {
+        this.command = !this.command;
+    };
+    this.setFalse = function() {
+        this.command = false;
+    }
 }
 
 // New an object
@@ -14,7 +20,7 @@ function getList() {
         $.getJSON("/api/v1/article/admin/view_all?limit=5&&offset=" + offset, function (result) {
             // console.log(result.status);
             if (result.data.length === 0) {
-                command.command = false
+                command.change();
             }
             $.each(result, function (key, values) {
                 var i;
@@ -55,5 +61,6 @@ $(window).scroll(function () {
 // According to the tag to get the corresponding article list
 // todo: finish it
 $("button").click(function () {
-    console.log($(this).parent().attr("data-id"))
+    console.log($(this).parent().attr("data-id"));
+    command.setFalse();
 });
