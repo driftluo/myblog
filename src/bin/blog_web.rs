@@ -3,7 +3,8 @@ extern crate sapper_std;
 extern crate blog;
 
 use sapper::{ SapperApp, SapperAppShell, Request, Response, Result as SapperResult };
-use blog::{ ArticleWeb };
+use blog::{ ArticleWeb, create_redis_pool, Redis };
+use std::sync::Arc;
 
 struct WebApp;
 
@@ -20,9 +21,17 @@ impl SapperAppShell for WebApp {
 }
 
 fn main() {
+    let redispool = Arc::new(create_redis_pool());
     let mut app = SapperApp::new();
     app.address("127.0.0.1")
         .port(8080)
+        .init_global(
+            Box::new(move |req: &mut Request| {
+                req.ext_mut().insert::<Redis>(redispool.clone());
+
+                Ok(())
+            })
+        )
         .with_shell(Box::new(WebApp))
         .add_module(Box::new(ArticleWeb))
         .static_service(true);

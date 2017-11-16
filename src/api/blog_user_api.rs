@@ -3,7 +3,7 @@ use serde_json;
 use sapper_std::{ JsonParams, QueryParams, PathParams };
 
 use super::super::{ random_string, sha3_256_encode, establish_connection,
-      UserInfo, Users, NewUser, ChangePassword, RegisteredUser, EditUser, LoginUser };
+      UserInfo, Users, NewUser, ChangePassword, RegisteredUser, EditUser, LoginUser, Redis};
 
 pub struct User;
 
@@ -118,12 +118,23 @@ impl User {
     fn login(req: &mut Request) -> SapperResult<Response> {
         let body: LoginUser = get_json_params!(req);
         let conn = establish_connection();
+        let redis_pool = req.ext().get::<Redis>().unwrap();
 
-        if body.verification(&conn) {
-            res_json!(json!({"status": true}))
-        } else {
-            res_json!(json!({"status": false}))
-        }
+        let res = match body.verification(&conn, redis_pool) {
+            Ok(cookies) => {
+                json!({
+                    "status": true,
+                    "cookies": cookies
+                })
+            }
+            Err(err) => {
+                json!({
+                    "status": false,
+                    "error": format!("{}", err)
+                })
+            }
+        };
+        res_json!(res)
     }
 }
 

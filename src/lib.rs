@@ -17,6 +17,10 @@ extern crate sapper_std;
 extern crate rand;
 extern crate tiny_keccak;
 extern crate comrak;
+extern crate redis;
+extern crate r2d2;
+extern crate r2d2_redis;
+extern crate typemap;
 
 
 pub mod schema;
@@ -31,6 +35,7 @@ pub(crate) use models::{ UserInfo, Users, NewUser, ChangePassword, RegisteredUse
 pub(crate) use models::{ RelationTag, Relations };
 pub(crate) use models::{ NewTag, Tags, TagCount };
 pub(crate) use util::{ sha3_256_encode, random_string, markdown_render, get_password };
+pub use util::{ create_redis_pool, RedisPool, Redis };
 pub use api::Article;
 pub use api::User;
 pub use api::Tag;

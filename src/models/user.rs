@@ -5,8 +5,9 @@ use super::super::PgConnection;
 use chrono::NaiveDateTime;
 use diesel;
 use diesel::{ FilterDsl, ExpressionMethods, ExecuteDsl, LoadDsl, SelectDsl, FindDsl };
+use std::sync::Arc;
 
-use super::super::{ sha3_256_encode, random_string, get_password };
+use super::super::{ sha3_256_encode, random_string, get_password, RedisPool };
 
 #[derive(Queryable, Debug, Clone, Deserialize, Serialize)]
 pub struct Users {
@@ -153,26 +154,31 @@ pub struct LoginUser {
 }
 
 impl LoginUser {
-    pub fn verification(&self, conn: &PgConnection) -> bool {
+    pub fn verification(&self, conn: &PgConnection, redis_pool: &Arc<RedisPool>) -> Result<String, String> {
         let res = all_users.filter(users::account.eq(self.account.to_owned())).get_result::<Users>(conn);
         match res {
             Ok(data) => {
                 if data.password == sha3_256_encode(get_password(&self.password) + &data.salt) {
                     match data.groups {
                         0 => {
-                            true
+                            let cookie = sha3_256_encode(random_string(8));
+                            redis_pool.hset("session_0", &cookie, data.id);
+                            redis_pool.lpush("cookies", &cookie);
+                            Ok(cookie)
                         }
                         _ => {
-                            true
+                            let cookie = sha3_256_encode(random_string(8));
+                            redis_pool.hset("session_1", &cookie, data.id);
+                            redis_pool.lpush("cookies", &cookie);
+                            Ok(cookie)
                         }
                     }
                 } else {
-                    false
+                    Err(format!("用户或密码错误"))
                 }
             }
             Err(err) => {
-                println!("{}", err);
-                false
+                Err(format!("{}", err))
             }
         }
     }

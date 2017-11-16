@@ -1,3 +1,7 @@
+pub mod redispool;
+
+pub use self::redispool::{ create_redis_pool, RedisPool, Redis };
+
 use rand::{ thread_rng, Rng };
 use tiny_keccak::Keccak;
 use std::fmt::Write;
