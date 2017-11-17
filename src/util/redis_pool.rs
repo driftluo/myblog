@@ -25,6 +25,17 @@ impl RedisPool {
         }
     }
 
+    pub fn exists(&self, redis_key: &str) -> bool {
+        redis::cmd("exists").arg(redis_key)
+            .query(&*self.pool.get().unwrap()).unwrap()
+    }
+
+    pub fn expire(&self, redis_key: &str, sec: u32) {
+        let a = | conn: &redis::Connection | redis::cmd("expire").arg(redis_key)
+            .arg(sec).execute(conn);
+        self.with_conn(a);
+    }
+
     pub fn hset<T>(&self, redis_key: &str, hash_key: &str, value: T)
         where T: redis::ToRedisArgs
     {
@@ -45,6 +56,11 @@ impl RedisPool {
         where T: redis::FromRedisValue
     {
         redis::cmd("hget").arg(redis_key)
+            .arg(hash_key).query(&*self.pool.get().unwrap()).unwrap()
+    }
+
+    pub fn hexists(&self, redis_key: &str, hash_key: &str) -> bool {
+        redis::cmd("hexists").arg(redis_key)
             .arg(hash_key).query(&*self.pool.get().unwrap()).unwrap()
     }
 

@@ -1,7 +1,7 @@
 use super::super::users;
 use super::super::users::dsl::users as all_users;
 
-use chrono::NaiveDateTime;
+use chrono::{ NaiveDateTime, Local };
 use diesel;
 use diesel::{ FilterDsl, ExpressionMethods, ExecuteDsl, LoadDsl, SelectDsl, FindDsl, PgConnection };
 use std::sync::Arc;
@@ -161,14 +161,16 @@ impl LoginUser {
                     match data.groups {
                         0 => {
                             let cookie = sha3_256_encode(random_string(8));
-                            redis_pool.hset("session_0", &cookie, data.id);
-                            redis_pool.lpush("cookies", &cookie);
+                            let redis_key = "admin_".to_string() + &cookie;
+                            redis_pool.hset(&redis_key, "login_time", Local::now().timestamp());
+                            redis_pool.expire(&redis_key, 90 * 24 * 3600);
                             Ok(cookie)
                         }
                         _ => {
                             let cookie = sha3_256_encode(random_string(8));
-                            redis_pool.hset("session_1", &cookie, data.id);
-                            redis_pool.lpush("cookies", &cookie);
+                            let redis_key = "user_".to_string() + &cookie;
+                            redis_pool.hset(&("user_".to_string() + &cookie), "login_time", Local::now().timestamp());
+                            redis_pool.expire(&redis_key, 90 * 24 * 3600);
                             Ok(cookie)
                         }
                     }
