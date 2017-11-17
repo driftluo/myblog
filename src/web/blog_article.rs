@@ -1,15 +1,15 @@
 use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult };
 use sapper_std::{ Context, render };
 
-use super::super::{ TagCount, establish_connection };
+use super::super::{ TagCount, Postgresql };
 
 pub struct ArticleWeb;
 
 impl ArticleWeb {
-    fn index(_req: &mut Request) -> SapperResult<Response> {
+    fn index(req: &mut Request) -> SapperResult<Response> {
         let mut web = Context::new();
-        let conn = establish_connection();
-        match TagCount::view_tag_count(&conn) {
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+        match TagCount::view_tag_count(&pg_pool) {
             Ok(data) => web.add("tags", &data),
             Err(err) => println!("No tags, {}", err)
         }

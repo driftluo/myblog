@@ -2,8 +2,8 @@ use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperRes
 use serde_json;
 use sapper_std::{ JsonParams, QueryParams, PathParams };
 
-use super::super::{ random_string, sha3_256_encode, establish_connection,
-      UserInfo, Users, NewUser, ChangePassword, RegisteredUser, EditUser, LoginUser, Redis};
+use super::super::{ random_string, sha3_256_encode,
+      UserInfo, Users, NewUser, ChangePassword, RegisteredUser, EditUser, LoginUser, Redis, Postgresql};
 
 pub struct User;
 
@@ -14,9 +14,9 @@ impl User {
         body.password = sha3_256_encode(body.password + &salt);
 
         let new_user = NewUser::new(body, salt);
-        let conn = establish_connection();
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        if new_user.insert(&conn) {
+        if new_user.insert(&pg_pool) {
             res_json!(json!({"status": true}))
         } else {
             res_json!(json!({"status": false}))
@@ -25,14 +25,14 @@ impl User {
 
     fn change_pwd(req: &mut Request) -> SapperResult<Response> {
         let body: ChangePassword = get_json_params!(req);
-        let conn = establish_connection();
-        let res = if !body.verification(&conn) {
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+        let res = if !body.verification(&pg_pool) {
             json!({
                 "status": false,
                 "error": format!("no this user, id: {}", body.id)
             })
         } else {
-            match body.change_password(&conn) {
+            match body.change_password(&pg_pool) {
                 Ok(data) => {
                     json!({
                     "status": true,
@@ -53,9 +53,9 @@ impl User {
     fn delete_user(req: &mut Request) -> SapperResult<Response> {
         let params = get_path_params!(req);
         let user_id: i32 = t_param!(params, "id").clone().parse().unwrap();
-        let conn = establish_connection();
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        let res = match Users::delete(&conn, user_id) {
+        let res = match Users::delete(&pg_pool, user_id) {
             Ok(num_deleted) => {
                 json!({
                     "status": true,
@@ -75,9 +75,9 @@ impl User {
     fn view_user(req: &mut Request) -> SapperResult<Response> {
         let params = get_query_params!(req);
         let user_id = t_param_parse!(params, "id", i32);
-        let conn = establish_connection();
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        let res = match UserInfo::view_user(&conn, user_id) {
+        let res = match UserInfo::view_user(&pg_pool, user_id) {
             Ok(data) => {
                 json!({
                     "status": true,
@@ -96,9 +96,9 @@ impl User {
 
     fn edit_user(req: &mut Request) -> SapperResult<Response> {
         let body: EditUser = get_json_params!(req);
-        let conn = establish_connection();
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        let res = match Users::edit_user(&conn, body) {
+        let res = match Users::edit_user(&pg_pool, body) {
             Ok(num_update) => {
                 json!({
                     "status": true,
@@ -117,10 +117,10 @@ impl User {
 
     fn login(req: &mut Request) -> SapperResult<Response> {
         let body: LoginUser = get_json_params!(req);
-        let conn = establish_connection();
         let redis_pool = req.ext().get::<Redis>().unwrap();
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        let res = match body.verification(&conn, redis_pool) {
+        let res = match body.verification(&pg_pool, redis_pool) {
             Ok(cookies) => {
                 json!({
                     "status": true,

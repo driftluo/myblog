@@ -3,16 +3,16 @@ use sapper_std::{ PathParams, QueryParams, JsonParams };
 use serde_json;
 
 use super::super::{ EditArticle, ModifyPublish, Articles,
-                    NewArticle, ArticleList, establish_connection };
+                    NewArticle, ArticleList, Postgresql };
 
 pub struct Article;
 
 impl Article {
     fn create_article(req: &mut Request) -> SapperResult<Response> {
         let body: NewArticle = get_json_params!(req);
-        let conn = establish_connection();
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        if body.insert(&conn) {
+        if body.insert(&pg_pool) {
             res_json!(json!({"status": true}))
         } else {
             res_json!(json!({"status": false}))
@@ -22,9 +22,9 @@ impl Article {
     fn delete_article(req: &mut Request) -> SapperResult<Response> {
         let params = get_path_params!(req);
         let article_id: i32 = t_param!(params, "id").clone().parse().unwrap();
-        let conn = establish_connection();
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        let res = match Articles::delete_with_id(&conn, article_id) {
+        let res = match Articles::delete_with_id(&pg_pool, article_id) {
             Ok(num_deleted) => {
                 json!({
                     "status": true,
@@ -44,9 +44,9 @@ impl Article {
     fn admin_view_article(req: &mut Request) -> SapperResult<Response> {
         let params = get_query_params!(req);
         let article_id = t_param_parse!(params, "id", i32);
-        let conn = establish_connection();
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        let res = match Articles::query_article(&conn, article_id, true) {
+        let res = match Articles::query_article(&pg_pool, article_id, true) {
             Ok(data) => {
                 json!({
                     "status": true,
@@ -66,9 +66,9 @@ impl Article {
     fn view_article(req: &mut Request) -> SapperResult<Response> {
         let params = get_query_params!(req);
         let article_id = t_param_parse!(params, "id", i32);
-        let conn = establish_connection();
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        let res = match Articles::query_article(&conn, article_id, false) {
+        let res = match Articles::query_article(&pg_pool, article_id, false) {
             Ok(data) => {
                 json!({
                     "status": true,
@@ -89,8 +89,8 @@ impl Article {
         let params = get_query_params!(req);
         let limit = t_param_parse!(params, "limit", i64);
         let offset = t_param_parse!(params, "offset", i64);
-        let conn = establish_connection();
-        let res = match ArticleList::query_list_article(&conn, limit, offset, true) {
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+        let res = match ArticleList::query_list_article(&pg_pool, limit, offset, true) {
             Ok(data) => {
                 json!({
                     "status": true,
@@ -111,8 +111,8 @@ impl Article {
         let params = get_query_params!(req);
         let limit = t_param_parse!(params, "limit", i64);
         let offset = t_param_parse!(params, "offset", i64);
-        let conn = establish_connection();
-        let res = match ArticleList::query_list_article(&conn, limit, offset, false) {
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+        let res = match ArticleList::query_list_article(&pg_pool, limit, offset, false) {
             Ok(data) => {
                 json!({
                     "status": true,
@@ -133,9 +133,9 @@ impl Article {
 
         let body: EditArticle = get_json_params!(req);
 
-        let conn = establish_connection();
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        let res = match Articles::edit_article(&conn, body) {
+        let res = match Articles::edit_article(&pg_pool, body) {
             Ok(num_update) => {
                  json!({
                     "status": true,
@@ -156,9 +156,9 @@ impl Article {
 
         let body: ModifyPublish = get_json_params!(req);
 
-        let conn = establish_connection();
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        let res = match Articles::publish_article(&conn, body) {
+        let res = match Articles::publish_article(&pg_pool, body) {
             Ok(num_update) => {
                 json!({
                     "status": true,

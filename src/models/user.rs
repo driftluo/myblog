@@ -1,10 +1,9 @@
 use super::super::users;
 use super::super::users::dsl::users as all_users;
 
-use super::super::PgConnection;
 use chrono::NaiveDateTime;
 use diesel;
-use diesel::{ FilterDsl, ExpressionMethods, ExecuteDsl, LoadDsl, SelectDsl, FindDsl };
+use diesel::{ FilterDsl, ExpressionMethods, ExecuteDsl, LoadDsl, SelectDsl, FindDsl, PgConnection };
 use std::sync::Arc;
 
 use super::super::{ sha3_256_encode, random_string, get_password, RedisPool };

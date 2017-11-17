@@ -1,11 +1,10 @@
 use super::super::tags;
 use super::super::tags::dsl::tags as all_tags;
-use super::super::PgConnection;
 use super::Relations;
 
 use diesel;
 use diesel::expression::sql;
-use diesel::{ ExecuteDsl, ExpressionMethods, FilterDsl, LoadDsl };
+use diesel::{ ExecuteDsl, ExpressionMethods, FilterDsl, LoadDsl, PgConnection };
 
 #[derive(Queryable, Debug, Clone, Deserialize, Serialize)]
 pub struct Tags {

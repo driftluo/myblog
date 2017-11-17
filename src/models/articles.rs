@@ -1,13 +1,13 @@
 use super::super::articles::dsl::articles as all_articles;
 use super::super::{ articles, article_with_tag };
 use super::super::article_with_tag::dsl::article_with_tag as all_article_with_tag;
-use super::super::{ PgConnection, markdown_render};
+use super::super::{ markdown_render };
 use super::Relations;
 
 use chrono::NaiveDateTime;
 use diesel;
 use diesel::{ FilterDsl, ExpressionMethods, ExecuteDsl, LoadDsl,
-              SelectDsl, OrderDsl, LimitDsl, OffsetDsl };
+              SelectDsl, OrderDsl, LimitDsl, OffsetDsl, PgConnection };
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Articles {

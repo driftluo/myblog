@@ -1,6 +1,8 @@
-pub mod redispool;
+pub mod redis_pool;
+pub mod postgresql_pool;
 
-pub use self::redispool::{ create_redis_pool, RedisPool, Redis };
+pub use self::redis_pool::{ create_redis_pool, RedisPool, Redis };
+pub use self::postgresql_pool::{ create_pg_pool, Postgresql };
 
 use rand::{ thread_rng, Rng };
 use tiny_keccak::Keccak;
