@@ -1,12 +1,12 @@
 use super::super::users;
 use super::super::users::dsl::users as all_users;
 
-use super::super::PgConnection;
-use chrono::NaiveDateTime;
+use chrono::{ NaiveDateTime, Local };
 use diesel;
-use diesel::{ FilterDsl, ExpressionMethods, ExecuteDsl, LoadDsl, SelectDsl, FindDsl };
+use diesel::{ FilterDsl, ExpressionMethods, ExecuteDsl, LoadDsl, SelectDsl, FindDsl, PgConnection };
+use std::sync::Arc;
 
-use super::super::{ sha3_256_encode, random_string };
+use super::super::{ sha3_256_encode, random_string, get_password, RedisPool };
 
 #[derive(Queryable, Debug, Clone, Deserialize, Serialize)]
 pub struct Users {
@@ -14,6 +14,7 @@ pub struct Users {
     pub account: String,
     pub password: String,
     pub salt: String,
+    pub groups: i16,
     pub nickname: String,
     pub say: Option<String>,
     pub email: String,
@@ -56,7 +57,7 @@ impl NewUser {
     pub fn new(reg: RegisteredUser, salt: String) -> Self {
         NewUser {
             account: reg.account,
-            password: reg.password,
+            password: get_password(&reg.password),
             salt,
             nickname: reg.nickname,
             say: reg.say,
@@ -114,8 +115,8 @@ pub struct ChangePassword {
 impl ChangePassword {
     pub fn change_password(&self, conn: &PgConnection) -> Result<usize, String> {
         let salt = random_string(6);
-        let password = sha3_256_encode(self.new_password.to_owned() + &salt);
-        let res =  diesel::update(all_users.filter(users::id.eq(self.id)))
+        let password = sha3_256_encode(get_password(&self.new_password) + &salt);
+        let res = diesel::update(all_users.filter(users::id.eq(self.id)))
             .set((users::password.eq(&password), users::salt.eq(&salt)))
             .execute(conn);
         match res {
@@ -128,7 +129,7 @@ impl ChangePassword {
         let old_user = all_users.filter(users::id.eq(self.id)).get_result::<Users>(conn);
         match old_user {
             Ok(old) => {
-                if old.password == sha3_256_encode(self.old_password.to_owned() + &old.salt) {
+                if old.password == sha3_256_encode(get_password(&self.old_password) + &old.salt) {
                     true
                 } else { false }
             }
@@ -143,4 +144,45 @@ pub struct EditUser {
     pub nickname: String,
     pub say: String,
     pub email: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct LoginUser {
+    account: String,
+    password: String
+}
+
+impl LoginUser {
+    pub fn verification(&self, conn: &PgConnection, redis_pool: &Arc<RedisPool>) -> Result<String, String> {
+        let res = all_users.filter(users::account.eq(self.account.to_owned())).get_result::<Users>(conn);
+        match res {
+            Ok(data) => {
+                if data.password == sha3_256_encode(get_password(&self.password) + &data.salt) {
+                    match data.groups {
+                        0 => {
+                            let cookie = sha3_256_encode(random_string(8));
+                            let redis_key = "admin_".to_string() + &cookie;
+                            redis_pool.hset(&redis_key, "login_time", Local::now().timestamp());
+                            redis_pool.hset(&redis_key, "id", data.id);
+                            redis_pool.expire(&redis_key, 90 * 24 * 3600);
+                            Ok(cookie)
+                        }
+                        _ => {
+                            let cookie = sha3_256_encode(random_string(8));
+                            let redis_key = "user_".to_string() + &cookie;
+                            redis_pool.hset(&("user_".to_string() + &cookie), "login_time", Local::now().timestamp());
+                            redis_pool.hset(&redis_key, "id", data.id);
+                            redis_pool.expire(&redis_key, 90 * 24 * 3600);
+                            Ok(cookie)
+                        }
+                    }
+                } else {
+                    Err(format!("用户或密码错误"))
+                }
+            }
+            Err(err) => {
+                Err(format!("{}", err))
+            }
+        }
+    }
 }

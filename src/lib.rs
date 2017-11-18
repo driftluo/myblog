@@ -16,6 +16,12 @@ extern crate sapper;
 extern crate sapper_std;
 extern crate rand;
 extern crate tiny_keccak;
+extern crate comrak;
+extern crate redis;
+extern crate r2d2;
+extern crate r2d2_redis;
+extern crate r2d2_diesel;
+extern crate typemap;
 
 
 pub mod schema;
@@ -26,22 +32,16 @@ pub mod web;
 
 pub(crate) use schema::{ articles, users, article_with_tag, tags, article_tag_relation };
 pub(crate) use models::{ NewArticle, Articles, ArticleList, ModifyPublish, EditArticle };
-pub(crate) use models::{ UserInfo, Users, NewUser, ChangePassword, RegisteredUser, EditUser };
+pub(crate) use models::{ UserInfo, Users, NewUser, ChangePassword, RegisteredUser, EditUser, LoginUser };
 pub(crate) use models::{ RelationTag, Relations };
 pub(crate) use models::{ NewTag, Tags, TagCount };
-pub(crate) use util::{ sha3_256_encode, random_string };
-pub use api::Article;
+pub(crate) use util::{ sha3_256_encode, random_string, markdown_render, get_password,
+                       admin_verification_cookie, user_verification_cookie, Session };
+pub use util::{ create_redis_pool, RedisPool, Redis };
+pub use util::{ create_pg_pool, Postgresql };
+pub use api::Visitor;
 pub use api::User;
+pub use api::AdminArticle;
 pub use api::Tag;
+pub use api::AdminUser;
 pub use web::ArticleWeb;
-
-use std::env;
-use diesel::pg::PgConnection;
-use diesel::Connection;
-
-pub(crate) fn establish_connection() -> PgConnection {
-    dotenv::dotenv().ok();
-
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    PgConnection::establish(&database_url).expect(&format!("Error connecting to {}", database_url))
-}

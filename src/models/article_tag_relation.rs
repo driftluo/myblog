@@ -1,10 +1,9 @@
 use super::super::article_tag_relation as relation;
 use super::super::article_tag_relation::dsl::article_tag_relation as all_relation;
-use super::super::PgConnection;
 use super::NewTag;
 
 use diesel;
-use diesel::{ ExecuteDsl, ExpressionMethods, FilterDsl };
+use diesel::{ ExecuteDsl, ExpressionMethods, FilterDsl, PgConnection };
 
 #[derive(Insertable, Debug, Clone, Deserialize, Serialize)]
 #[table_name="relation"]

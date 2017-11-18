@@ -1,15 +1,15 @@
 use super::super::articles::dsl::articles as all_articles;
 use super::super::{ articles, article_with_tag };
 use super::super::article_with_tag::dsl::article_with_tag as all_article_with_tag;
-use super::super::PgConnection;
+use super::super::{ markdown_render };
 use super::Relations;
 
 use chrono::NaiveDateTime;
 use diesel;
 use diesel::{ FilterDsl, ExpressionMethods, ExecuteDsl, LoadDsl,
-              SelectDsl, OrderDsl, LimitDsl, OffsetDsl };
+              SelectDsl, OrderDsl, LimitDsl, OffsetDsl, PgConnection };
 
-#[derive(Queryable, Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Articles {
     pub id: i32,
     pub title: String,
@@ -35,22 +35,30 @@ impl Articles {
     pub fn query_article(conn: &PgConnection, id: i32, admin: bool) -> Result<Vec<Articles>, String> {
         let res = if admin {
             all_article_with_tag.filter(article_with_tag::id.eq(id))
-                .load::<Articles>(conn)
+                .load::<RawArticles>(conn)
         } else {
             all_article_with_tag.filter(article_with_tag::id.eq(id))
                 .filter(article_with_tag::published.eq(true))
-                .load::<Articles>(conn)
+                .load::<RawArticles>(conn)
         };
 
         match res {
-            Ok(data) => Ok(data),
+            Ok(data) => {
+                if admin {
+                    Ok(data.into_iter().map(|x| x.into_admin()).collect())
+                } else {
+                    Ok(data.into_iter().map(|x| x.into_user()).collect())
+                }
+            },
             Err(err) => Err(format!("{}", err))
         }
     }
 
     pub fn edit_article(conn: &PgConnection, data: EditArticle) -> Result<usize, String> {
         let res = diesel::update(all_articles.filter(articles::id.eq(data.id)))
-            .set((articles::title.eq(data.title), articles::content.eq(data.content)))
+            .set((articles::title.eq(data.title),
+                  articles::content.eq(markdown_render(&data.raw_content)), articles::raw_content.eq(data.raw_content)
+                  ))
             .execute(conn);
         match res {
             Ok(data) => Ok(data),
@@ -104,22 +112,25 @@ impl ArticleList {
     }
 }
 
-#[derive(Insertable, Debug, Clone, Deserialize, Serialize)]
+#[derive(Insertable, Debug, Clone)]
 #[table_name = "articles"]
-pub struct NewArticle {
-    pub title: String,
-    pub content: String,
+struct InsertArticle {
+    title: String,
+    raw_content: String,
+    content: String,
 }
 
-impl NewArticle {
-    pub fn new(title: String, content: String) -> Self {
-        NewArticle {
+impl InsertArticle {
+    fn new(title: String, raw_content: String) -> Self {
+        let content = markdown_render(&raw_content);
+        InsertArticle {
             title,
+            raw_content,
             content
         }
     }
 
-    pub fn insert(&self, conn: &PgConnection) -> bool {
+    fn insert(&self, conn: &PgConnection) -> bool {
         diesel::insert(self)
             .into(articles::table)
             .execute(conn)
@@ -128,14 +139,71 @@ impl NewArticle {
 }
 
 #[derive(Deserialize, Serialize)]
+pub struct NewArticle {
+    pub title: String,
+    pub raw_content: String,
+}
+
+impl NewArticle {
+    pub fn insert(self, conn: &PgConnection) -> bool {
+        self.into_insert_article().insert(conn)
+    }
+
+    fn into_insert_article(self) -> InsertArticle {
+        InsertArticle::new(self.title, self.raw_content)
+    }
+}
+
+#[derive(Deserialize, Serialize)]
 pub struct EditArticle {
     id: i32,
     title: String,
-    content: String
+    raw_content: String
 }
 
 #[derive(Deserialize, Serialize)]
 pub struct ModifyPublish {
     id: i32,
     publish: bool
+}
+
+#[derive(Queryable, Debug, Clone)]
+struct RawArticles {
+    pub id: i32,
+    pub title: String,
+    pub raw_content: String,
+    pub content: String,
+    pub published: bool,
+    pub tags_id: Vec<Option<i32>>,
+    pub tags: Vec<Option<String>>,
+    pub create_time: NaiveDateTime,
+    pub modify_time: NaiveDateTime,
+}
+
+impl RawArticles {
+    fn into_admin(self) -> Articles {
+        Articles {
+            id: self.id,
+            title: self.title,
+            content: self.raw_content,
+            published: self.published,
+            tags_id: self.tags_id,
+            tags: self.tags,
+            create_time: self.create_time,
+            modify_time: self.modify_time
+        }
+    }
+
+    fn into_user(self) -> Articles {
+        Articles {
+            id: self.id,
+            title: self.title,
+            content: self.content,
+            published: self.published,
+            tags_id: self.tags_id,
+            tags: self.tags,
+            create_time: self.create_time,
+            modify_time: self.modify_time
+        }
+    }
 }

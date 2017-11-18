@@ -1,17 +1,17 @@
 use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult };
-use sapper_std::{ PathParams, JsonParams };
+use sapper_std::{ PathParams, JsonParams, SessionVal };
 use serde_json;
 
-use super::super::{ establish_connection, NewTag, RelationTag, Tags, Relations, TagCount };
+use super::super::{ NewTag, RelationTag, Tags, Relations, TagCount, Postgresql, Redis, admin_verification_cookie };
 
 pub struct Tag;
 
 impl Tag {
     fn create_tag(req: &mut Request) -> SapperResult<Response> {
         let body: NewTag = get_json_params!(req);
-        let conn = establish_connection();
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        if body.insert(&conn) {
+        if body.insert(&pg_pool) {
             res_json!(json!({"status": true}))
         } else {
             res_json!(json!({"status": false}))
@@ -20,9 +20,9 @@ impl Tag {
 
     fn create_relation(req: &mut Request) -> SapperResult<Response> {
         let body: RelationTag = get_json_params!(req);
-        let conn = establish_connection();
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        if body.insert(&conn) {
+        if body.insert(&pg_pool) {
             res_json!(json!({"status": true}))
         } else {
             res_json!(json!({"status": false}))
@@ -31,9 +31,9 @@ impl Tag {
 
     fn delete_relation(req: &mut Request) -> SapperResult<Response> {
         let body: Relations = get_json_params!(req);
-        let conn = establish_connection();
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        if body.delete_relation(&conn) {
+        if body.delete_relation(&pg_pool) {
             res_json!(json!({"status": true}))
         } else {
             res_json!(json!({"status": false}))
@@ -43,8 +43,8 @@ impl Tag {
     fn delete_tag(req: &mut Request) -> SapperResult<Response> {
         let params = get_path_params!(req);
         let id: i32 = t_param!(params, "id").clone().parse().unwrap();
-        let conn = establish_connection();
-        let res = match Tags::delete_tag(&conn, id) {
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+        let res = match Tags::delete_tag(&pg_pool, id) {
             Ok(num_deleted) => {
                 json!({
                     "status": true,
@@ -61,9 +61,9 @@ impl Tag {
         res_json!(res)
     }
 
-    fn view_tag(_req: &mut Request) -> SapperResult<Response> {
-        let conn = establish_connection();
-        let res = match TagCount::view_tag_count(&conn) {
+    fn view_tag(req: &mut Request) -> SapperResult<Response> {
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+        let res = match TagCount::view_tag_count(&pg_pool) {
             Ok(data) => {
                 json!({
                     "status": true,
@@ -82,8 +82,8 @@ impl Tag {
 
     fn edit_tag(req: &mut Request) -> SapperResult<Response> {
         let body: Tags = get_json_params!(req);
-        let conn = establish_connection();
-        let res = match body.edit_tag(&conn) {
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+        let res = match body.edit_tag(&pg_pool) {
             Ok(num_update) => {
                 json!({
                     "status": true,
@@ -102,8 +102,19 @@ impl Tag {
 }
 
 impl SapperModule for Tag {
-    fn before(&self, _req: &mut Request) -> SapperResult<()> {
-        Ok(())
+    fn before(&self, req: &mut Request) -> SapperResult<Option<Response>> {
+        let cookie = req.ext().get::<SessionVal>();
+        let redis_pool = req.ext().get::<Redis>().unwrap();
+        match admin_verification_cookie(cookie, redis_pool) {
+            true => { Ok(None) }
+            false => {
+                let res = json!({
+                    "status": false,
+                    "error": String::from("Verification error")
+                });
+                res_json!(res, true)
+            }
+        }
     }
 
     fn after(&self, _req: &Request, _res: &mut Response) -> SapperResult<()> {
