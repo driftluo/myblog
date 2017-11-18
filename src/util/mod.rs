@@ -8,6 +8,8 @@ use rand::{ thread_rng, Rng };
 use tiny_keccak::Keccak;
 use std::fmt::Write;
 use comrak::{ markdown_to_html, ComrakOptions };
+use std::sync::Arc;
+use typemap::Key;
 
 /// Get random value
 #[inline]
@@ -47,4 +49,37 @@ pub fn markdown_render(md: &str) -> String {
 pub fn get_password(raw: &str) -> String {
     let (_, password) = raw.split_at(6);
     password.to_string()
+}
+
+#[inline]
+pub fn admin_verification_cookie(cookie: Option<&String>, redis_pool: &Arc<RedisPool>) -> bool {
+    match cookie {
+        Some(cookie) => {
+            let redis_key = "admin_".to_string() + cookie;
+            redis_pool.exists(&redis_key)
+        }
+        None => {
+            false
+        }
+    }
+}
+
+#[inline]
+pub fn user_verification_cookie(cookie: Option<&String>, redis_pool: &Arc<RedisPool>) -> bool {
+    match cookie {
+        Some(cookie) => {
+            let admin_redis_key = "admin_".to_string() + cookie;
+            let user_redis_key = "user_".to_string() + &cookie;
+            redis_pool.exists(&admin_redis_key) || redis_pool.exists(&user_redis_key)
+        }
+        None => {
+            false
+        }
+    }
+}
+
+pub struct Session;
+
+impl Key for Session {
+    type Value = bool;
 }

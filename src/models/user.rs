@@ -163,6 +163,7 @@ impl LoginUser {
                             let cookie = sha3_256_encode(random_string(8));
                             let redis_key = "admin_".to_string() + &cookie;
                             redis_pool.hset(&redis_key, "login_time", Local::now().timestamp());
+                            redis_pool.hset(&redis_key, "id", data.id);
                             redis_pool.expire(&redis_key, 90 * 24 * 3600);
                             Ok(cookie)
                         }
@@ -170,6 +171,7 @@ impl LoginUser {
                             let cookie = sha3_256_encode(random_string(8));
                             let redis_key = "user_".to_string() + &cookie;
                             redis_pool.hset(&("user_".to_string() + &cookie), "login_time", Local::now().timestamp());
+                            redis_pool.hset(&redis_key, "id", data.id);
                             redis_pool.expire(&redis_key, 90 * 24 * 3600);
                             Ok(cookie)
                         }

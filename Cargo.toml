@@ -32,4 +32,5 @@ features = ["postgres"]
 version = "^0.16.0"
 
 [patch.crates-io]
-sapper_std = { path='..\sapper_std' }
+sapper_std = { path='../sapper_std' }
+sapper = { path = '../sapper' }

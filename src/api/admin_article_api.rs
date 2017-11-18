@@ -1,8 +1,9 @@
 use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult };
-use sapper_std::{ PathParams, QueryParams, JsonParams };
+use sapper_std::{ PathParams, QueryParams, JsonParams, SessionVal };
 use serde_json;
 
-use super::super::{ NewArticle, Articles, Postgresql, EditArticle, ArticleList, ModifyPublish };
+use super::super::{ NewArticle, Articles, Postgresql, EditArticle, Redis,
+                    ArticleList, ModifyPublish, admin_verification_cookie };
 
 pub struct AdminArticle;
 
@@ -132,8 +133,19 @@ impl AdminArticle {
 }
 
 impl SapperModule for AdminArticle {
-    fn before(&self, _req: &mut Request) -> SapperResult<()> {
-        Ok(())
+    fn before(&self, req: &mut Request) -> SapperResult<Option<Response>> {
+        let cookie = req.ext().get::<SessionVal>();
+        let redis_pool = req.ext().get::<Redis>().unwrap();
+        match admin_verification_cookie(cookie, redis_pool) {
+            true => { Ok(None) }
+            false => {
+                let res = json!({
+                    "status": false,
+                    "error": String::from("Verification error")
+                });
+                res_json!(res, true)
+            }
+        }
     }
 
     fn after(&self, _req: &Request, _res: &mut Response) -> SapperResult<()> {
