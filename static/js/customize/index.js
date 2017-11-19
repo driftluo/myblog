@@ -1,11 +1,12 @@
 "use strict";
+
 // Record the status of the request asynchronously again
 function Command() {
     this.command = true;
-    this.change = function() {
+    this.change = function () {
         this.command = !this.command;
     };
-    this.setFalse = function() {
+    this.setFalse = function () {
         this.command = false;
     }
 }
@@ -17,7 +18,7 @@ var command = new Command();
 function getList() {
     if (command.command) {
         var offset = $("div.col-md-8 h2").length;
-        $.getJSON("/api/v1/article/admin/view_all?limit=5&&offset=" + offset, function (result) {
+        $.getJSON("/api/v1/article/view_all?limit=5&&offset=" + offset, function (result) {
             // console.log(result.status);
             if (result.data.length === 0) {
                 command.change();
@@ -46,15 +47,6 @@ $(document).ready(function () {
 $(window).scroll(function () {
     if ($(document).scrollTop() + $(window).height() >= $(document).height()) {
         getList();
-    }
-});
-
-// Navigation bar color gradient
-$(window).scroll(function () {
-    if ($(".navbar").offset().top > 350) {
-        $(".navbar-fixed-top").addClass("top-nav");
-    } else {
-        $(".navbar-fixed-top").removeClass("top-nav");
     }
 });
 

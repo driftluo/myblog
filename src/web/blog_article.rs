@@ -13,7 +13,17 @@ impl ArticleWeb {
             Ok(data) => web.add("tags", &data),
             Err(err) => println!("No tags, {}", err)
         }
-    res_html!("index.html", web)
+        res_html!("index.html", web)
+    }
+
+    fn about(_req: &mut Request) -> SapperResult<Response> {
+        let web = Context::new();
+        res_html!("about.html", web)
+    }
+
+    fn list(_req: &mut Request) -> SapperResult<Response> {
+        let web = Context::new();
+        res_html!("list.html", web)
     }
 }
 
@@ -41,6 +51,12 @@ impl SapperModule for ArticleWeb {
 
         // http get /index
         router.get("/index", ArticleWeb::index);
+
+        // http get /about
+        router.get("/about", ArticleWeb::about);
+
+        // http get /list
+        router.get("/list", ArticleWeb::list);
 
         Ok(())
     }

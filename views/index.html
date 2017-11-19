@@ -8,21 +8,14 @@ driftluo's blog
 <link href="/css/index.css" rel="stylesheet"/>
 {% endblock css %}
 
+{% block header %}
+<div class="img">
+    <img src="/images/img_5.JPG" class="img-responsive img-rounded"/><br>
+    <p class="text-right">--- 摄于 2017 年 9 月 亚丁·牛奶海</p>
+</div>
+{% endblock header %}
+
 {% block body %}
-<nav class="navbar navbar-inverse navbar-fixed-top my-navbar" role="navigation">
-    <div class="container-fluid">
-        <div class="navbar-header">
-            <a class="navbar-brand" href="#">Blog</a>
-        </div>
-        <div>
-            <ul class="nav navbar-nav navbar-right">
-                <li ><a href="#">Home</a></li>
-                <li><a href="#">Blog List</a></li>
-                <li><a href="#">About</a></li>
-            </ul>
-        </div>
-    </div>
-</nav>
 <div class="container col-sm-12 col-md-8 col-xs-8">
 
 </div>
@@ -38,5 +31,6 @@ driftluo's blog
 {% endblock body %}
 
 {% block script %}
-<script src="/js/index.js"></script>
+<script src="/js/customize/index.js"></script>
+<script src="/js/customize/navigationBar.js"></script>
 {% endblock script%}
