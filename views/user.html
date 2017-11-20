@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}
+Home
+{% endblock title %}
+{% block css %}
+    <style>
+        .side-navbar {
+            background: rgba(217, 219, 252, 0.98);
+            /*background-color: #777777;*/
+            color: #fff;
+            border: hidden;
+        }
+        .container {
+            margin-top:50px;
+        }
+        #information {display: block;}
+        #sign_out {display: none;}
+    </style>
+{% endblock css %}
+
+{% block header %}
+{% endblock header %}
+
+{% block body %}
+<div class="container col-sm-2 col-md-2">
+<nav class="navbar navbar-inverse side-navbar" id="sidebar-wrapper" role="navigation">
+    <ul class="nav sidebar-nav">
+        <li>
+            <a href="#"><i class="fa fa-fw fa-home"></i> Home</a>
+        </li>
+        <li>
+            <a id="information_btn"><i class="fa fa-fw fa-home"></i> Information</a>
+        </li>
+        <li>
+            <a id="sign_out_btn"><i class="fa fa-fw fa-home"></i> Sign out</a>
+        </li>
+    </ul>
+</nav>
+</div>
+<div class="container col-sm-8 col-md-8">
+    <div id="information">
+        <h3>用户信息</h3>
+        <hr/>
+        <div><label>账号：</label><span>{{ user.account }}</span></div>
+        <div><label>昵称：</label><span>{{ user.nickname }}</span></div>
+        <div><label>签名：</label><span>{{ user.say }}</span></div>
+        <div><label>Email：</label><span>{{ user.email }}</span></div>
+        <div><label>创建时间：</label><span>{{ user.create_time }}</span></div>
+    </div>
+    <div id="sign_out">
+        <h3>确定退出？</h3>
+        <hr />
+        <button type="button" class="btn btn-warning">退出</button>
+    </div>
+</div>
+{% endblock body%}
+
+{% block script %}
+<script>
+    $("#information_btn").click(function () {
+        $("#information").css("display", "block");
+        $("#sign_out").css("display", "none");
+    });
+    $("#sign_out_btn").click(function () {
+        $("#information").css("display", "none");
+        $("#sign_out").css("display", "block");
+    })
+</script>
+{% endblock script%}

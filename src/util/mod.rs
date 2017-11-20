@@ -78,8 +78,14 @@ pub fn user_verification_cookie(cookie: Option<&String>, redis_pool: &Arc<RedisP
     }
 }
 
-pub struct Session;
+pub struct UserSession;
 
-impl Key for Session {
+impl Key for UserSession {
+    type Value = bool;
+}
+
+pub struct AdminSession;
+
+impl Key for AdminSession {
     type Value = bool;
 }

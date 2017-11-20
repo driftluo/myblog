@@ -11,6 +11,7 @@
     <script src="http://code.jquery.com/jquery-3.2.1.min.js"></script>
     <script async src="/js/moment.js"></script>
     <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="/css/index.css" rel="stylesheet"/>
     {% block css %}{% endblock css %}
 </head>
 <body>
@@ -24,7 +25,10 @@
             </div>
             <div>
                 <ul class="nav navbar-nav navbar-right">
-                    <li><a href="#">Home</a></li>
+                    {% if admin %}
+                    <li><a href="/admin">Admin</a></li>
+                    {% endif %}
+                    <li><a href="/home">Home</a></li>
                     <li><a href="/list">Blog List</a></li>
                     <li><a href="/about">About</a></li>
                 </ul>

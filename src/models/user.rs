@@ -103,6 +103,21 @@ impl UserInfo {
             Err(err) => Err(format!("{}", err))
         }
     }
+    pub fn view_user_with_cookie(conn: &PgConnection, redis_pool: &Arc<RedisPool>, cookie: &str, admin: &bool) -> Result<Self, String> {
+        let redis_key = match admin {
+            &true => { "admin_".to_string() + cookie }
+            &false => { "user_".to_string() + cookie }
+        };
+        let id = redis_pool.hget::<i32>(&redis_key, "id");
+        let res = all_users
+            .select((users::id, users::account, users::nickname, users::say, users::email, users::create_time))
+            .find(id)
+            .get_result::<UserInfo>(conn);
+        match res {
+            Ok(data) => Ok(data),
+            Err(err) => Err(format!("{}", err))
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

@@ -68,7 +68,7 @@ impl Visitor {
 
                 response.write_body(serde_json::to_string(&res).unwrap());
                 let _ = set_cookie(&mut response, "blog_session".to_string(), cookies,
-                                   None, None, None, None);
+                                   None, Some("/".to_string()), None, None);
             }
             Err(err) => {
                 let res = json!({
