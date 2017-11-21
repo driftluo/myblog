@@ -3,7 +3,7 @@ use sapper_std::{ QueryParams, JsonParams, set_cookie };
 use sapper::header::ContentType;
 use serde_json;
 
-use super::super::{ Articles, RegisteredUser, NewUser, sha3_256_encode, random_string,
+use super::super::{ Articles, RegisteredUser, NewUser, sha3_256_encode, random_string, get_password,
                     ArticleList, Postgresql, Redis, LoginUser };
 
 pub struct Visitor;
@@ -60,15 +60,23 @@ impl Visitor {
 
         let mut response = Response::new();
         response.headers_mut().set(ContentType::json());
-        match body.verification(&pg_pool, redis_pool) {
+
+        let max_age: Option<i64> = match body.get_remember() {
+            true => Some(24 * 90),
+            false => None
+        };
+
+        match body.verification(&pg_pool, redis_pool, &max_age) {
             Ok(cookies) => {
                 let res = json!({
                     "status": true,
                 });
 
                 response.write_body(serde_json::to_string(&res).unwrap());
+
                 let _ = set_cookie(&mut response, "blog_session".to_string(), cookies,
-                                   None, Some("/".to_string()), None, None);
+                                   None, Some("/".to_string()), None, max_age);
+
             }
             Err(err) => {
                 let res = json!({
@@ -86,16 +94,36 @@ impl Visitor {
     fn create_user(req: &mut Request) -> SapperResult<Response> {
         let mut body: RegisteredUser = get_json_params!(req);
         let salt = random_string(6);
-        body.password = sha3_256_encode(body.password + &salt);
+        body.password = sha3_256_encode(get_password(&body.password) + &salt);
 
         let new_user = NewUser::new(body, salt);
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+        let redis_pool = req.ext().get::<Redis>().unwrap();
 
-        if new_user.insert(&pg_pool) {
-            res_json!(json!({"status": true}))
-        } else {
-            res_json!(json!({"status": false}))
+        let mut response = Response::new();
+        response.headers_mut().set(ContentType::json());
+
+        match new_user.insert(&pg_pool, redis_pool) {
+            Ok(cookies) => {
+                let res = json!({
+                    "status": true,
+                });
+
+                response.write_body(serde_json::to_string(&res).unwrap());
+
+                let _ = set_cookie(&mut response, "blog_session".to_string(), cookies,
+                                   None, Some("/".to_string()), None, Some(24));
+            }
+            Err(err) => {
+                let res = json!({
+                    "status": false,
+                    "error": format!("{}", err)
+                });
+
+                response.write_body(serde_json::to_string(&res).unwrap());
+            }
         }
+        Ok(response)
     }
 }
 

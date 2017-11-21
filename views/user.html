@@ -17,6 +17,8 @@ Home
         #information {display: block;}
         #sign_out {display: none;}
     </style>
+<script src="/js/arttemplate.js"></script>
+{% include "template/userinfo.html" %}
 {% endblock css %}
 
 {% block header %}
@@ -42,11 +44,6 @@ Home
     <div id="information">
         <h3>用户信息</h3>
         <hr/>
-        <div><label>账号：</label><span>{{ user.account }}</span></div>
-        <div><label>昵称：</label><span>{{ user.nickname }}</span></div>
-        <div><label>签名：</label><span>{{ user.say }}</span></div>
-        <div><label>Email：</label><span>{{ user.email }}</span></div>
-        <div><label>创建时间：</label><span>{{ user.create_time }}</span></div>
     </div>
     <div id="sign_out">
         <h3>确定退出？</h3>
@@ -65,6 +62,34 @@ Home
     $("#sign_out_btn").click(function () {
         $("#information").css("display", "none");
         $("#sign_out").css("display", "block");
-    })
+    });
+
+    $(document).ready(function () {
+        getUserInfo();
+        }
+    );
+
+    $("#sign_out :button").click(function () {
+        $.ajax({
+            url: "/api/v1/user/sign_out",
+            type: "get",
+            dataType: "json",
+            data: JSON.stringify({}),
+            headers: {"Content-Type": "application/json"},
+            success: function (res) {
+                if (res.status) {
+                    window.location = "/index"
+                }
+            }
+        })
+    });
+
+    function getUserInfo() {
+        $.getJSON("/api/v1/user/view", function (result) {
+            result.data.create_time = moment.utc(result.data.create_time).local().format();
+            var html = template("tpl-user", result);
+            $("#information").append(html)
+        })
+    }
 </script>
 {% endblock script%}

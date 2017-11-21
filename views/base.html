@@ -12,6 +12,24 @@
     <script async src="/js/moment.js"></script>
     <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet"/>
     <link href="/css/index.css" rel="stylesheet"/>
+    <style>
+        .fixed-bottom {position: fixed;bottom: 0;width:100%;}
+    </style>
+    <script>
+        $(function(){
+            function footerPosition(){
+//                $("footer").removeClass("fixed-bottom");
+                var contentHeight = document.body.scrollHeight,//网页正文全文高度
+                    winHeight = window.innerHeight-54 ;//可视窗口高度，不包括浏览器顶部工具栏
+                if(!(contentHeight > winHeight)){
+                    //当网页正文高度小于可视窗口高度时，为footer添加类fixed-bottom
+                    $("footer").addClass("fixed-bottom");
+                }
+            }
+            footerPosition();
+            $(window).resize(footerPosition);
+        });
+    </script>
     {% block css %}{% endblock css %}
 </head>
 <body>
@@ -54,4 +72,5 @@
 </footer>
 {% block script %} {% endblock script %}
 </body>
+
 </html>

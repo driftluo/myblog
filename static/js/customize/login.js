@@ -2,6 +2,16 @@
 $().ready(function () {
     loginValidate();
     registerValidate();
+    document.onkeydown = function(e) {
+        var ev = document.all ? window.event : e;
+        if (ev.keyCode === 13) {
+            if ($("#login_form").css("display") === 'block') {
+                login()
+            } else {
+                register()
+            }
+        }
+    }
 });
 
 $("#register_btn").click(function () {
@@ -12,31 +22,62 @@ $("#back_btn").click(function () {
     $("#register_form").css("display", "none");
     $("#login_form").css("display", "block");
 });
-$("#sign_btn").click(function () {
-    if (registerValidate().form()) {
-        console.log($("#account").val())
+
+$("#login").click( function (event) {
+        event.preventDefault();
+        login()
     }
-});
-$("#login").click(function () {
+);
+
+$("#sign_btn").click(function (event) {
+        event.preventDefault();
+        register()
+    }
+);
+
+function login() {
     if (loginValidate().form()) {
         var account = $("#login_account").val();
         var password = randomString(6) + $("#login_password").val();
-        // $.post("/api/v1/user/login", {"account": account, "password": password}, function (result) {
-        //     console.log(result.status);
-        // })
+        var remember = $(".checkbox").children().is(':checked');
         $.ajax({
             url: "/api/v1/user/login",
             type: "post",
             dataType: "json",
-            data: JSON.stringify({"account": account, "password": password}),
+            data: JSON.stringify({"account": account, "password": password, "remember": remember}),
             headers: {'Content-Type': 'application/json'},
             success: function (res) {
-                console.log(res.status);
-                window.location = "/home"
+                if (res.status) {
+                    window.location = "/home"
+                } else {
+                    $(".text-danger").text("");
+                    $(".checkbox").parent().before("<span class='text-danger'>用户名或密码错误</span>")
+                }
             }
         })
     }
-});
+}
+
+function register() {
+    if (registerValidate().form()) {
+        var account = $("#account").val();
+        var password = randomString(6) + $("#register_password").val();
+        var nickname = $("#nickname").val();
+        var email = $("#email").val();
+        $.ajax({
+            url: "/api/v1/user/new",
+            type: "post",
+            dataType: "json",
+            data: JSON.stringify({"account": account, "password": password, "nickname": nickname, "email": email}),
+            headers: {"Content-Type": "application/json"},
+            success: function (res) {
+                if (res.status) {
+                    window.location = "/home"
+                }
+            }
+        })
+    }
+}
 
 function registerValidate() {
     return $("#register_form").validate({

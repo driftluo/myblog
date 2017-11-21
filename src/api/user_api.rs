@@ -1,18 +1,19 @@
 use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult };
-use sapper_std::{ QueryParams, JsonParams, SessionVal };
+use sapper_std::{ JsonParams, SessionVal };
 use serde_json;
 
-use super::super::{ Postgresql, UserInfo, ChangePassword, Redis, user_verification_cookie };
+use super::super::{ Postgresql, UserInfo, ChangePassword, Redis, user_verification_cookie,
+                    admin_verification_cookie, AdminSession, LoginUser };
 
 pub struct User;
 
 impl User {
     fn view_user(req: &mut Request) -> SapperResult<Response> {
-        let params = get_query_params!(req);
-        let user_id = t_param_parse!(params, "id", i32);
+        let cookie = req.ext().get::<SessionVal>().unwrap();
+        let admin = req.ext().get::<AdminSession>().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-
-        let res = match UserInfo::view_user(&pg_pool, user_id) {
+        let redis_pool = req.ext().get::<Redis>().unwrap();
+        let res = match UserInfo::view_user_with_cookie(&pg_pool, redis_pool, cookie, admin) {
             Ok(data) => {
                 json!({
                     "status": true,
@@ -55,13 +56,30 @@ impl User {
         };
         res_json!(res)
     }
+
+    fn sign_out(req: &mut Request) -> SapperResult<Response> {
+        let cookie = req.ext().get::<SessionVal>().unwrap();
+        let admin = req.ext().get::<AdminSession>().unwrap();
+        let redis_pool = req.ext().get::<Redis>().unwrap();
+        let res = json!({"status": LoginUser::sign_out(redis_pool, cookie, admin) });
+        res_json!(res)
+    }
 }
 
 impl SapperModule for User {
+    #[allow(unused_assignments)]
     fn before(&self, req: &mut Request) -> SapperResult<Option<Response>> {
-        let cookie = req.ext().get::<SessionVal>();
-        let redis_pool = req.ext().get::<Redis>().unwrap();
-        match user_verification_cookie(cookie, redis_pool) {
+        let mut admin_status = false;
+        let mut user_status = false;
+        {
+            let cookie = req.ext().get::<SessionVal>();
+            let redis_pool = req.ext().get::<Redis>().unwrap();
+            admin_status = admin_verification_cookie(cookie, redis_pool);
+            user_status = user_verification_cookie(cookie, redis_pool);
+        }
+        req.ext_mut().insert::<AdminSession>(admin_status);
+
+        match user_status {
             true => { Ok(None) }
             false => {
                 let res = json!({
@@ -81,8 +99,10 @@ impl SapperModule for User {
         // http post :8888/user/change_pwd id:=1 old_password=1234 new_password=12345
         router.post("/user/change_pwd", User::change_pwd);
 
-        // http get :8888/user/view id==1
+        // http get :8888/user/view
         router.get("/user/view", User::view_user);
+
+        router.get("/user/sign_out", User::sign_out);
 
         Ok(())
     }

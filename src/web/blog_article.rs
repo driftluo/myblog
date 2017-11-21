@@ -1,7 +1,7 @@
 use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult };
 use sapper_std::{ Context, render, SessionVal };
 
-use super::super::{ TagCount, Postgresql, Redis, AdminSession, UserSession, UserInfo,
+use super::super::{ TagCount, Postgresql, Redis, AdminSession, UserSession,
                     user_verification_cookie, admin_verification_cookie };
 
 pub struct ArticleWeb;
@@ -37,18 +37,10 @@ impl ArticleWeb {
         let mut web = Context::new();
         let user_cookies_status = req.ext().get::<UserSession>().unwrap();
         let admin_cookies_status = req.ext().get::<AdminSession>().unwrap();
-        println!("{:?} {:?}", user_cookies_status, admin_cookies_status);
         web.add("admin", admin_cookies_status);
         match user_cookies_status {
            &false => res_html!("login.html", web),
-            &true => {
-                let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-                let redis_pool = req.ext().get::<Redis>().unwrap();
-                let cookie = req.ext().get::<SessionVal>().unwrap();
-                let res = UserInfo::view_user_with_cookie(&pg_pool, redis_pool, cookie, admin_cookies_status).unwrap();
-                web.add("user", &res);
-                res_html!("user.html", web)
-            }
+            &true => res_html!("user.html", web)
         }
     }
 }
