@@ -21,14 +21,14 @@ impl SapperAppShell for ApiApp {
 }
 
 fn main() {
-    let redispool = Arc::new(create_redis_pool());
+    let redis_pool = Arc::new(create_redis_pool());
     let pg_pool = create_pg_pool();
     let mut app = SapperApp::new();
     app.address("127.0.0.1")
         .port(8888)
         .init_global(
         Box::new(move |req: &mut Request| {
-                req.ext_mut().insert::<Redis>(redispool.clone());
+                req.ext_mut().insert::<Redis>(redis_pool.clone());
                 req.ext_mut().insert::<Postgresql>(pg_pool.clone());
                 Ok(())
             })

@@ -5,26 +5,72 @@
     <meta name="Keywords" content="blog, 个人博客"/>
     <meta name="Description" content="个人博客"/>
     <meta name="author" content="driftluo"/>
-    <meta name="viewport" content="width=device-width,user-scalable=no" />
-    <link rel="icon" type="image/jpg" href="/images/head.jpg" />
+    <meta name="viewport" content="width=device-width,user-scalable=no"/>
+    <link rel="icon" type="image/jpg" href="/images/head.jpg"/>
     <title>{% block title %}{% endblock title %}</title>
     <script src="http://code.jquery.com/jquery-3.2.1.min.js"></script>
     <script async src="/js/moment.js"></script>
     <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="/css/index.css" rel="stylesheet"/>
+    <style>
+        .fixed-bottom {position: fixed;bottom: 0;width:100%;}
+    </style>
+    <script>
+        $(function(){
+            function footerPosition(){
+//                $("footer").removeClass("fixed-bottom");
+                var contentHeight = document.body.scrollHeight,//网页正文全文高度
+                    winHeight = window.innerHeight-54 ;//可视窗口高度，不包括浏览器顶部工具栏
+                if(!(contentHeight > winHeight)){
+                    //当网页正文高度小于可视窗口高度时，为footer添加类fixed-bottom
+                    $("footer").addClass("fixed-bottom");
+                }
+            }
+            footerPosition();
+            $(window).resize(footerPosition);
+        });
+    </script>
     {% block css %}{% endblock css %}
 </head>
 <body>
 <header>
-    <div class="img">
-    <img src="/images/img_5.JPG" class="img-responsive img-rounded"/><br>
-    <p class="text-right">--- 摄于 2017 年 9 月 亚丁·牛奶海</p>
-    </div>
+    {% block header %}{% endblock header%}
 </header>
-<div class="container">{% block body %}{% endblock body %}</div>
+    <nav class="navbar navbar-inverse navbar-fixed-top my-navbar" role="navigation">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="/index">Blog</a>
+            </div>
+            <div>
+                <ul class="nav navbar-nav navbar-right">
+                    {% if admin %}
+                    <li><a href="/admin">Admin</a></li>
+                    {% endif %}
+                    <li><a href="/home">Home</a></li>
+                    <li><a href="/list">Blog List</a></li>
+                    <li><a href="/about">About</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+<div class="container">
+    {% block body %}{% endblock body %}
+</div>
 <footer class="container">
     <hr>
+    <div class="text-center">
+        <a href="https://github.com/driftluo">
+            <svg aria-hidden="true" class="octicon octicon-mark-github" height="32" version="1.1" viewBox="0 0 16 16"
+                 width="32">
+                <path fill-rule="evenodd"
+                      d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z">
+                </path>
+            </svg>
+        </a>
+    </div>
     <p class="text-center">Copyright © Luo Chao 2017-</p>
 </footer>
-{% block script%} {% endblock script%}
+{% block script %} {% endblock script %}
 </body>
+
 </html>

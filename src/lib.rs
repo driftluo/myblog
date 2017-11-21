@@ -36,7 +36,7 @@ pub(crate) use models::{ UserInfo, Users, NewUser, ChangePassword, RegisteredUse
 pub(crate) use models::{ RelationTag, Relations };
 pub(crate) use models::{ NewTag, Tags, TagCount };
 pub(crate) use util::{ sha3_256_encode, random_string, markdown_render, get_password,
-                       admin_verification_cookie, user_verification_cookie, Session };
+                       admin_verification_cookie, user_verification_cookie, UserSession, AdminSession };
 pub use util::{ create_redis_pool, RedisPool, Redis };
 pub use util::{ create_pg_pool, Postgresql };
 pub use api::Visitor;

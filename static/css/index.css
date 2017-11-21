@@ -23,21 +23,6 @@
     opacity: 0.75
 }
 
-.my-tag a {
-    background-color: #1f8699;
-    font-weight: bold;
-    color: #fff !important;
-    padding: 4px;
-    border-radius: 10px;
-    text-decoration: none;
-}
-
-.my-tag a:hover {
-    background-color: #2d2f99;
-    font-weight: bold;
-    outline: 0
-}
-
 .post-meta {
     color: #777;
     font-size: 15px;

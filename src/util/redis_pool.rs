@@ -30,10 +30,16 @@ impl RedisPool {
             .query(&*self.pool.get().unwrap()).unwrap()
     }
 
-    pub fn expire(&self, redis_key: &str, sec: u32) {
+    pub fn expire(&self, redis_key: &str, sec: i64) {
         let a = | conn: &redis::Connection | redis::cmd("expire").arg(redis_key)
             .arg(sec).execute(conn);
         self.with_conn(a);
+    }
+
+    pub fn del(&self, redis_key: &str) -> bool
+    {
+        redis::cmd("del").arg(redis_key)
+            .query(&*self.pool.get().unwrap()).unwrap()
     }
 
     pub fn hset<T>(&self, redis_key: &str, hash_key: &str, value: T)

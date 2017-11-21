@@ -57,7 +57,7 @@ impl NewUser {
     pub fn new(reg: RegisteredUser, salt: String) -> Self {
         NewUser {
             account: reg.account,
-            password: get_password(&reg.password),
+            password: reg.password,
             salt,
             nickname: reg.nickname,
             say: reg.say,
@@ -65,11 +65,26 @@ impl NewUser {
         }
     }
 
-    pub fn insert(&self, conn: &PgConnection) -> bool {
-        diesel::insert(self)
+    pub fn insert(&self, conn: &PgConnection, redis_pool: &Arc<RedisPool>) -> Result<String, String> {
+        match diesel::insert(self)
             .into(users::table)
-            .execute(conn)
-            .is_ok()
+            .get_result::<Users>(conn) {
+            Ok(info) => {
+                self.set_cookies(redis_pool, info.id)
+            }
+            Err(err) => {
+                Err(format!("{}", err))
+            }
+        }
+    }
+
+    fn set_cookies(&self, redis_pool: &Arc<RedisPool>, id: i32) -> Result<String, String> {
+        let cookie = sha3_256_encode(random_string(8));
+        let redis_key = "user_".to_string() + &cookie;
+        redis_pool.hset(&("user_".to_string() + &cookie), "login_time", Local::now().timestamp());
+        redis_pool.hset(&redis_key, "id", id);
+        redis_pool.expire(&redis_key, 24 * 3600);
+        Ok(cookie)
     }
 }
 
@@ -94,6 +109,21 @@ pub struct UserInfo {
 
 impl UserInfo {
     pub fn view_user(conn: &PgConnection, id: i32) -> Result<Self, String> {
+        let res = all_users
+            .select((users::id, users::account, users::nickname, users::say, users::email, users::create_time))
+            .find(id)
+            .get_result::<UserInfo>(conn);
+        match res {
+            Ok(data) => Ok(data),
+            Err(err) => Err(format!("{}", err))
+        }
+    }
+    pub fn view_user_with_cookie(conn: &PgConnection, redis_pool: &Arc<RedisPool>, cookie: &str, admin: &bool) -> Result<Self, String> {
+        let redis_key = match admin {
+            &true => { "admin_".to_string() + cookie }
+            &false => { "user_".to_string() + cookie }
+        };
+        let id = redis_pool.hget::<i32>(&redis_key, "id");
         let res = all_users
             .select((users::id, users::account, users::nickname, users::say, users::email, users::create_time))
             .find(id)
@@ -149,22 +179,28 @@ pub struct EditUser {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct LoginUser {
     account: String,
-    password: String
+    password: String,
+    remember: bool
 }
 
 impl LoginUser {
-    pub fn verification(&self, conn: &PgConnection, redis_pool: &Arc<RedisPool>) -> Result<String, String> {
+    pub fn verification(&self, conn: &PgConnection, redis_pool: &Arc<RedisPool>, max_age: &Option<i64>) -> Result<String, String> {
         let res = all_users.filter(users::account.eq(self.account.to_owned())).get_result::<Users>(conn);
         match res {
             Ok(data) => {
                 if data.password == sha3_256_encode(get_password(&self.password) + &data.salt) {
+                    let ttl = match max_age {
+                        &Some(t) => t * 3600,
+                        &None => 24 * 60
+                    };
+
                     match data.groups {
                         0 => {
                             let cookie = sha3_256_encode(random_string(8));
                             let redis_key = "admin_".to_string() + &cookie;
                             redis_pool.hset(&redis_key, "login_time", Local::now().timestamp());
                             redis_pool.hset(&redis_key, "id", data.id);
-                            redis_pool.expire(&redis_key, 90 * 24 * 3600);
+                            redis_pool.expire(&redis_key, ttl);
                             Ok(cookie)
                         }
                         _ => {
@@ -172,7 +208,7 @@ impl LoginUser {
                             let redis_key = "user_".to_string() + &cookie;
                             redis_pool.hset(&("user_".to_string() + &cookie), "login_time", Local::now().timestamp());
                             redis_pool.hset(&redis_key, "id", data.id);
-                            redis_pool.expire(&redis_key, 90 * 24 * 3600);
+                            redis_pool.expire(&redis_key, ttl);
                             Ok(cookie)
                         }
                     }
@@ -184,5 +220,18 @@ impl LoginUser {
                 Err(format!("{}", err))
             }
         }
+    }
+
+    pub fn get_remember(&self) -> bool {
+        self.remember
+    }
+
+    pub fn sign_out(redis_pool: &Arc<RedisPool>, cookies: &str, admin: &bool) -> bool {
+        let redis_key = match admin {
+            &true => { "admin_".to_string() + cookies }
+            &false => { "user_".to_string() + cookies }
+        };
+
+        redis_pool.del(&redis_key)
     }
 }

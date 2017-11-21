@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}
+About
+{% endblock title %}
+
+{% block css %}
+
+{% endblock css %}
+
+{% block header %}
+<div class="img">
+    <img src="/images/img_7.JPG" class="img-responsive img-rounded"/><br>
+    <p class="text-right">--- 摄于 2017 年 9 月 亚丁·五色湖</p>
+</div>
+{% endblock header %}
+
+{% block body %}
+<div class="container ">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <h1>About driftluo</h1>
+        <p>Hey, everyone, here is driftluo's blog.</p>
+        <h2>Programming</h2>
+        <h3>Programming language</h3>
+        <h4>Python</h4>
+        <p><strong>"Life is short, I use Python."</strong> Python is very easy to learn, although in some cases, it is
+            slow,
+            but it is still a great implementation tool with huge third-party library resources unmatched in other
+            languages.</p>
+        <h4>Rust</h4>
+        <p>When I want to write something low-level, someone tell I must learn C/C++, because I have no choice.
+            But now, I have Rust. Rust helped me solve most memory pointer problems at compile time, while C/C ++
+            panicked at run time.
+            Even though Rust is still in it's infancy, but I have fallen in love with it.</p>
+        <h4>Go</h4>
+        <p>Go is a good compilation of engineering language, comes with GC, cross-platform.
+            The most notable feature is the "go" syntax, which makes asynchronous operation very easy.
+            I'm not very familiar with it, but I will conduct a more in-depth understanding.</p>
+        <h3>Contact</h3>
+        <p>If someone want to get in touch with me, you could send me an email　:)</p>
+        <p>Email: luochaopiaoliu@gmail.com</p>
+        <p>Github: github.com/driftluo</p>
+    </div>
+</div>
+{% endblock body %}
+
+{% block script %}
+<script src="/js/customize/navigationBar.js"></script>
+{% endblock script%}
