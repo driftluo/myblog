@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "visitor/base.html" %}
 
 {% block title %}
 Login
@@ -6,10 +6,7 @@ Login
 {% block css %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.17.0/jquery.validate.js" ></script>
 <style type="text/css">
-    .my-navbar {
-        opacity: 0.75
-    }
-    .container {margin-top:50px;}
+    .body-form {margin-top:100px;}
     .form{background: rgba(255,255,255,0.2);}
     #login_form{display: block;}
     #register_form{display: none;}
@@ -24,7 +21,7 @@ Login
 {% endblock header %}
 
 {% block body %}
-<div class="container">
+<div class="container body-form">
     <div class="form row">
         <form class="form-horizontal col-sm-8 col-sm-offset-2 col-md-8 col-md-offset-2" id="login_form">
             <h3 class="form-title">Login to your account</h3>
@@ -87,5 +84,6 @@ Login
 
 {% block script %}
 <script src="/js/customize/login.js"></script>
+<script src="/js/customize/navigationBar.js"></script>
 {% endblock script%}
 

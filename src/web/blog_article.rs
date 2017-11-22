@@ -16,21 +16,21 @@ impl ArticleWeb {
         }
         let admin_cookies_status = req.ext().get::<AdminSession>().unwrap();
         web.add("admin", admin_cookies_status);
-        res_html!("index.html", web)
+        res_html!("visitor/index.html", web)
     }
 
     fn about(req: &mut Request) -> SapperResult<Response> {
         let mut web = Context::new();
         let admin_cookies_status = req.ext().get::<AdminSession>().unwrap();
         web.add("admin", admin_cookies_status);
-        res_html!("about.html", web)
+        res_html!("visitor/about.html", web)
     }
 
     fn list(req: &mut Request) -> SapperResult<Response> {
         let mut web = Context::new();
         let admin_cookies_status = req.ext().get::<AdminSession>().unwrap();
         web.add("admin", admin_cookies_status);
-        res_html!("list.html", web)
+        res_html!("visitor/list.html", web)
     }
 
     fn home(req: &mut Request) -> SapperResult<Response> {
@@ -39,8 +39,8 @@ impl ArticleWeb {
         let admin_cookies_status = req.ext().get::<AdminSession>().unwrap();
         web.add("admin", admin_cookies_status);
         match user_cookies_status {
-           &false => res_html!("login.html", web),
-            &true => res_html!("user.html", web)
+           &false => res_html!("visitor/login.html", web),
+            &true => res_html!("visitor/user.html", web)
         }
     }
 }

@@ -1,0 +1,69 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}
+Article List
+{% endblock title %}
+
+{% block css %}
+<script src="/js/arttemplate.js"></script>
+<style>
+    .fixed-bottom {
+        position: relative;
+    }
+</style>
+{% include "template/article_list.html" %}
+{% endblock css %}
+
+{% block body %}
+<div class="col-sm-offset-1 col-sm-10 col-md-offset-1 col-md-10 col-xs-offset-1 col-xs-10" style="margin-top: 50px">
+
+    <button type="button" class="btn btn-success pull-right">
+        <span class="glyphicon glyphicon-plus"></span>
+        New
+    </button>
+    <br />
+    <hr />
+    <div class="container col-sm-12 col-md-12 col-xs-12">
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th>文章名</th>
+                <th>状态</th>
+                <th>创建时间</th>
+                <th>最后修改时间</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody>
+
+            </tbody>
+        </table>
+    </div>
+    <div class="text-center">
+        <nav aria-label="Page navigation">
+            <ul class="pagination">
+
+                    <li class="previous"><a href="#"><span aria-hidden="true">&larr;</span> Previous</a></li>
+                    <li class="next"><a href="#">Next <span aria-hidden="true">&rarr;</span></a></li>
+
+            </ul>
+        </nav>
+    </div>
+</div>
+{% endblock body %}
+
+{% block script %}
+<script>
+    $(document).ready(function () {
+            getArticleList();
+        }
+    );
+    function getArticleList() {
+        var html = template("tpl-article-list", {data:[{"a":1},{"a":2},{"a":1},{"a":2},{"a":3},{"a":4}, {"a":1},{"a":2},{"a":3},{"a":4}]});
+        $("tbody").append(html)
+    }
+    $("button.pull-right").click(function () {
+        window.location= "/admin/new"
+    })
+</script>
+{% endblock script %}

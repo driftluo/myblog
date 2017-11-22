@@ -18,7 +18,6 @@
     <script>
         $(function(){
             function footerPosition(){
-//                $("footer").removeClass("fixed-bottom");
                 var contentHeight = document.body.scrollHeight,//网页正文全文高度
                     winHeight = window.innerHeight-54 ;//可视窗口高度，不包括浏览器顶部工具栏
                 if(!(contentHeight > winHeight)){
@@ -36,23 +35,35 @@
 <header>
     {% block header %}{% endblock header%}
 </header>
-    <nav class="navbar navbar-inverse navbar-fixed-top my-navbar" role="navigation">
-        <div class="container-fluid">
+<nav class="navbar navbar-inverse navbar-fixed-top my-navbar">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
             <div class="navbar-header">
                 <a class="navbar-brand" href="/index">Blog</a>
             </div>
-            <div>
-                <ul class="nav navbar-nav navbar-right">
-                    {% if admin %}
-                    <li><a href="/admin">Admin</a></li>
-                    {% endif %}
-                    <li><a href="/home">Home</a></li>
-                    <li><a href="/list">Blog List</a></li>
-                    <li><a href="/about">About</a></li>
-                </ul>
-            </div>
         </div>
-    </nav>
+        <div id="navbar" class="navbar-collapse collapse">
+            <div class="container-fluid">
+                <div>
+                    <ul class="nav navbar-nav navbar-right">
+                        {% if admin %}
+                        <li><a href="/admin">Admin</a></li>
+                        {% endif %}
+                        <li><a href="/home">Home</a></li>
+                        <li><a href="/list">Blog List</a></li>
+                        <li><a href="/about">About</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div><!--/.navbar-collapse -->
+    </div>
+</nav>
 <div class="container">
     {% block body %}{% endblock body %}
 </div>

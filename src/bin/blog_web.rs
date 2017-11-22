@@ -3,7 +3,7 @@ extern crate sapper_std;
 extern crate blog;
 
 use sapper::{ SapperApp, SapperAppShell, Request, Response, Result as SapperResult };
-use blog::{ ArticleWeb, create_redis_pool, Redis, create_pg_pool, Postgresql };
+use blog::{ ArticleWeb, create_redis_pool, Redis, create_pg_pool, Postgresql, Admin };
 use std::sync::Arc;
 
 struct WebApp;
@@ -35,6 +35,7 @@ fn main() {
         )
         .with_shell(Box::new(WebApp))
         .add_module(Box::new(ArticleWeb))
+        .add_module(Box::new(Admin))
         .static_service(true);
 
     println!("Start listen on {}", "127.0.0.1:8080");

@@ -44,4 +44,4 @@ pub use api::User;
 pub use api::AdminArticle;
 pub use api::Tag;
 pub use api::AdminUser;
-pub use web::ArticleWeb;
+pub use web::{ ArticleWeb, Admin };

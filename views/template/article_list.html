@@ -1,0 +1,26 @@
+<script id="tpl-article-list" type="text/html">
+    {% raw %}
+    {{each data}}
+    <tr>
+        <td><a href='#'><p>Linux与xxx的故事</p></a></td>
+        <td><span class="label label-primary">False</span></td>
+        <td>2017-11-21T17:16:27+08:00</td>
+        <td>2017-11-21T17:16:27+08:00</td>
+        <td>
+            <button type="button" class="btn btn-primary btn-sm">
+                <span class="glyphicon glyphicon-open"></span>
+                Publish
+            </button>
+            <button type="button" class="btn btn-info btn-sm" >
+                <span class="glyphicon glyphicon-info-sign"></span>
+                Modify
+            </button>
+            <button type="button" class="btn btn-danger btn-sm">
+                <span class="glyphicon glyphicon-remove-circle"></span>
+                Delete
+            </button>
+        </td>
+    </tr>
+    {{/each}}
+    {% endraw %}
+</script>

@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "visitor/base.html" %}
 
 {% block title %}
 Home
@@ -11,8 +11,8 @@ Home
             color: #fff;
             border: hidden;
         }
-        .container {
-            margin-top:50px;
+        .body-information {
+            margin-top:100px;
         }
         #information {display: block;}
         #sign_out {display: none;}
@@ -25,7 +25,7 @@ Home
 {% endblock header %}
 
 {% block body %}
-<div class="container col-sm-2 col-md-2">
+<div class="container col-sm-2 col-md-2 body-information">
 <nav class="navbar navbar-inverse side-navbar" id="sidebar-wrapper" role="navigation">
     <ul class="nav sidebar-nav">
         <li>
@@ -40,7 +40,7 @@ Home
     </ul>
 </nav>
 </div>
-<div class="container col-sm-8 col-md-8">
+<div class="container col-sm-8 col-md-8 body-information">
     <div id="information">
         <h3>用户信息</h3>
         <hr/>
@@ -92,4 +92,5 @@ Home
         })
     }
 </script>
+<script src="/js/customize/navigationBar.js"></script>
 {% endblock script%}
