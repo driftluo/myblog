@@ -1,0 +1,42 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}
+{{ article.title }}
+{% endblock title %}
+
+{% block css %}
+<script src='/js/highlight.pack.js'></script>
+<link href='/css/monokai_default.css' rel='stylesheet' />
+<style>
+    pre {
+        padding: 0px;
+    }
+</style>
+{% endblock css %}
+
+{% block body %}
+<header>
+    <div class="img">
+        <img src="/images/img_12.JPG" class="img-responsive img-rounded"/><br>
+        <p class="text-right">--- 摄于 2017 年 9 月 藏川线前段</p>
+    </div>
+</header>
+<div class="col-sm-offset-1 col-sm-10 col-md-offset-1 col-md-10 col-xs-offset-1 col-xs-10" data-id={{ article.id }}>
+
+</div>
+
+{% endblock body %}
+
+{% block script %}
+<script>
+$(function() {
+    var id = $(".col-md-offset-1").attr("data-id");
+    $.getJSON("/api/v1//article/admin/view?id=" + id, function (result) {
+        $(".col-md-offset-1").append(result.data[0].content);
+        $('pre code').each(function(i, block) {
+            hljs.highlightBlock(block);
+        });
+    });
+})
+</script>
+{% endblock script%}

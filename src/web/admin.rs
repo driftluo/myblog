@@ -1,7 +1,7 @@
 use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult };
-use sapper_std::{ Context, render, SessionVal };
+use sapper_std::{ Context, render, SessionVal, QueryParams };
 
-use super::super::{ admin_verification_cookie, Redis };
+use super::super::{ admin_verification_cookie, Redis, Postgresql, Articles };
 
 pub struct Admin;
 
@@ -19,6 +19,19 @@ impl Admin {
     fn new(_req: &mut Request) -> SapperResult<Response> {
         let web = Context::new();
         res_html!("admin/article_editor.html", web)
+    }
+
+    fn admin_view_article(req: &mut Request) -> SapperResult<Response> {
+        let params = get_query_params!(req);
+        let article_id = t_param_parse!(params, "id", i32);
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+        let mut web = Context::new();
+
+        match Articles::query_article(&pg_pool, article_id, true) {
+            Ok(ref data) => web.add("article", data),
+            Err(err) => println!("{}", err)
+        }
+        res_html!("admin/article_view.html", web)
     }
 }
 
@@ -50,6 +63,8 @@ impl SapperModule for Admin {
         router.get("/admin/list", Admin::admin_list);
 
         router.get("/admin/new", Admin::new);
+
+        router.get("/admin/article/view", Admin::admin_view_article);
 
         Ok(())
     }

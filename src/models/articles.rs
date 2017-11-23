@@ -32,23 +32,30 @@ impl Articles {
         }
     }
 
-    pub fn query_article(conn: &PgConnection, id: i32, admin: bool) -> Result<Vec<Articles>, String> {
+    pub fn query_article(conn: &PgConnection, id: i32, admin: bool) -> Result<Articles, String> {
         let res = if admin {
             all_article_with_tag.filter(article_with_tag::id.eq(id))
-                .load::<RawArticles>(conn)
+                .get_result::<RawArticles>(conn)
         } else {
             all_article_with_tag.filter(article_with_tag::id.eq(id))
                 .filter(article_with_tag::published.eq(true))
-                .load::<RawArticles>(conn)
+                .get_result::<RawArticles>(conn)
         };
 
         match res {
             Ok(data) => {
-                if admin {
-                    Ok(data.into_iter().map(|x| x.into_admin()).collect())
-                } else {
-                    Ok(data.into_iter().map(|x| x.into_user()).collect())
-                }
+                    Ok(data.into_user())
+            },
+            Err(err) => Err(format!("{}", err))
+        }
+    }
+
+    pub fn query_raw_article(conn: &PgConnection, id: i32) -> Result<Vec<Articles>, String> {
+        let res = all_article_with_tag.filter(article_with_tag::id.eq(id))
+            .load::<RawArticles>(conn);
+        match res {
+            Ok(data) => {
+                Ok(data.into_iter().map(|x| x.into_admin()).collect())
             },
             Err(err) => Err(format!("{}", err))
         }

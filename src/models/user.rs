@@ -191,7 +191,7 @@ impl LoginUser {
                 if data.password == sha3_256_encode(get_password(&self.password) + &data.salt) {
                     let ttl = match max_age {
                         &Some(t) => t * 3600,
-                        &None => 24 * 60
+                        &None => 24 * 60 * 60
                     };
 
                     match data.groups {
