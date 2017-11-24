@@ -6,7 +6,7 @@ use redis;
 use r2d2;
 use dotenv;
 use r2d2::Pool;
-use typemap::Key;
+use sapper::Key;
 use r2d2_redis::RedisConnectionManager;
 
 pub struct RedisPool {

@@ -9,7 +9,7 @@ use tiny_keccak::Keccak;
 use std::fmt::Write;
 use comrak::{ markdown_to_html, ComrakOptions };
 use std::sync::Arc;
-use typemap::Key;
+use sapper::Key;
 
 /// Get random value
 #[inline]
