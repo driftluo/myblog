@@ -18,7 +18,7 @@ impl Admin {
 
     fn new(_req: &mut Request) -> SapperResult<Response> {
         let web = Context::new();
-        res_html!("admin/article_editor.html", web)
+        res_html!("admin/article_new.html", web)
     }
 
     fn admin_view_article(req: &mut Request) -> SapperResult<Response> {
@@ -32,6 +32,14 @@ impl Admin {
             Err(err) => println!("{}", err)
         }
         res_html!("admin/article_view.html", web)
+    }
+
+    fn article_edit(req: &mut Request) -> SapperResult<Response> {
+        let params = get_query_params!(req);
+        let article_id = t_param_parse!(params, "id", i32);
+        let mut web = Context::new();
+        web.add("id", &article_id);
+        res_html!("admin/article_edit.html", web)
     }
 }
 
@@ -65,6 +73,8 @@ impl SapperModule for Admin {
         router.get("/admin/new", Admin::new);
 
         router.get("/admin/article/view", Admin::admin_view_article);
+
+        router.get("/admin/article/edit", Admin::article_edit);
 
         Ok(())
     }

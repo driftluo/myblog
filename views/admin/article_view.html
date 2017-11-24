@@ -6,6 +6,7 @@
 
 {% block css %}
 <script src='/js/highlight.pack.js'></script>
+<script src="/js/arttemplate.js"></script>
 <link href='/css/monokai_default.css' rel='stylesheet' />
 <style>
     pre {
@@ -29,14 +30,33 @@
 
 {% block script %}
 <script>
+    "use strict";
 $(function() {
     var id = $(".col-md-offset-1").attr("data-id");
     $.getJSON("/api/v1//article/admin/view?id=" + id, function (result) {
-        $(".col-md-offset-1").append(result.data[0].content);
+        $(".col-md-offset-1").append(result.data.content);
         $('pre code').each(function(i, block) {
             hljs.highlightBlock(block);
         });
+        var tags = {data: []};
+
+        $.each(result.data.tags, function (index, value) {
+            if (value !== null) {
+                tags.data.push([result.data.tags_id[index], value])
+            }
+        });
+        var html = template("tpl-tag-list", tags);
+        $(".col-md-offset-1").children().first().after(html)
     });
 })
+</script>
+<script id="tpl-tag-list" type="text/html">
+    {% raw %}
+    <div style="margin-bottom: 10px;">
+    {{each data}}
+    <span class='label label-success' tag-id={{ $value[0] }}><span class='glyphicon glyphicon-tags' style='margin-right: 5px;'></span>{{ $value[1] }}</span>
+    {{/each}}
+    </div>
+    {% endraw %}
 </script>
 {% endblock script%}

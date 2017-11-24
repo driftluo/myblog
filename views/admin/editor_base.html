@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="Keywords" content="blog, 个人博客"/>
@@ -7,21 +7,60 @@
     <meta name="author" content="driftluo"/>
     <meta name="viewport" content="width=device-width,user-scalable=no"/>
     <link rel="icon" type="image/jpg" href="/images/head.jpg"/>
-    <title>编辑器</title>
+    <title>{% block title %}{% endblock title %}</title>
     <script src="http://code.jquery.com/jquery-3.2.1.min.js"></script>
     <script src="/js/marked.js"></script>
     <script src="/js/highlight.pack.js"></script>
     <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet"/>
     <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     <link rel="stylesheet" href="/css/monokai_default.css">
+    <style>
+        a:hover { text-decoration: none; cursor:pointer; }
+        ul.tag {
+            overflow: hidden;
+        }
+        ul.tag li {
+            float: left;
+            margin: 20px 15px 10px 0px;
+            line-height: 20px;
+            display: list-item;
+            text-align: -webkit-match-parent;
+            list-style: none;
+        }
+        ul.tag li a {
+            padding: 5px 10px;
+            border: 1px solid #d9d9d9;
+            border-radius: 14px;
+            box-sizing: border-box;
+            font-size: 12px;
+            font-weight: normal;
+            line-height: 1.5;
+            text-decoration: none;
+        }
+        .a_click {
+            background-color: #e78170;
+            color: #fff;
+            border: 0px;
+        }
+    </style>
 </head>
 <body>
+{% block id %}
+{% endblock id %}
 <div class="col-md-8 col-md-offset-2">
     <h3>Title: </h3><input id="title" type="text" class="form-control" placeholder="标题">
+    <div>
+        <ul class="tag">
+            <li ><a >Home</a></li>
+            <li ><a >Profile</a></li>
+            <li ><a>Messages</a></li>
+        </ul>
+        <button id="tag_btn" class="btn btn-sm btn-info pull-right">添加标签</button>
+    </div>
     <div style="margin-top: 20px;">
         <ul class="nav nav-tabs">
-            <li role="presentation" class="active" id="editor_note" ><a href="#" onclick="editorPage()" >Editor</a></li>
-            <li role="presentation" id="preview_note"><a href="#" onclick="previewPage()">Preview</a></li>
+            <li role="presentation" class="active" id="editor_note" ><a onclick="editorPage()" >Editor</a></li>
+            <li role="presentation" id="preview_note"><a onclick="previewPage()">Preview</a></li>
         </ul>
     </div>
     <div id="editor_page" style="display: block">
@@ -75,6 +114,28 @@
         </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
 </div><!-- /.modal -->
+<div id="tag" class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">新标签</h4>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="tag-name" class="control-label">名称:</label>
+                        <input type="text" class="form-control" id="tag-name">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button id="add_tag" type="button" class="btn btn-primary">增加</button>
+            </div>
+        </div>
+    </div>
+</div>
 <footer class="container col-sm-12 col-md-12 col-xs-12">
     <hr>
     <div class="text-center">
@@ -136,27 +197,7 @@
                         + selected.length);
                 }
             });
-        $("#submit").click(function (event) {
-            event.preventDefault();
-            var title = $("#title").val();
-            var content = $("#editor").val();
-            if (title === "" || content === "") {
-                $("#mistake").modal("show")
-            } else {
-                $.ajax({
-                    url: "/api/v1/article/new",
-                    type: "post",
-                    dataType: "json",
-                    data: JSON.stringify({"title": title, "raw_content": content }),
-                    headers: {"Content-Type": "application/json"},
-                    success: function (res) {
-                        if (res.status) {
-                            $("#success").modal("show")
-                        }
-                    }
-                })
-            }
-        });
+
         $("#quit").click(function (event) {
             event.preventDefault();
             window.location = "/admin/list"
@@ -164,7 +205,32 @@
         $("#success_btn").click(function (event) {
             event.preventDefault();
             window.location = "/admin/list"
+        });
+
+        $("ul.tag").on("click","li", function(){
+            if ($(this).children().hasClass("a_click")) {
+                $(this).children().removeClass("a_click")
+            } else {
+                $(this).children().addClass("a_click")
+            }
+        });
+        $("#tag_btn").on("click", function () {
+            $("#tag-name").val("");
+            $("#tag").modal("show")
+        });
+        $("#add_tag").click(function () {
+            var tag_name = $("#tag-name").val();
+            if (tag_name === "") {
+
+            } else {
+                $('#tag').modal('hide');
+                $("ul.tag").append("<li><a class='a_click'>"+ tag_name +"</a></li>")
+            }
+
         })
+
     </script>
+{% block script %}
+{% endblock script %}
 </body>
 </html>

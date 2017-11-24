@@ -1,0 +1,31 @@
+{% extends "admin/editor_base.html" %}
+
+{% block title %}
+新增
+{% endblock title%}
+
+{% block script %}
+<script>
+    $("#submit").click(function (event) {
+        event.preventDefault();
+        var title = $("#title").val();
+        var content = $("#editor").val();
+        if (title === "" || content === "") {
+            $("#mistake").modal("show")
+        } else {
+            $.ajax({
+                url: "/api/v1/article/new",
+                type: "post",
+                dataType: "json",
+                data: JSON.stringify({"title": title, "raw_content": content }),
+                headers: {"Content-Type": "application/json"},
+                success: function (res) {
+                    if (res.status) {
+                        $("#success").modal("show")
+                    }
+                }
+            })
+        }
+    });
+</script>
+{% endblock script %}

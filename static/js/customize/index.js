@@ -3,11 +3,15 @@
 // Record the status of the request asynchronously again
 function Command() {
     this.command = true;
+    this.order = 0;
     this.change = function () {
         this.command = !this.command;
     };
     this.setFalse = function () {
         this.command = false;
+    };
+    this.add = function () {
+      this.order += 1;
     }
 }
 
@@ -17,9 +21,9 @@ var command = new Command();
 // Asynchronous request for article list
 function getList() {
     if (command.command) {
-        var offset = $("div.col-md-8 h2").length;
-        $.getJSON("/api/v1/article/view_all?limit=5&&offset=" + offset, function (result) {
+        $.getJSON("/api/v1/article/view_all?limit=5&&offset=" + command.order * 5, function (result) {
             // console.log(result.status);
+            command.add();
             if (result.data.length === 0) {
                 command.change();
             }
@@ -31,7 +35,6 @@ function getList() {
                     var blog = $("<div class='text-center'></div>").append(title).append(p);
                     $("div.col-md-8").append(blog);
                 }
-
             })
         });
     }
@@ -45,7 +48,7 @@ $(document).ready(function () {
 
 // After scroll on the end, asynchronous access to follow-up article list
 $(window).scroll(function () {
-    if ($(document).scrollTop() + $(window).height() >= $(document).height()) {
+    if ($(window).scrollTop() + $(window).height() >= $(document).height() * 0.99) {
         getList();
     }
 });

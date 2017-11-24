@@ -44,18 +44,18 @@ impl Articles {
 
         match res {
             Ok(data) => {
-                    Ok(data.into_user())
+                    Ok(data.into_html())
             },
             Err(err) => Err(format!("{}", err))
         }
     }
 
-    pub fn query_raw_article(conn: &PgConnection, id: i32) -> Result<Vec<Articles>, String> {
+    pub fn query_raw_article(conn: &PgConnection, id: i32) -> Result<Articles, String> {
         let res = all_article_with_tag.filter(article_with_tag::id.eq(id))
-            .load::<RawArticles>(conn);
+            .get_result::<RawArticles>(conn);
         match res {
             Ok(data) => {
-                Ok(data.into_iter().map(|x| x.into_admin()).collect())
+                Ok(data.into_markdown())
             },
             Err(err) => Err(format!("{}", err))
         }
@@ -188,7 +188,7 @@ struct RawArticles {
 }
 
 impl RawArticles {
-    fn into_admin(self) -> Articles {
+    fn into_markdown(self) -> Articles {
         Articles {
             id: self.id,
             title: self.title,
@@ -201,7 +201,7 @@ impl RawArticles {
         }
     }
 
-    fn into_user(self) -> Articles {
+    fn into_html(self) -> Articles {
         Articles {
             id: self.id,
             title: self.title,

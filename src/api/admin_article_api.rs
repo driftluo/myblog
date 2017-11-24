@@ -63,6 +63,28 @@ impl AdminArticle {
         res_json!(res)
     }
 
+    fn admin_view_raw_article(req: &mut Request) -> SapperResult<Response> {
+        let params = get_query_params!(req);
+        let article_id = t_param_parse!(params, "id", i32);
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+
+        let res = match Articles::query_raw_article(&pg_pool, article_id) {
+            Ok(data) => {
+                json!({
+                    "status": true,
+                    "data": data
+                })
+            }
+            Err(err) => {
+                json!({
+                    "status": false,
+                    "error": err
+                })
+            }
+        };
+        res_json!(res)
+    }
+
     fn admin_list_all_article(req: &mut Request) -> SapperResult<Response> {
         let params = get_query_params!(req);
         let limit = t_param_parse!(params, "limit", i64);
@@ -155,6 +177,8 @@ impl SapperModule for AdminArticle {
     fn router(&self, router: &mut SapperRouter) -> SapperResult<()> {
         // http get /article/admin/view id==4
         router.get("/article/admin/view", AdminArticle::admin_view_article);
+
+        router.get("/article/admin/view_raw", AdminArticle::admin_view_raw_article);
 
         // http get /article/admin/view_all limit==5
         router.get("/article/admin/view_all", AdminArticle::admin_list_all_article);

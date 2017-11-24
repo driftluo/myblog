@@ -91,7 +91,8 @@ Article List
             var html = template("tpl-article-list", result);
             $("tbody").append(html);
             publishButton();
-            deleteButton()
+            deleteButton();
+            modifyButton();
         });
 
     }
@@ -144,6 +145,14 @@ Article List
                     }
                 })
             })
+        })
+    }
+
+    function modifyButton() {
+        $(".modify").on("click", function (event) {
+            event.preventDefault();
+            var id = $(this).attr("data-id");
+            window.location = "/admin/article/edit?id=" + id;
         })
     }
 
