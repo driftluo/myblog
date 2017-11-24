@@ -128,8 +128,8 @@ impl Visitor {
 }
 
 impl SapperModule for Visitor {
-    fn before(&self, _req: &mut Request) -> SapperResult<Option<Response>> {
-        Ok(None)
+    fn before(&self, _req: &mut Request) -> SapperResult<()> {
+        Ok(())
     }
 
     fn after(&self, _req: &Request, _res: &mut Response) -> SapperResult<()> {

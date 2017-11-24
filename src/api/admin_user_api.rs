@@ -1,4 +1,4 @@
-use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult };
+use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult, Error as SapperError };
 use serde_json;
 use sapper_std::{ JsonParams, PathParams, SessionVal };
 
@@ -52,17 +52,17 @@ impl AdminUser {
 }
 
 impl SapperModule for AdminUser {
-    fn before(&self, req: &mut Request) -> SapperResult<Option<Response>> {
+    fn before(&self, req: &mut Request) -> SapperResult<()> {
         let cookie = req.ext().get::<SessionVal>();
         let redis_pool = req.ext().get::<Redis>().unwrap();
         match admin_verification_cookie(cookie, redis_pool) {
-            true => { Ok(None) }
+            true => { Ok(()) }
             false => {
                 let res = json!({
                     "status": false,
                     "error": String::from("Verification error")
                 });
-                res_json!(res, true)
+                Err(SapperError::CustomJson(res.to_string()))
             }
         }
     }

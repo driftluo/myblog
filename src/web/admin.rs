@@ -1,4 +1,4 @@
-use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult };
+use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult, Error as SapperError };
 use sapper_std::{ Context, render, SessionVal, QueryParams };
 
 use super::super::{ admin_verification_cookie, Redis, Postgresql, Articles };
@@ -45,17 +45,17 @@ impl Admin {
 
 impl SapperModule for Admin {
     #[allow(unused_assignments)]
-    fn before(&self, req: &mut Request) -> SapperResult<Option<Response>> {
+    fn before(&self, req: &mut Request) -> SapperResult<()> {
         let cookie = req.ext().get::<SessionVal>();
         let redis_pool = req.ext().get::<Redis>().unwrap();
         match admin_verification_cookie(cookie, redis_pool) {
-            true => { Ok(None) }
+            true => { Ok(()) }
             false => {
                 let res = json!({
                     "status": false,
                     "error": String::from("Verification error")
                 });
-                res_json!(res, true)
+                Err(SapperError::CustomJson(res.to_string()))
             }
         }
     }

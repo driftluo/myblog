@@ -1,4 +1,4 @@
-use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult };
+use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult, Error as SapperError };
 use sapper_std::{ JsonParams, SessionVal };
 use serde_json;
 
@@ -68,7 +68,7 @@ impl User {
 
 impl SapperModule for User {
     #[allow(unused_assignments)]
-    fn before(&self, req: &mut Request) -> SapperResult<Option<Response>> {
+    fn before(&self, req: &mut Request) -> SapperResult<()> {
         let mut admin_status = false;
         let mut user_status = false;
         {
@@ -80,13 +80,13 @@ impl SapperModule for User {
         req.ext_mut().insert::<AdminSession>(admin_status);
 
         match user_status {
-            true => { Ok(None) }
+            true => { Ok(()) }
             false => {
                 let res = json!({
                     "status": false,
                     "error": String::from("Verification error")
                 });
-                res_json!(res, true)
+                Err(SapperError::CustomJson(res.to_string()))
             }
         }
     }

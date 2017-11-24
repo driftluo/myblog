@@ -47,7 +47,7 @@ impl ArticleWeb {
 
 impl SapperModule for ArticleWeb {
     #[allow(unused_assignments)]
-    fn before(&self, req: &mut Request) -> SapperResult<Option<Response>> {
+    fn before(&self, req: &mut Request) -> SapperResult<()> {
         let mut user_status = false;
         let mut admin_status = false;
         {
@@ -59,7 +59,7 @@ impl SapperModule for ArticleWeb {
         req.ext_mut().insert::<UserSession>(user_status);
         req.ext_mut().insert::<AdminSession>(admin_status);
 
-        Ok(None)
+        Ok(())
     }
 
     fn after(&self, _req: &Request, _res: &mut Response) -> SapperResult<()> {
