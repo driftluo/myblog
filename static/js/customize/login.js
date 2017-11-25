@@ -50,7 +50,7 @@ function login() {
                 if (res.status) {
                     window.location = "/home"
                 } else {
-                    $(".text-danger").text("");
+                    $(".text-danger").remove();
                     $(".checkbox").parent().before("<span class='text-danger'>用户名或密码错误</span>")
                 }
             }

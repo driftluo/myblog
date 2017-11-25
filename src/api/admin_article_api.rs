@@ -2,7 +2,7 @@ use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperRes
 use sapper_std::{ PathParams, QueryParams, JsonParams, SessionVal };
 use serde_json;
 
-use super::super::{ NewArticle, Articles, Postgresql, EditArticle, Redis,
+use super::super::{ NewArticle, ArticlesWithTag, Postgresql, EditArticle, Redis,
                     ArticleList, ModifyPublish, admin_verification_cookie };
 
 pub struct AdminArticle;
@@ -24,7 +24,7 @@ impl AdminArticle {
         let article_id: i32 = t_param!(params, "id").clone().parse().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        let res = match Articles::delete_with_id(&pg_pool, article_id) {
+        let res = match ArticlesWithTag::delete_with_id(&pg_pool, article_id) {
             Ok(num_deleted) => {
                 json!({
                     "status": true,
@@ -46,7 +46,7 @@ impl AdminArticle {
         let article_id = t_param_parse!(params, "id", i32);
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        let res = match Articles::query_article(&pg_pool, article_id, true) {
+        let res = match ArticlesWithTag::query_article(&pg_pool, article_id, true) {
             Ok(data) => {
                 json!({
                     "status": true,
@@ -68,7 +68,7 @@ impl AdminArticle {
         let article_id = t_param_parse!(params, "id", i32);
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        let res = match Articles::query_raw_article(&pg_pool, article_id) {
+        let res = match ArticlesWithTag::query_raw_article(&pg_pool, article_id) {
             Ok(data) => {
                 json!({
                     "status": true,
@@ -113,7 +113,7 @@ impl AdminArticle {
 
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        let res = match Articles::edit_article(&pg_pool, body) {
+        let res = match body.edit_article(&pg_pool) {
             Ok(num_update) => {
                 json!({
                     "status": true,
@@ -136,7 +136,7 @@ impl AdminArticle {
 
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        let res = match Articles::publish_article(&pg_pool, body) {
+        let res = match ArticlesWithTag::publish_article(&pg_pool, body) {
             Ok(num_update) => {
                 json!({
                     "status": true,

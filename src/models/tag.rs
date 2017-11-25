@@ -55,7 +55,8 @@ pub struct TagCount {
 
 impl TagCount {
     pub fn view_tag_count(conn: &PgConnection) -> Result<Vec<Self>, String> {
-        let query = sql::<(diesel::types::Integer, diesel::types::Text ,diesel::types::BigInt)>("select b.id, b.tag, count(*) from article_tag_relation a join tags b on a.tag_id=b.id group by b.id, b.tag");
+        let query = sql::<(diesel::types::Integer, diesel::types::Text ,diesel::types::BigInt)>
+            ("select b.id, b.tag, count(*) from article_tag_relation a join tags b on a.tag_id=b.id group by b.id, b.tag");
         let res = query.load::<Self>(conn);
         match res {
             Ok(data) => Ok(data),
@@ -89,5 +90,11 @@ impl NewTag {
             .into(tags::table)
             .get_result(conn)
             .unwrap()
+    }
+
+    pub fn insert_all(raw_tag: Vec<NewTag>, conn: &PgConnection) -> Vec<i32> {
+        let new_tags: Vec<Tags> = diesel::insert(&raw_tag).into(tags::table)
+            .get_results(conn).unwrap();
+        new_tags.iter().map(|tag| tag.get_id()).collect()
     }
 }

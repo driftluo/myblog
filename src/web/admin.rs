@@ -1,7 +1,7 @@
 use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult, Error as SapperError };
 use sapper_std::{ Context, render, SessionVal, QueryParams };
 
-use super::super::{ admin_verification_cookie, Redis, Postgresql, Articles };
+use super::super::{ admin_verification_cookie, Redis, Postgresql, ArticlesWithTag, Tags };
 
 pub struct Admin;
 
@@ -16,8 +16,13 @@ impl Admin {
         res_html!("admin/admin_list.html", web)
     }
 
-    fn new(_req: &mut Request) -> SapperResult<Response> {
-        let web = Context::new();
+    fn new(req: &mut Request) -> SapperResult<Response> {
+        let mut web = Context::new();
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+        match Tags::view_list_tag(&pg_pool) {
+            Ok(ref data) => web.add("tags", data),
+            Err(err) => println!("No tags, {}", err)
+        }
         res_html!("admin/article_new.html", web)
     }
 
@@ -27,7 +32,7 @@ impl Admin {
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let mut web = Context::new();
 
-        match Articles::query_article(&pg_pool, article_id, true) {
+        match ArticlesWithTag::query_article(&pg_pool, article_id, true) {
             Ok(ref data) => web.add("article", data),
             Err(err) => println!("{}", err)
         }
@@ -39,6 +44,11 @@ impl Admin {
         let article_id = t_param_parse!(params, "id", i32);
         let mut web = Context::new();
         web.add("id", &article_id);
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+        match Tags::view_list_tag(&pg_pool) {
+            Ok(ref data) => web.add("tags", data),
+            Err(err) => println!("No tags, {}", err)
+        }
         res_html!("admin/article_edit.html", web)
     }
 }

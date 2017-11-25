@@ -13,7 +13,7 @@ pub struct Relations {
 }
 
 impl Relations {
-    fn new(article_id: i32, tag_id: i32) -> Relations {
+    pub fn new(article_id: i32, tag_id: i32) -> Relations {
         Relations {
             tag_id,
             article_id
@@ -50,20 +50,36 @@ impl Relations {
 #[derive(Deserialize, Serialize)]
 pub struct RelationTag {
     article_id: i32,
-    tag_id: Option<i32>,
-    tag: String,
+    tag_id: Option<Vec<i32>>,
+    tag: Option<Vec<String>>,
 }
 
 impl RelationTag {
-    pub fn insert(&self, conn: &PgConnection) -> bool {
-        match self.tag_id {
-            Some(id) => {
-                Relations::new(self.article_id, id).insert(conn)
-            }
-            None => {
-                let tag = NewTag::new(&self.tag).insert_with_result(conn);
-                Relations::new(self.article_id, tag.get_id()).insert(conn)
-            }
+    pub fn new(article_id: i32, tag: Option<Vec<String>>, tag_id: Option<Vec<i32>>) -> Self {
+        RelationTag {
+            article_id,
+            tag_id,
+            tag
         }
+    }
+
+    pub fn insert_all(&self, conn: &PgConnection) -> bool {
+        // If `tag` exist, insert all the new tags into the table all at once, and return the ID of the newly added tag
+        let mut tags_id = if self.tag.is_some() {
+            NewTag::insert_all(self.tag.clone().unwrap().iter().map(|tag| NewTag::new(tag)).collect::<Vec<NewTag>>(), conn)
+        } else {
+            Vec::new()
+        };
+
+        // Combine all tag id
+        if self.tag_id.is_some() {
+            tags_id.append(&mut self.tag_id.clone().unwrap())
+        }
+
+        let new_relations: Vec<Relations> = tags_id.iter().map(|id| Relations::new(self.article_id, *id)).collect();
+
+        // Insert the relationships into the table
+        diesel::insert(&new_relations).into(relation::table).execute(conn)
+            .is_ok()
     }
 }

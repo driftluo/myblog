@@ -2,7 +2,7 @@ use super::super::articles::dsl::articles as all_articles;
 use super::super::{ articles, article_with_tag };
 use super::super::article_with_tag::dsl::article_with_tag as all_article_with_tag;
 use super::super::{ markdown_render };
-use super::Relations;
+use super::{ Relations, RelationTag };
 
 use chrono::NaiveDateTime;
 use diesel;
@@ -10,7 +10,7 @@ use diesel::{ FilterDsl, ExpressionMethods, ExecuteDsl, LoadDsl,
               SelectDsl, OrderDsl, LimitDsl, OffsetDsl, PgConnection };
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct Articles {
+pub struct ArticlesWithTag {
     pub id: i32,
     pub title: String,
     pub content: String,
@@ -21,7 +21,7 @@ pub struct Articles {
     pub modify_time: NaiveDateTime,
 }
 
-impl Articles {
+impl ArticlesWithTag {
     pub fn delete_with_id(conn: &PgConnection, id: i32) -> Result<usize, String> {
         Relations::delete_all(conn, id, "article");
         let res = diesel::delete(all_articles.filter(articles::id.eq(id)))
@@ -32,14 +32,14 @@ impl Articles {
         }
     }
 
-    pub fn query_article(conn: &PgConnection, id: i32, admin: bool) -> Result<Articles, String> {
+    pub fn query_article(conn: &PgConnection, id: i32, admin: bool) -> Result<ArticlesWithTag, String> {
         let res = if admin {
             all_article_with_tag.filter(article_with_tag::id.eq(id))
-                .get_result::<RawArticles>(conn)
+                .get_result::<RawArticlesWithTag>(conn)
         } else {
             all_article_with_tag.filter(article_with_tag::id.eq(id))
                 .filter(article_with_tag::published.eq(true))
-                .get_result::<RawArticles>(conn)
+                .get_result::<RawArticlesWithTag>(conn)
         };
 
         match res {
@@ -50,25 +50,13 @@ impl Articles {
         }
     }
 
-    pub fn query_raw_article(conn: &PgConnection, id: i32) -> Result<Articles, String> {
+    pub fn query_raw_article(conn: &PgConnection, id: i32) -> Result<ArticlesWithTag, String> {
         let res = all_article_with_tag.filter(article_with_tag::id.eq(id))
-            .get_result::<RawArticles>(conn);
+            .get_result::<RawArticlesWithTag>(conn);
         match res {
             Ok(data) => {
                 Ok(data.into_markdown())
             },
-            Err(err) => Err(format!("{}", err))
-        }
-    }
-
-    pub fn edit_article(conn: &PgConnection, data: EditArticle) -> Result<usize, String> {
-        let res = diesel::update(all_articles.filter(articles::id.eq(data.id)))
-            .set((articles::title.eq(data.title),
-                  articles::content.eq(markdown_render(&data.raw_content)), articles::raw_content.eq(data.raw_content)
-                  ))
-            .execute(conn);
-        match res {
-            Ok(data) => Ok(data),
             Err(err) => Err(format!("{}", err))
         }
     }
@@ -137,11 +125,10 @@ impl InsertArticle {
         }
     }
 
-    fn insert(&self, conn: &PgConnection) -> bool {
+    fn insert(&self, conn: &PgConnection) -> Articles {
         diesel::insert(self)
             .into(articles::table)
-            .execute(conn)
-            .is_ok()
+            .get_result::<Articles>(conn).unwrap()
     }
 }
 
@@ -149,15 +136,22 @@ impl InsertArticle {
 pub struct NewArticle {
     pub title: String,
     pub raw_content: String,
+    pub exist_tags: Option<Vec<i32>>,
+    pub new_tags: Option<Vec<String>>,
 }
 
 impl NewArticle {
     pub fn insert(self, conn: &PgConnection) -> bool {
-        self.into_insert_article().insert(conn)
+        let article = self.convert_insert_article().insert(conn);
+        if self.new_tags.is_some() || self.exist_tags.is_some() {
+            return RelationTag::new(article.id, self.new_tags, self.exist_tags).insert_all(conn)
+        } else {
+            return true
+        }
     }
 
-    fn into_insert_article(self) -> InsertArticle {
-        InsertArticle::new(self.title, self.raw_content)
+    fn convert_insert_article(&self) -> InsertArticle {
+        InsertArticle::new(self.title.to_owned(), self.raw_content.to_owned())
     }
 }
 
@@ -165,7 +159,32 @@ impl NewArticle {
 pub struct EditArticle {
     id: i32,
     title: String,
-    raw_content: String
+    raw_content: String,
+    new_choice_already_exists_tags: Option<Vec<i32>>,
+    deselect_tags: Option<Vec<i32>>,
+    new_tags: Option<Vec<String>>
+}
+
+impl EditArticle {
+    pub fn edit_article(self, conn: &PgConnection) -> Result<usize, String> {
+        let res = diesel::update(all_articles.filter(articles::id.eq(self.id)))
+            .set((articles::title.eq(self.title),
+                  articles::content.eq(markdown_render(&self.raw_content)), articles::raw_content.eq(self.raw_content)
+            ))
+            .execute(conn);
+        if self.new_tags.is_some() || self.new_choice_already_exists_tags.is_some() {
+            RelationTag::new(self.id, self.new_tags, self.new_choice_already_exists_tags).insert_all(conn);
+        }
+        if self.deselect_tags.is_some() {
+            for i in self.deselect_tags.unwrap() {
+                Relations::new(self.id, i).delete_relation(conn);
+            }
+        }
+        match res {
+            Ok(data) => Ok(data),
+            Err(err) => Err(format!("{}", err))
+        }
+    }
 }
 
 #[derive(Deserialize, Serialize)]
@@ -175,7 +194,7 @@ pub struct ModifyPublish {
 }
 
 #[derive(Queryable, Debug, Clone)]
-struct RawArticles {
+struct RawArticlesWithTag {
     pub id: i32,
     pub title: String,
     pub raw_content: String,
@@ -187,9 +206,9 @@ struct RawArticles {
     pub modify_time: NaiveDateTime,
 }
 
-impl RawArticles {
-    fn into_markdown(self) -> Articles {
-        Articles {
+impl RawArticlesWithTag {
+    fn into_markdown(self) -> ArticlesWithTag {
+        ArticlesWithTag {
             id: self.id,
             title: self.title,
             content: self.raw_content,
@@ -201,8 +220,8 @@ impl RawArticles {
         }
     }
 
-    fn into_html(self) -> Articles {
-        Articles {
+    fn into_html(self) -> ArticlesWithTag {
+        ArticlesWithTag {
             id: self.id,
             title: self.title,
             content: self.content,
@@ -213,4 +232,15 @@ impl RawArticles {
             modify_time: self.modify_time
         }
     }
+}
+
+#[derive(Queryable, Debug, Clone)]
+struct Articles {
+    pub id: i32,
+    pub title: String,
+    pub raw_content: String,
+    pub content: String,
+    pub published: bool,
+    pub create_time: NaiveDateTime,
+    pub modify_time: NaiveDateTime,
 }

@@ -2,24 +2,13 @@ use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperRes
 use sapper_std::{ PathParams, JsonParams, SessionVal };
 use serde_json;
 
-use super::super::{ NewTag, RelationTag, Tags, Relations, TagCount, Postgresql, Redis, admin_verification_cookie };
+use super::super::{ NewTag, Tags, Relations, TagCount, Postgresql, Redis, admin_verification_cookie };
 
 pub struct Tag;
 
 impl Tag {
     fn create_tag(req: &mut Request) -> SapperResult<Response> {
         let body: NewTag = get_json_params!(req);
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-
-        if body.insert(&pg_pool) {
-            res_json!(json!({"status": true}))
-        } else {
-            res_json!(json!({"status": false}))
-        }
-    }
-
-    fn create_relation(req: &mut Request) -> SapperResult<Response> {
-        let body: RelationTag = get_json_params!(req);
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
         if body.insert(&pg_pool) {
@@ -133,9 +122,6 @@ impl SapperModule for Tag {
 
         // http post :8888/tag/edit id:=2 tag="Linux&&Rust"
         router.post("/tag/edit", Tag::edit_tag);
-
-        // http post :8888/relation/new tag="Python" article_id:=1 tag_id:=
-        router.post("/relation/new", Tag::create_relation);
 
         // http post :8888/relation/delete tag_id:=2  article_id:=1
         router.post("/relation/delete", Tag::delete_relation);

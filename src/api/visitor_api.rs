@@ -3,7 +3,7 @@ use sapper_std::{ QueryParams, JsonParams, set_cookie };
 use sapper::header::ContentType;
 use serde_json;
 
-use super::super::{ Articles, RegisteredUser, NewUser, sha3_256_encode, random_string, get_password,
+use super::super::{ ArticlesWithTag, RegisteredUser, NewUser, sha3_256_encode, random_string, get_password,
                     ArticleList, Postgresql, Redis, LoginUser };
 
 pub struct Visitor;
@@ -36,7 +36,7 @@ impl Visitor {
         let article_id = t_param_parse!(params, "id", i32);
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        let res = match Articles::query_article(&pg_pool, article_id, false) {
+        let res = match ArticlesWithTag::query_article(&pg_pool, article_id, false) {
             Ok(data) => {
                 json!({
                     "status": true,

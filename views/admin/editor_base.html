@@ -42,18 +42,25 @@
             color: #fff;
             border: 0px;
         }
+         pre {
+             padding: 0px;
+         }
     </style>
 </head>
 <body>
-{% block id %}
-{% endblock id %}
 <div class="col-md-8 col-md-offset-2">
-    <h3>Title: </h3><input id="title" type="text" class="form-control" placeholder="标题">
+    {% if id %}
+        <h3>Title: </h3><input id="title" type="text" class="form-control" placeholder="标题" article-id={{ id }}>
+    {% else %}
+        <h3>Title: </h3><input id="title" type="text" class="form-control" placeholder="标题">
+    {% endif %}
     <div>
         <ul class="tag">
-            <li ><a >Home</a></li>
-            <li ><a >Profile</a></li>
-            <li ><a>Messages</a></li>
+            {% if tags %}
+                {% for tag in tags %}
+                <li ><a data-id={{ tag.id }}>{{ tag.tag }}</a></li>
+                {% endfor %}
+            {% endif %}
         </ul>
         <button id="tag_btn" class="btn btn-sm btn-info pull-right">添加标签</button>
     </div>
@@ -95,9 +102,9 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
             </div>
-        </div><!-- /.modal-content -->
-    </div><!-- /.modal-dialog -->
-</div><!-- /.modal -->
+        </div>
+    </div>
+</div>
 <div id="success" class="modal fade" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -111,9 +118,9 @@
             <div class="modal-footer">
                 <button id="success_btn" type="button" class="btn btn-default" data-dismiss="modal">Close</button>
             </div>
-        </div><!-- /.modal-content -->
-    </div><!-- /.modal-dialog -->
-</div><!-- /.modal -->
+        </div>
+    </div>
+</div>
 <div id="tag" class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -179,7 +186,8 @@
             $("#preview_page").css("display", "block");
             $("#preview_note").addClass("active");
             var html = marked($("#editor").val());
-            $("#preview_page").html(html)
+            $("#preview_page").html(html);
+            $("pre code").addClass("hljs")
         }
         $("textarea").on(
             'keydown',
@@ -220,15 +228,16 @@
         });
         $("#add_tag").click(function () {
             var tag_name = $("#tag-name").val();
-            if (tag_name === "") {
-
+            var tags = $('ul.tag li a').map(function(){return $(this).html();}).toArray();
+            if (tag_name === "" || $.inArray(tag_name, tags) !== -1) {
+                $(".text-danger").remove();
+                $(this).parent().prev().append("<span class='text-danger'>标签已存在或为空</span>")
             } else {
                 $('#tag').modal('hide');
                 $("ul.tag").append("<li><a class='a_click'>"+ tag_name +"</a></li>")
             }
 
         })
-        //todo 1.create article api 2.modify article api 3.editor base html modify
 
     </script>
 {% block script %}
