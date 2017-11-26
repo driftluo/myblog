@@ -180,7 +180,7 @@ impl SapperModule for AdminArticle {
 
         router.get("/article/admin/view_raw", AdminArticle::admin_view_raw_article);
 
-        // http get /article/admin/view_all limit==5
+        // http get /article/admin/view_all limit==5 offset==0
         router.get("/article/admin/view_all", AdminArticle::admin_list_all_article);
 
         // http post /article/new title=something raw_content=something

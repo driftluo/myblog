@@ -1,5 +1,5 @@
 use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult, Error as SapperError };
-use sapper_std::{ PathParams, JsonParams, SessionVal };
+use sapper_std::{ QueryParams, PathParams, JsonParams, SessionVal };
 use serde_json;
 
 use super::super::{ NewTag, Tags, Relations, TagCount, Postgresql, Redis, admin_verification_cookie };
@@ -51,8 +51,11 @@ impl Tag {
     }
 
     fn view_tag(req: &mut Request) -> SapperResult<Response> {
+        let params = get_query_params!(req);
+        let limit = t_param_parse!(params, "limit", i64);
+        let offset = t_param_parse!(params, "offset", i64);
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-        let res = match TagCount::view_tag_count(&pg_pool) {
+        let res = match TagCount::view_all_tag_count(&pg_pool, limit, offset) {
             Ok(data) => {
                 json!({
                     "status": true,
@@ -111,7 +114,7 @@ impl SapperModule for Tag {
     }
 
     fn router(&self, router: &mut SapperRouter) -> SapperResult<()> {
-        // http get :8888/tag/view
+        // http get :8888/tag/view limit==5 offset==0
         router.get("/tag/view", Tag::view_tag);
 
         // http post :8888/tag/new tag="Rust"

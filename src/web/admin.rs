@@ -51,6 +51,11 @@ impl Admin {
         }
         res_html!("admin/article_edit.html", web)
     }
+
+    fn tags(_req: &mut Request) -> SapperResult<Response> {
+        let web = Context::new();
+        res_html!("admin/tags.html", web)
+    }
 }
 
 impl SapperModule for Admin {
@@ -85,6 +90,8 @@ impl SapperModule for Admin {
         router.get("/admin/article/view", Admin::admin_view_article);
 
         router.get("/admin/article/edit", Admin::article_edit);
+
+        router.get("/admin/tags", Admin::tags);
 
         Ok(())
     }

@@ -39,3 +39,7 @@ div.col-md-8 a:hover {
     color: #337ab7;
     transition: color 0.25s ease-in-out;
 }
+
+button {
+    margin-top: 10px;
+}

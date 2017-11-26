@@ -4,6 +4,7 @@
 function Command() {
     this.command = true;
     this.order = 0;
+    this.status = true;
     this.change = function () {
         this.command = !this.command;
     };
@@ -12,6 +13,9 @@ function Command() {
     };
     this.add = function () {
         this.order += 1;
+    };
+    this.statusChange = function () {
+        this.status = !this.status
     }
 }
 
@@ -35,8 +39,8 @@ function getList() {
                     var blog = $("<div class='text-center'></div>").append(title).append(p);
                     $("div.col-md-10").append(blog);
                 }
-
-            })
+            });
+            command.statusChange();
         });
     }
 }
@@ -44,12 +48,14 @@ function getList() {
 // First visit, asynchronously access article list
 $(document).ready(function () {
         getList();
+        command.statusChange();
     }
 );
 
 // After scroll on the end, asynchronous access to follow-up article list
 $(window).scroll(function () {
-    if ($(window).scrollTop() + $(window).height() >= $(document).height() * 0.99) {
+    if ($(window).scrollTop() + $(window).height() >= $(document).height() - 1 && command.status) {
+        command.statusChange();
         getList();
     }
 });

@@ -1,12 +1,12 @@
 {% extends "admin/admin_base.html" %}
 
 {% block title %}
-Article List
+Tags
 {% endblock title %}
 
 {% block css %}
 <script src="/js/arttemplate.js"></script>
-{% include "template/article_list.html" %}
+{% include "template/tag_list.html" %}
 {% endblock css %}
 
 {% block body %}
@@ -23,10 +23,8 @@ Article List
             <thead>
             <tr>
                 <th>序号</th>
-                <th>文章名</th>
-                <th>状态</th>
-                <th>创建时间</th>
-                <th>最后修改时间</th>
+                <th>标签名</th>
+                <th>使用数</th>
                 <th>操作</th>
             </tr>
             </thead>
@@ -50,6 +48,50 @@ Article List
 
             </ul>
         </nav>
+    </div>
+</div>
+<div id="tag" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">新标签</h4>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="tag-name" class="control-label">名称:</label>
+                        <input type="text" class="form-control" id="tag-name">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button id="add_tag" type="button" class="btn btn-primary">增加</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="modify" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">修改标签</h4>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="tag-name" class="control-label">名称:</label>
+                        <input type="text" class="form-control" id="modify-tag-name">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button id="modify_tag" type="button" class="btn btn-primary">修改</button>
+            </div>
+        </div>
     </div>
 </div>
 <div id="delete_modal" class="modal fade" tabindex="-1" role="dialog">
@@ -76,52 +118,48 @@ Article List
 <script>
     "use strict";
     $(function () {
-        getArticleList();
+        getTags()
     });
 
-    function getArticleList() {
-        $.getJSON("/api/v1/article/admin/view_all?limit=10&&offset=" + page.page * 10, function (result) {
+    function getTags() {
+        $.getJSON("/api/v1/tag/view?limit=10&&offset=" + page.page * 10, function (result) {
             if (result.data.length < 10) {
                 $("#next").attr({"disabled": "disabled"});
             }
-            for (var index in result.data) {
-                result.data[index].create_time = moment.utc(result.data[index].create_time).local().format();
-                result.data[index].modify_time = moment.utc(result.data[index].modify_time).local().format();
-            }
-            var html = template("tpl-article-list", result);
+            var html = template("tpl-tag-list", result);
             $("tbody").append(html);
-            publishButton();
             deleteButton();
             modifyButton();
-        });
-
+        })
     }
 
     $("button.pull-right").click(function (event) {
         event.preventDefault();
-        window.location = "/admin/new"
+        $("#tag-name").val("");
+        $("#tag").modal("show")
     });
 
-    function publishButton() {
-        $(".publish").on("click", function (event) {
-            event.preventDefault();
-            var raw = $(this).parent().parent().children("td:nth-child(3)").children().html();
-            var status = raw === "false" ? false : true;
+    $("#add_tag").click(function () {
+        var tag_name = $("#tag-name").val().replace(/(^\s*)|(\s*$)/g, "");
+        if (tag_name === "") {
+            $(".text-danger").remove();
+            $(this).parent().prev().append("<span class='text-danger'>标签为空</span>")
+        } else {
+            $('#tag').modal('hide');
             $.ajax({
-                url: "/api/v1/article/publish",
+                url: "/api/v1/tag/new",
                 type: "post",
                 dataType: "json",
-                data: JSON.stringify({"id": parseInt($(this).attr("data-id")), "publish": !status}),
+                data: JSON.stringify({"tag": tag_name}),
                 headers: {"Content-Type": "application/json"},
                 success: function (res) {
                     if (res.status) {
 
                     }
                 }
-            });
-            $(this).parent().parent().children("td:nth-child(3)").children().html((!status).toString())
-        });
-    }
+            })
+        }
+    });
 
     function deleteButton() {
         $(".delete").on("click", function (event) {
@@ -131,7 +169,7 @@ Article List
             var id = $(this).attr("data-id");
             $(".modal-delete").click(function () {
                 $.ajax({
-                    url: "/api/v1/article/delete/" + id,
+                    url: "/api/v1/tag/delete/" + id,
                     type: "post",
                     dataType: "json",
                     data: "",
@@ -151,8 +189,32 @@ Article List
     function modifyButton() {
         $(".modify").on("click", function (event) {
             event.preventDefault();
-            var id = $(this).attr("data-id");
-            window.location = "/admin/article/edit?id=" + id;
+            $("#modify").modal("show");
+            var pre_tag = $(this).parent().prev().prev().children().text();
+            var pre_tag_element = $(this).parent().prev().prev().children();
+            $("#modify-tag-name").val(pre_tag);
+            var id = parseInt($(this).attr("data-id"));
+            $("#modify_tag").click(function () {
+                var tag_name = $("#modify-tag-name").val().replace(/(^\s*)|(\s*$)/g, "");
+                if (tag_name === "" || tag_name === pre_tag) {
+                    $(".text-danger").remove();
+                    $(this).parent().prev().append("<span class='text-danger'>标签为空或未修改</span>")
+                } else {
+                    $.ajax({
+                        url: "/api/v1/tag/edit",
+                        type: "post",
+                        dataType: "json",
+                        data: JSON.stringify({"id": id, "tag": tag_name}),
+                        headers: {"Content-Type": "application/json"},
+                        success: function (res) {
+                            if (res.status) {
+                                pre_tag_element.text(tag_name);
+                                $('#modify').modal('hide');
+                            }
+                        }
+                    })
+                }
+            })
         })
     }
 
@@ -164,7 +226,7 @@ Article List
             $("#previous").attr({"disabled": "disabled"});
         }
         $("tbody").html("");
-        getArticleList();
+        getTags();
     });
 
     $("#next").click(function (event) {
@@ -174,7 +236,7 @@ Article List
             $("#previous").removeAttr("disabled");
         }
         $("tbody").html("");
-        getArticleList();
+        getTags();
     });
 
     function Page() {
@@ -188,6 +250,5 @@ Article List
     }
 
     var page = new Page();
-
 </script>
 {% endblock script %}

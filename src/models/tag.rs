@@ -63,6 +63,18 @@ impl TagCount {
             Err(err) => Err(format!("{}", err))
         }
     }
+
+    pub fn view_all_tag_count(conn: &PgConnection, limit: i64, offset: i64) -> Result<Vec<Self>, String> {
+        let raw_sql = format!("select a.id, a.tag, (case when b.count is null then 0 else b.count end) as count from tags a left join \
+                (select tag_id, count(*) from article_tag_relation group by tag_id) b on a.id = b.tag_id order by a.id limit {} offset {};", limit, offset);
+        let query = sql::<(diesel::types::Integer, diesel::types::Text ,diesel::types::BigInt)>
+            (&raw_sql);
+        let res = query.load::<Self>(conn);
+        match res {
+            Ok(data) => Ok(data),
+            Err(err) => Err(format!("{}", err))
+        }
+    }
 }
 
 #[derive(Insertable, Debug, Clone, Deserialize, Serialize)]
