@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 use super::super::{ sha3_256_encode, random_string, get_password, RedisPool };
 
-#[derive(Queryable, Debug, Clone)]
+#[derive(Queryable, Debug, Clone, Deserialize, Serialize)]
 pub struct Users {
     pub id: Uuid,
     pub account: String,
@@ -50,6 +50,18 @@ impl Users {
         match res {
             Ok(num_update) => Ok(num_update),
             Err(err) => Err(format!("{}", err))
+        }
+    }
+
+    pub fn into_user_info(self) -> UserInfo {
+        UserInfo {
+            id: self.id,
+            account: self.account,
+            nickname: self.nickname,
+            groups: self.groups,
+            say: self.say,
+            email: self.email,
+            create_time: self.create_time
         }
     }
 }
@@ -121,30 +133,22 @@ pub struct UserInfo {
 }
 
 impl UserInfo {
-    pub fn view_user(conn: &PgConnection, account: String) -> Result<Self, String> {
+    pub fn view_user(conn: &PgConnection, id: Uuid) -> Result<Self, String> {
         let res = all_users
             .select((users::id, users::account, users::nickname, users::groups, users::say, users::email, users::create_time))
-            .filter(users::account.eq(account))
+            .filter(users::id.eq(id))
             .get_result::<UserInfo>(conn);
         match res {
             Ok(data) => Ok(data),
             Err(err) => Err(format!("{}", err))
         }
     }
-    pub fn view_user_with_cookie(conn: &PgConnection, redis_pool: &Arc<RedisPool>, cookie: &str, admin: &bool) -> Result<Self, String> {
+    pub fn view_user_with_cookie(redis_pool: &Arc<RedisPool>, cookie: &str, admin: &bool) -> String {
         let redis_key = match admin {
             &true => { "admin_".to_string() + cookie }
             &false => { "user_".to_string() + cookie }
         };
-        let id = redis_pool.hget::<String>(&redis_key, "id");
-        let res = all_users
-            .select((users::id, users::account, users::nickname,users::groups, users::say, users::email, users::create_time))
-            .find(Uuid::parse_str(&id).unwrap())
-            .get_result::<UserInfo>(conn);
-        match res {
-            Ok(data) => Ok(data),
-            Err(err) => Err(format!("{}", err))
-        }
+        redis_pool.hget::<String>(&redis_key, "info")
     }
 
     pub fn view_user_list(conn: &PgConnection, limit: i64, offset: i64) -> Result<Vec<Self>, String> {
@@ -228,7 +232,7 @@ impl LoginUser {
                             let cookie = sha3_256_encode(random_string(8));
                             let redis_key = "admin_".to_string() + &cookie;
                             redis_pool.hset(&redis_key, "login_time", Local::now().timestamp());
-                            redis_pool.hset(&redis_key, "id", &data.id.to_string());
+                            redis_pool.hset(&redis_key, "info", json!(data.into_user_info()).to_string());
                             redis_pool.expire(&redis_key, ttl);
                             Ok(cookie)
                         }
@@ -236,7 +240,7 @@ impl LoginUser {
                             let cookie = sha3_256_encode(random_string(8));
                             let redis_key = "user_".to_string() + &cookie;
                             redis_pool.hset(&("user_".to_string() + &cookie), "login_time", Local::now().timestamp());
-                            redis_pool.hset(&redis_key, "id", &data.id.to_string());
+                            redis_pool.hset(&redis_key, "info", json!(data.into_user_info()).to_string());
                             redis_pool.expire(&redis_key, ttl);
                             Ok(cookie)
                         }

@@ -11,22 +11,11 @@ impl User {
     fn view_user(req: &mut Request) -> SapperResult<Response> {
         let cookie = req.ext().get::<SessionVal>().unwrap();
         let admin = req.ext().get::<AdminSession>().unwrap();
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let redis_pool = req.ext().get::<Redis>().unwrap();
-        let res = match UserInfo::view_user_with_cookie(&pg_pool, redis_pool, cookie, admin) {
-            Ok(data) => {
-                json!({
+        let mut res = json!({
                     "status": true,
-                    "data": data
-                })
-            }
-            Err(err) => {
-                json!({
-                    "status": false,
-                    "error": err
-                })
-            }
-        };
+                });
+        res["data"] = serde_json::from_str(&UserInfo::view_user_with_cookie(redis_pool, cookie, admin)).unwrap();
         res_json!(res)
     }
 
