@@ -3,12 +3,13 @@ use super::super::users::dsl::users as all_users;
 
 use chrono::{ NaiveDateTime, Local };
 use diesel;
-use diesel::{ FilterDsl, ExpressionMethods, ExecuteDsl, LoadDsl, SelectDsl, FindDsl, PgConnection };
+use diesel::{ FilterDsl, ExpressionMethods, ExecuteDsl, LoadDsl, OrderDsl,
+              SelectDsl, FindDsl, PgConnection, LimitDsl, OffsetDsl };
 use std::sync::Arc;
 
 use super::super::{ sha3_256_encode, random_string, get_password, RedisPool };
 
-#[derive(Queryable, Debug, Clone, Deserialize, Serialize)]
+#[derive(Queryable, Debug, Clone)]
 pub struct Users {
     pub id: i32,
     pub account: String,
@@ -34,6 +35,16 @@ impl Users {
     pub fn edit_user(conn: &PgConnection, data: EditUser) -> Result<usize, String> {
         let res = diesel::update(all_users.filter(users::id.eq(data.id)))
             .set((users::nickname.eq(data.nickname), users::say.eq(data.say), users::email.eq(data.email)))
+            .execute(conn);
+        match res {
+            Ok(num_update) => Ok(num_update),
+            Err(err) => Err(format!("{}", err))
+        }
+    }
+
+    pub fn change_permission(conn: &PgConnection, data: ChangePermission) -> Result<usize, String> {
+        let res = diesel::update(all_users.filter(users::id.eq(data.id)))
+            .set((users::groups.eq(data.permission)))
             .execute(conn);
         match res {
             Ok(num_update) => Ok(num_update),
@@ -102,16 +113,17 @@ pub struct UserInfo {
     pub id: i32,
     pub account: String,
     pub nickname: String,
+    pub groups: i16,
     pub say: Option<String>,
     pub email: String,
     pub create_time: NaiveDateTime
 }
 
 impl UserInfo {
-    pub fn view_user(conn: &PgConnection, id: i32) -> Result<Self, String> {
+    pub fn view_user(conn: &PgConnection, account: String) -> Result<Self, String> {
         let res = all_users
-            .select((users::id, users::account, users::nickname, users::say, users::email, users::create_time))
-            .find(id)
+            .select((users::id, users::account, users::nickname, users::groups, users::say, users::email, users::create_time))
+            .filter(users::account.eq(account))
             .get_result::<UserInfo>(conn);
         match res {
             Ok(data) => Ok(data),
@@ -125,9 +137,19 @@ impl UserInfo {
         };
         let id = redis_pool.hget::<i32>(&redis_key, "id");
         let res = all_users
-            .select((users::id, users::account, users::nickname, users::say, users::email, users::create_time))
+            .select((users::id, users::account, users::nickname,users::groups, users::say, users::email, users::create_time))
             .find(id)
             .get_result::<UserInfo>(conn);
+        match res {
+            Ok(data) => Ok(data),
+            Err(err) => Err(format!("{}", err))
+        }
+    }
+
+    pub fn view_user_list(conn: &PgConnection, limit: i64, offset: i64) -> Result<Vec<Self>, String> {
+        let res = all_users
+            .select((users::id, users::account, users::nickname, users::groups, users::say, users::email, users::create_time))
+            .limit(limit).offset(offset).order(users::id).load::<UserInfo>(conn);
         match res {
             Ok(data) => Ok(data),
             Err(err) => Err(format!("{}", err))
@@ -174,6 +196,12 @@ pub struct EditUser {
     pub nickname: String,
     pub say: String,
     pub email: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct ChangePermission {
+    pub id: i32,
+    pub permission: i16,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

@@ -19,7 +19,7 @@ authors = ["piaoliu <441594700@qq.com>"]
  r2d2-diesel = '^0.16.0'
 
 [dependencies.diesel]
-features = ["postgres", "chrono"]
+features = ["postgres", "chrono", "uuid"]
 version = "^0.16.0"
 
 [dependencies.chrono]
@@ -29,3 +29,7 @@ version = "^0.4.0"
 [dependencies.diesel_codegen]
 features = ["postgres"]
 version = "^0.16.0"
+
+[dependencies.uuid]
+features = ["serde", "v4"]
+version = "^0.5.1"

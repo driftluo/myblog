@@ -56,6 +56,11 @@ impl Admin {
         let web = Context::new();
         res_html!("admin/tags.html", web)
     }
+
+    fn users(_req: &mut Request) -> SapperResult<Response> {
+        let web = Context::new();
+        res_html!("admin/users.html", web)
+    }
 }
 
 impl SapperModule for Admin {
@@ -92,6 +97,8 @@ impl SapperModule for Admin {
         router.get("/admin/article/edit", Admin::article_edit);
 
         router.get("/admin/tags", Admin::tags);
+
+        router.get("/admin/users", Admin::users);
 
         Ok(())
     }

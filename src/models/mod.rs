@@ -4,6 +4,6 @@ pub mod tag;
 pub mod article_tag_relation;
 
 pub(crate) use self::articles::{ NewArticle, ArticlesWithTag, ArticleList, ModifyPublish, EditArticle };
-pub(crate) use self::user::{ UserInfo, Users, NewUser, ChangePassword, RegisteredUser, EditUser, LoginUser };
+pub(crate) use self::user::{ UserInfo, Users, NewUser, ChangePassword, RegisteredUser, EditUser, LoginUser, ChangePermission };
 pub(crate) use self::tag::{ NewTag, Tags, TagCount };
 pub(crate) use self::article_tag_relation::{ Relations, RelationTag };
