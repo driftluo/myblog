@@ -2,6 +2,7 @@ pub mod articles;
 pub mod user;
 pub mod tag;
 pub mod article_tag_relation;
+pub mod comment;
 
 pub(crate) use self::articles::{ NewArticle, ArticlesWithTag, ArticleList, ModifyPublish, EditArticle };
 pub(crate) use self::user::{ UserInfo, Users, NewUser, ChangePassword, RegisteredUser, EditUser, LoginUser, ChangePermission };

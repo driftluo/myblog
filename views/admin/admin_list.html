@@ -111,7 +111,7 @@ Article List
                 url: "/api/v1/article/publish",
                 type: "post",
                 dataType: "json",
-                data: JSON.stringify({"id": parseInt($(this).attr("data-id")), "publish": !status}),
+                data: JSON.stringify({"id": $(this).attr("data-id"), "publish": !status}),
                 headers: {"Content-Type": "application/json"},
                 success: function (res) {
                     if (res.status) {

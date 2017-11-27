@@ -30,7 +30,7 @@ pub mod util;
 pub mod api;
 pub mod web;
 
-pub(crate) use schema::{ articles, users, article_with_tag, tags, article_tag_relation };
+pub(crate) use schema::{ articles, users, article_with_tag, tags, article_tag_relation, comments };
 pub(crate) use models::{ NewArticle, ArticlesWithTag, ArticleList, ModifyPublish, EditArticle };
 pub(crate) use models::{ UserInfo, Users, NewUser, ChangePassword, RegisteredUser, EditUser, LoginUser, ChangePermission };
 pub(crate) use models::{ Relations };

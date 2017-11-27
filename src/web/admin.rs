@@ -1,5 +1,6 @@
 use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult, Error as SapperError };
 use sapper_std::{ Context, render, SessionVal, QueryParams };
+use uuid::Uuid;
 
 use super::super::{ admin_verification_cookie, Redis, Postgresql, ArticlesWithTag, Tags };
 
@@ -28,7 +29,7 @@ impl Admin {
 
     fn admin_view_article(req: &mut Request) -> SapperResult<Response> {
         let params = get_query_params!(req);
-        let article_id = t_param_parse!(params, "id", i32);
+        let article_id = t_param_parse!(params, "id", Uuid);
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let mut web = Context::new();
 
@@ -41,7 +42,7 @@ impl Admin {
 
     fn article_edit(req: &mut Request) -> SapperResult<Response> {
         let params = get_query_params!(req);
-        let article_id = t_param_parse!(params, "id", i32);
+        let article_id = t_param_parse!(params, "id", String);
         let mut web = Context::new();
         web.add("id", &article_id);
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();

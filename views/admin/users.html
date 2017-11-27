@@ -124,7 +124,7 @@ Users
             event.preventDefault();
             var permission = $(this).parent().prev().prev().prev().children().attr("data-id") === "1" ? 0 : 1;
             var permission_element = $(this).parent().prev().prev().prev().children();
-            var id = parseInt($(this).attr("data-id"));
+            var id = $(this).attr("data-id");
             $.ajax({
                 url: "/api/v1/user/permission",
                 type: "post",

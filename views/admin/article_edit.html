@@ -10,9 +10,9 @@
         event.preventDefault();
         var title = $("#title").val();
         var content = $("#editor").val();
-        var id = parseInt($("#title").attr("article-id"));
-        var new_choice_already_exists_tags = $("ul.tag li a[data-id].a_click:not([have_chosen])").map(function(){return parseInt($(this).attr("data-id"));}).toArray();
-        var deselect_tags = $("ul.tag li a[have_chosen]").map(function(){if (!$(this).hasClass("a_click")) { return parseInt($(this).attr("data-id")); }}).toArray();
+        var id = $("#title").attr("article-id");
+        var new_choice_already_exists_tags = $("ul.tag li a[data-id].a_click:not([have_chosen])").map(function(){return $(this).attr("data-id");}).toArray();
+        var deselect_tags = $("ul.tag li a[have_chosen]").map(function(){if (!$(this).hasClass("a_click")) { return $(this).attr("data-id"); }}).toArray();
         var new_tag = $("ul.tag li a:not([data-id]).a_click").map(function(){return $(this).html();}).toArray();
         if (title === "" || content === "") {
             $("#mistake").modal("show")
@@ -38,7 +38,8 @@
             $("#title").val(result.data.title);
             $("#editor").val(result.data.content);
             $("ul.tag li a").map(function () {
-                if ($.inArray(parseInt($(this).attr("data-id")), result.data.tags_id) !== -1) {
+
+                if ($.inArray($(this).attr("data-id"), result.data.tags_id) !== -1) {
                     $(this).addClass("a_click");
                     $(this).attr("have_chosen", true)
                 }

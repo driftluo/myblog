@@ -5,6 +5,7 @@ use serde_json;
 
 use super::super::{ ArticlesWithTag, RegisteredUser, NewUser, sha3_256_encode, random_string, get_password,
                     ArticleList, Postgresql, Redis, LoginUser };
+use uuid::Uuid;
 
 pub struct Visitor;
 
@@ -33,7 +34,7 @@ impl Visitor {
 
     fn view_article(req: &mut Request) -> SapperResult<Response> {
         let params = get_query_params!(req);
-        let article_id = t_param_parse!(params, "id", i32);
+        let article_id = t_param_parse!(params, "id", Uuid);
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
         let res = match ArticlesWithTag::query_article(&pg_pool, article_id, false) {

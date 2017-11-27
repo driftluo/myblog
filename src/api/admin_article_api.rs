@@ -1,6 +1,7 @@
 use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult, Error as SapperError };
 use sapper_std::{ PathParams, QueryParams, JsonParams, SessionVal };
 use serde_json;
+use uuid::Uuid;
 
 use super::super::{ NewArticle, ArticlesWithTag, Postgresql, EditArticle, Redis,
                     ArticleList, ModifyPublish, admin_verification_cookie };
@@ -21,7 +22,7 @@ impl AdminArticle {
 
     fn delete_article(req: &mut Request) -> SapperResult<Response> {
         let params = get_path_params!(req);
-        let article_id: i32 = t_param!(params, "id").clone().parse().unwrap();
+        let article_id: Uuid = t_param!(params, "id").clone().parse().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
         let res = match ArticlesWithTag::delete_with_id(&pg_pool, article_id) {
@@ -43,7 +44,7 @@ impl AdminArticle {
 
     fn admin_view_article(req: &mut Request) -> SapperResult<Response> {
         let params = get_query_params!(req);
-        let article_id = t_param_parse!(params, "id", i32);
+        let article_id = t_param_parse!(params, "id", Uuid);
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
         let res = match ArticlesWithTag::query_article(&pg_pool, article_id, true) {
@@ -65,7 +66,7 @@ impl AdminArticle {
 
     fn admin_view_raw_article(req: &mut Request) -> SapperResult<Response> {
         let params = get_query_params!(req);
-        let article_id = t_param_parse!(params, "id", i32);
+        let article_id = t_param_parse!(params, "id", Uuid);
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
         let res = match ArticlesWithTag::query_raw_article(&pg_pool, article_id) {

@@ -193,7 +193,7 @@ Tags
             var pre_tag = $(this).parent().prev().prev().children().text();
             var pre_tag_element = $(this).parent().prev().prev().children();
             $("#modify-tag-name").val(pre_tag);
-            var id = parseInt($(this).attr("data-id"));
+            var id = $(this).attr("data-id");
             $("#modify_tag").click(function () {
                 var tag_name = $("#modify-tag-name").val().replace(/(^\s*)|(\s*$)/g, "");
                 if (tag_name === "" || tag_name === pre_tag) {

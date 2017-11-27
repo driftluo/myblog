@@ -1,6 +1,7 @@
 use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult, Error as SapperError };
 use sapper_std::{ QueryParams, PathParams, JsonParams, SessionVal };
 use serde_json;
+use uuid::Uuid;
 
 use super::super::{ NewTag, Tags, Relations, TagCount, Postgresql, Redis, admin_verification_cookie };
 
@@ -31,7 +32,7 @@ impl Tag {
 
     fn delete_tag(req: &mut Request) -> SapperResult<Response> {
         let params = get_path_params!(req);
-        let id: i32 = t_param!(params, "id").clone().parse().unwrap();
+        let id: Uuid = t_param!(params, "id").clone().parse().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let res = match Tags::delete_tag(&pg_pool, id) {
             Ok(num_deleted) => {

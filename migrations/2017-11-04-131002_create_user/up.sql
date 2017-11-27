@@ -1,7 +1,7 @@
 -- Your SQL goes here
 
 Create table users (
-  id serial primary key,
+  id uuid primary key default gen_random_uuid(),
   account VARCHAR NOT NULL,
   password VARCHAR NOT NULL,
   salt VARCHAR NOT NULL,

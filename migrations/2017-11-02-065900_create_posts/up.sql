@@ -1,6 +1,9 @@
 -- Your SQL goes here
+
+create extension pgcrypto;
+
 Create table articles (
-    id serial primary key ,
+    id uuid primary key default gen_random_uuid(),
     title varchar not null,
     raw_content text not null,
     content text not null,

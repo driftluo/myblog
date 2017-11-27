@@ -4,16 +4,17 @@ use super::NewTag;
 
 use diesel;
 use diesel::{ ExecuteDsl, ExpressionMethods, FilterDsl, PgConnection };
+use uuid::Uuid;
 
 #[derive(Insertable, Debug, Clone, Deserialize, Serialize)]
 #[table_name="relation"]
 pub struct Relations {
-    tag_id: i32,
-    article_id: i32
+    tag_id: Uuid,
+    article_id: Uuid
 }
 
 impl Relations {
-    pub fn new(article_id: i32, tag_id: i32) -> Relations {
+    pub fn new(article_id: Uuid, tag_id: Uuid) -> Relations {
         Relations {
             tag_id,
             article_id
@@ -27,7 +28,7 @@ impl Relations {
             .is_ok()
     }
 
-    pub fn delete_all(conn: &PgConnection, id: i32, method: &str) -> bool {
+    pub fn delete_all(conn: &PgConnection, id: Uuid, method: &str) -> bool {
         if method == "article" {
             diesel::delete(all_relation.filter(relation::article_id.eq(id)))
                 .execute(conn)
@@ -49,13 +50,13 @@ impl Relations {
 
 #[derive(Deserialize, Serialize)]
 pub struct RelationTag {
-    article_id: i32,
-    tag_id: Option<Vec<i32>>,
+    article_id: Uuid,
+    tag_id: Option<Vec<Uuid>>,
     tag: Option<Vec<String>>,
 }
 
 impl RelationTag {
-    pub fn new(article_id: i32, tag: Option<Vec<String>>, tag_id: Option<Vec<i32>>) -> Self {
+    pub fn new(article_id: Uuid, tag: Option<Vec<String>>, tag_id: Option<Vec<Uuid>>) -> Self {
         RelationTag {
             article_id,
             tag_id,

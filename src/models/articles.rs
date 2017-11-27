@@ -8,21 +8,22 @@ use chrono::NaiveDateTime;
 use diesel;
 use diesel::{ FilterDsl, ExpressionMethods, ExecuteDsl, LoadDsl,
               SelectDsl, OrderDsl, LimitDsl, OffsetDsl, PgConnection };
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ArticlesWithTag {
-    pub id: i32,
+    pub id: Uuid,
     pub title: String,
     pub content: String,
     pub published: bool,
-    pub tags_id: Vec<Option<i32>>,
+    pub tags_id: Vec<Option<Uuid>>,
     pub tags: Vec<Option<String>>,
     pub create_time: NaiveDateTime,
     pub modify_time: NaiveDateTime,
 }
 
 impl ArticlesWithTag {
-    pub fn delete_with_id(conn: &PgConnection, id: i32) -> Result<usize, String> {
+    pub fn delete_with_id(conn: &PgConnection, id: Uuid) -> Result<usize, String> {
         Relations::delete_all(conn, id, "article");
         let res = diesel::delete(all_articles.filter(articles::id.eq(id)))
         .execute(conn);
@@ -32,7 +33,7 @@ impl ArticlesWithTag {
         }
     }
 
-    pub fn query_article(conn: &PgConnection, id: i32, admin: bool) -> Result<ArticlesWithTag, String> {
+    pub fn query_article(conn: &PgConnection, id: Uuid, admin: bool) -> Result<ArticlesWithTag, String> {
         let res = if admin {
             all_article_with_tag.filter(article_with_tag::id.eq(id))
                 .get_result::<RawArticlesWithTag>(conn)
@@ -50,7 +51,7 @@ impl ArticlesWithTag {
         }
     }
 
-    pub fn query_raw_article(conn: &PgConnection, id: i32) -> Result<ArticlesWithTag, String> {
+    pub fn query_raw_article(conn: &PgConnection, id: Uuid) -> Result<ArticlesWithTag, String> {
         let res = all_article_with_tag.filter(article_with_tag::id.eq(id))
             .get_result::<RawArticlesWithTag>(conn);
         match res {
@@ -74,7 +75,7 @@ impl ArticlesWithTag {
 
 #[derive(Queryable, Debug, Clone, Deserialize, Serialize)]
 pub struct ArticleList {
-    pub id: i32,
+    pub id: Uuid,
     pub title: String,
     pub published: bool,
     pub create_time: NaiveDateTime,
@@ -136,7 +137,7 @@ impl InsertArticle {
 pub struct NewArticle {
     pub title: String,
     pub raw_content: String,
-    pub exist_tags: Option<Vec<i32>>,
+    pub exist_tags: Option<Vec<Uuid>>,
     pub new_tags: Option<Vec<String>>,
 }
 
@@ -157,11 +158,11 @@ impl NewArticle {
 
 #[derive(Deserialize, Serialize)]
 pub struct EditArticle {
-    id: i32,
+    id: Uuid,
     title: String,
     raw_content: String,
-    new_choice_already_exists_tags: Option<Vec<i32>>,
-    deselect_tags: Option<Vec<i32>>,
+    new_choice_already_exists_tags: Option<Vec<Uuid>>,
+    deselect_tags: Option<Vec<Uuid>>,
     new_tags: Option<Vec<String>>
 }
 
@@ -189,18 +190,18 @@ impl EditArticle {
 
 #[derive(Deserialize, Serialize)]
 pub struct ModifyPublish {
-    id: i32,
+    id: Uuid,
     publish: bool
 }
 
 #[derive(Queryable, Debug, Clone)]
 struct RawArticlesWithTag {
-    pub id: i32,
+    pub id: Uuid,
     pub title: String,
     pub raw_content: String,
     pub content: String,
     pub published: bool,
-    pub tags_id: Vec<Option<i32>>,
+    pub tags_id: Vec<Option<Uuid>>,
     pub tags: Vec<Option<String>>,
     pub create_time: NaiveDateTime,
     pub modify_time: NaiveDateTime,
@@ -236,7 +237,7 @@ impl RawArticlesWithTag {
 
 #[derive(Queryable, Debug, Clone)]
 struct Articles {
-    pub id: i32,
+    pub id: Uuid,
     pub title: String,
     pub raw_content: String,
     pub content: String,

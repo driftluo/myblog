@@ -5,13 +5,14 @@ use chrono::{ NaiveDateTime, Local };
 use diesel;
 use diesel::{ FilterDsl, ExpressionMethods, ExecuteDsl, LoadDsl, OrderDsl,
               SelectDsl, FindDsl, PgConnection, LimitDsl, OffsetDsl };
+use uuid::Uuid;
 use std::sync::Arc;
 
 use super::super::{ sha3_256_encode, random_string, get_password, RedisPool };
 
 #[derive(Queryable, Debug, Clone)]
 pub struct Users {
-    pub id: i32,
+    pub id: Uuid,
     pub account: String,
     pub password: String,
     pub salt: String,
@@ -23,7 +24,7 @@ pub struct Users {
 }
 
 impl Users {
-    pub fn delete(conn: &PgConnection, id: i32) -> Result<usize, String> {
+    pub fn delete(conn: &PgConnection, id: Uuid) -> Result<usize, String> {
         let res = diesel::delete(all_users.find(id))
             .execute(conn);
         match res {
@@ -81,7 +82,7 @@ impl NewUser {
             .into(users::table)
             .get_result::<Users>(conn) {
             Ok(info) => {
-                self.set_cookies(redis_pool, info.id)
+                self.set_cookies(redis_pool, &info.id.to_string())
             }
             Err(err) => {
                 Err(format!("{}", err))
@@ -89,7 +90,7 @@ impl NewUser {
         }
     }
 
-    fn set_cookies(&self, redis_pool: &Arc<RedisPool>, id: i32) -> Result<String, String> {
+    fn set_cookies(&self, redis_pool: &Arc<RedisPool>, id: &str) -> Result<String, String> {
         let cookie = sha3_256_encode(random_string(8));
         let redis_key = "user_".to_string() + &cookie;
         redis_pool.hset(&("user_".to_string() + &cookie), "login_time", Local::now().timestamp());
@@ -110,7 +111,7 @@ pub struct RegisteredUser {
 
 #[derive(Queryable, Debug, Clone, Deserialize, Serialize)]
 pub struct UserInfo {
-    pub id: i32,
+    pub id: Uuid,
     pub account: String,
     pub nickname: String,
     pub groups: i16,
@@ -135,10 +136,10 @@ impl UserInfo {
             &true => { "admin_".to_string() + cookie }
             &false => { "user_".to_string() + cookie }
         };
-        let id = redis_pool.hget::<i32>(&redis_key, "id");
+        let id = redis_pool.hget::<String>(&redis_key, "id");
         let res = all_users
             .select((users::id, users::account, users::nickname,users::groups, users::say, users::email, users::create_time))
-            .find(id)
+            .find(Uuid::parse_str(&id).unwrap())
             .get_result::<UserInfo>(conn);
         match res {
             Ok(data) => Ok(data),
@@ -149,7 +150,7 @@ impl UserInfo {
     pub fn view_user_list(conn: &PgConnection, limit: i64, offset: i64) -> Result<Vec<Self>, String> {
         let res = all_users
             .select((users::id, users::account, users::nickname, users::groups, users::say, users::email, users::create_time))
-            .limit(limit).offset(offset).order(users::id).load::<UserInfo>(conn);
+            .limit(limit).offset(offset).order(users::create_time).load::<UserInfo>(conn);
         match res {
             Ok(data) => Ok(data),
             Err(err) => Err(format!("{}", err))
@@ -159,7 +160,7 @@ impl UserInfo {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ChangePassword {
-    pub id: i32,
+    pub id: Uuid,
     pub old_password: String,
     pub new_password: String
 }
@@ -192,7 +193,7 @@ impl ChangePassword {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct EditUser {
-    pub id: i32,
+    pub id: Uuid,
     pub nickname: String,
     pub say: String,
     pub email: String,
@@ -200,7 +201,7 @@ pub struct EditUser {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ChangePermission {
-    pub id: i32,
+    pub id: Uuid,
     pub permission: i16,
 }
 
@@ -227,7 +228,7 @@ impl LoginUser {
                             let cookie = sha3_256_encode(random_string(8));
                             let redis_key = "admin_".to_string() + &cookie;
                             redis_pool.hset(&redis_key, "login_time", Local::now().timestamp());
-                            redis_pool.hset(&redis_key, "id", data.id);
+                            redis_pool.hset(&redis_key, "id", &data.id.to_string());
                             redis_pool.expire(&redis_key, ttl);
                             Ok(cookie)
                         }
@@ -235,7 +236,7 @@ impl LoginUser {
                             let cookie = sha3_256_encode(random_string(8));
                             let redis_key = "user_".to_string() + &cookie;
                             redis_pool.hset(&("user_".to_string() + &cookie), "login_time", Local::now().timestamp());
-                            redis_pool.hset(&redis_key, "id", data.id);
+                            redis_pool.hset(&redis_key, "id", &data.id.to_string());
                             redis_pool.expire(&redis_key, ttl);
                             Ok(cookie)
                         }

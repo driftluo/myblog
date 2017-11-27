@@ -1,6 +1,7 @@
 use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult, Error as SapperError };
 use serde_json;
 use sapper_std::{ QueryParams, JsonParams, PathParams, SessionVal };
+use uuid::Uuid;
 
 use super::super::{ Users, EditUser, UserInfo, Postgresql, Redis, ChangePermission, admin_verification_cookie };
 
@@ -9,7 +10,7 @@ pub struct AdminUser;
 impl AdminUser {
     fn delete_user(req: &mut Request) -> SapperResult<Response> {
         let params = get_path_params!(req);
-        let user_id: i32 = t_param!(params, "id").clone().parse().unwrap();
+        let user_id: Uuid = t_param!(params, "id").clone().parse().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
         let res = match Users::delete(&pg_pool, user_id) {

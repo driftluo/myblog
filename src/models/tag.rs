@@ -5,10 +5,11 @@ use super::Relations;
 use diesel;
 use diesel::expression::sql;
 use diesel::{ ExecuteDsl, ExpressionMethods, FilterDsl, LoadDsl, PgConnection };
+use uuid::Uuid;
 
 #[derive(Queryable, Debug, Clone, Deserialize, Serialize)]
 pub struct Tags {
-    id: i32,
+    id: Uuid,
     tag: String
 }
 
@@ -21,7 +22,7 @@ impl Tags {
         }
     }
 
-    pub fn delete_tag(conn: &PgConnection, id: i32) -> Result<usize, String> {
+    pub fn delete_tag(conn: &PgConnection, id: Uuid) -> Result<usize, String> {
         Relations::delete_all(conn, id, "tag");
         let res = diesel::delete(all_tags.filter(tags::id.eq(id)))
         .execute(conn);
@@ -31,7 +32,7 @@ impl Tags {
         }
     }
 
-    pub fn get_id(&self) -> i32 {
+    pub fn get_id(&self) -> Uuid {
         self.id
     }
 
@@ -48,14 +49,14 @@ impl Tags {
 
 #[derive(Queryable, Debug, Clone, Deserialize, Serialize)]
 pub struct TagCount {
-    id: i32,
+    id: Uuid,
     tag: String,
     count: i64
 }
 
 impl TagCount {
     pub fn view_tag_count(conn: &PgConnection) -> Result<Vec<Self>, String> {
-        let query = sql::<(diesel::types::Integer, diesel::types::Text ,diesel::types::BigInt)>
+        let query = sql::<(diesel::types::Uuid, diesel::types::Text ,diesel::types::BigInt)>
             ("select b.id, b.tag, count(*) from article_tag_relation a join tags b on a.tag_id=b.id group by b.id, b.tag");
         let res = query.load::<Self>(conn);
         match res {
@@ -67,7 +68,7 @@ impl TagCount {
     pub fn view_all_tag_count(conn: &PgConnection, limit: i64, offset: i64) -> Result<Vec<Self>, String> {
         let raw_sql = format!("select a.id, a.tag, (case when b.count is null then 0 else b.count end) as count from tags a left join \
                 (select tag_id, count(*) from article_tag_relation group by tag_id) b on a.id = b.tag_id order by a.id limit {} offset {};", limit, offset);
-        let query = sql::<(diesel::types::Integer, diesel::types::Text ,diesel::types::BigInt)>
+        let query = sql::<(diesel::types::Uuid, diesel::types::Text ,diesel::types::BigInt)>
             (&raw_sql);
         let res = query.load::<Self>(conn);
         match res {
@@ -104,7 +105,7 @@ impl NewTag {
             .unwrap()
     }
 
-    pub fn insert_all(raw_tag: Vec<NewTag>, conn: &PgConnection) -> Vec<i32> {
+    pub fn insert_all(raw_tag: Vec<NewTag>, conn: &PgConnection) -> Vec<Uuid> {
         let new_tags: Vec<Tags> = diesel::insert(&raw_tag).into(tags::table)
             .get_results(conn).unwrap();
         new_tags.iter().map(|tag| tag.get_id()).collect()
