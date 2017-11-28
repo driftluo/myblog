@@ -1,0 +1,64 @@
+{% extends "visitor/base.html" %}
+
+{% block title %}
+{{ article.title }}
+{% endblock title %}
+
+{% block css %}
+<script src='/js/highlight.pack.js'></script>
+<script src="/js/arttemplate.js"></script>
+<link href='/css/monokai_default.css' rel='stylesheet' />
+<style>
+    pre {
+        padding: 0px;
+    }
+</style>
+{% endblock css %}
+
+{% block header %}
+<div class="img">
+    <img src="/images/img_12.JPG" class="img-responsive img-rounded"/><br>
+    <p class="text-right">--- 摄于 2017 年 9 月 藏川线前段</p>
+</div>
+{% endblock header%}
+
+{% block body %}
+<div class="col-sm-offset-1 col-sm-10 col-md-offset-1 col-md-10 col-xs-offset-1 col-xs-10" data-id={{ article.id }}>
+
+</div>
+
+{% endblock body %}
+
+{% block script %}
+<script>
+    "use strict";
+    $(function() {
+        var id = $(".col-md-offset-1").attr("data-id");
+        $.getJSON("/api/v1/article/view?id=" + id, function (result) {
+            $(".col-md-offset-1").append(result.data.content);
+            $('pre code').each(function(i, block) {
+                hljs.highlightBlock(block);
+            });
+            var tags = {data: []};
+
+            $.each(result.data.tags, function (index, value) {
+                if (value !== null) {
+                    tags.data.push([result.data.tags_id[index], value])
+                }
+            });
+            var html = template("tpl-tag-list", tags);
+            $(".col-md-offset-1").children().first().after(html)
+        });
+    })
+</script>
+<script id="tpl-tag-list" type="text/html">
+    {% raw %}
+    <div style="margin-bottom: 10px;">
+        {{each data}}
+        <span class='label label-info' tag-id={{ $value[0] }}><span class='glyphicon glyphicon-tags' style='margin-right: 5px;'></span>{{ $value[1] }}</span>
+        {{/each}}
+    </div>
+    {% endraw %}
+</script>
+<script src="/js/customize/navigationBar.js"></script>
+{% endblock script%}

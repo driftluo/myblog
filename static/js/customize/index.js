@@ -31,15 +31,12 @@ function getList() {
             if (result.data.length === 0) {
                 command.change();
             }
-            $.each(result, function (key, values) {
-                var i;
-                for (i in values) {
-                    var p = $("<p class='post-meta'>Posted on " + moment.utc(values[i].create_time).local().format() + "</p>");
-                    var title = $("<a href='#'>" + "<h2>" + values[i].title + "<br><small>测试副标题</small>" + "</h2>" + "</a>");
-                    var blog = $("<div class='text-center'></div>").append(title).append(p);
-                    $("div.col-md-8").append(blog);
-                }
-            });
+            for (var index in result.data) {
+                result.data[index].create_time = moment.utc(result.data[index].create_time).local().format();
+                result.data[index].modify_time = moment.utc(result.data[index].modify_time).local().format();
+            }
+            var html = template("tpl-article-list", result);
+            $("div.col-md-8").append(html);
             command.statusChange();
         });
     }

@@ -3,7 +3,7 @@ use sapper_std::{ JsonParams, SessionVal };
 use serde_json;
 
 use super::super::{ Postgresql, UserInfo, ChangePassword, Redis, user_verification_cookie,
-                    admin_verification_cookie, AdminSession, LoginUser };
+                    admin_verification_cookie, AdminSession, LoginUser, EditUser };
 
 pub struct User;
 
@@ -21,27 +21,42 @@ impl User {
 
     fn change_pwd(req: &mut Request) -> SapperResult<Response> {
         let body: ChangePassword = get_json_params!(req);
+        let cookie = req.ext().get::<SessionVal>().unwrap();
+        let admin = req.ext().get::<AdminSession>().unwrap();
+        let redis_pool = req.ext().get::<Redis>().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-        let res = if !body.verification(&pg_pool) {
-            json!({
-                "status": false,
-                "error": format!("no this user, id: {}", body.id)
-            })
-        } else {
-            match body.change_password(&pg_pool) {
-                Ok(data) => {
-                    json!({
+        let res = match body.change_password(&pg_pool, redis_pool, cookie, admin) {
+            Ok(data) => {
+                json!({
                     "status": true,
                     "data": data
                 })
-                }
-                Err(err) => {
-                    json!({
+            }
+            Err(err) => {
+                json!({
                     "status": false,
                     "error": err
                 })
-                }
             }
+        };
+        res_json!(res)
+    }
+
+    fn edit(req: &mut Request) -> SapperResult<Response> {
+        let body: EditUser = get_json_params!(req);
+        let cookie = req.ext().get::<SessionVal>().unwrap();
+        let admin = req.ext().get::<AdminSession>().unwrap();
+        let redis_pool = req.ext().get::<Redis>().unwrap();
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+        let res = match body.edit_user(&pg_pool, redis_pool, cookie, admin) {
+            Ok(num_edit) => json!({
+                "status": true,
+                "num_edit": num_edit
+            }),
+            Err(err) => json!({
+                "status": false,
+                "error": err
+            })
         };
         res_json!(res)
     }
@@ -85,13 +100,15 @@ impl SapperModule for User {
     }
 
     fn router(&self, router: &mut SapperRouter) -> SapperResult<()> {
-        // http post :8888/user/change_pwd id:=1 old_password=1234 new_password=12345
+        // http post :8888/user/change_pwd old_password=1234 new_password=12345
         router.post("/user/change_pwd", User::change_pwd);
 
         // http get :8888/user/view
         router.get("/user/view", User::view_user);
 
         router.get("/user/sign_out", User::sign_out);
+
+        router.post("/user/edit", User::edit);
 
         Ok(())
     }

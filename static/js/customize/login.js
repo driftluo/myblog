@@ -17,10 +17,12 @@ $().ready(function () {
 $("#register_btn").click(function () {
     $("#register_form").css("display", "block");
     $("#login_form").css("display", "none");
+    $("#account").focus();
 });
 $("#back_btn").click(function () {
     $("#register_form").css("display", "none");
     $("#login_form").css("display", "block");
+    $("#login_account").focus();
 });
 
 $("#login").click( function (event) {

@@ -10,7 +10,9 @@ struct Comments {
     comment: String,
     article_id: Uuid,
     user_id: Uuid,
-    re_user_id: Option<Uuid>
+    user_nickname: String,
+    re_user_id: Option<Uuid>,
+    re_user_nickname: Option<String>
 }
 
 impl Comments {

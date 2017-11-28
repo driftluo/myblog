@@ -3,7 +3,7 @@ use serde_json;
 use sapper_std::{ QueryParams, JsonParams, PathParams, SessionVal };
 use uuid::Uuid;
 
-use super::super::{ Users, EditUser, UserInfo, Postgresql, Redis, ChangePermission, admin_verification_cookie };
+use super::super::{ Users, UserInfo, Postgresql, Redis, ChangePermission, admin_verification_cookie };
 
 pub struct AdminUser;
 
@@ -25,27 +25,6 @@ impl AdminUser {
                     "status": false,
                     "error": err
                     })
-            }
-        };
-        res_json!(res)
-    }
-
-    fn edit_user(req: &mut Request) -> SapperResult<Response> {
-        let body: EditUser = get_json_params!(req);
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-
-        let res = match Users::edit_user(&pg_pool, body) {
-            Ok(num_update) => {
-                json!({
-                    "status": true,
-                    "num_update": num_update
-                })
-            }
-            Err(err) => {
-                json!({
-                    "status": false,
-                    "error": format!("{}", err)
-                })
             }
         };
         res_json!(res)
@@ -120,10 +99,6 @@ impl SapperModule for AdminUser {
 
         // http post :8888/user/delete/2
         router.post("/user/delete/:id", AdminUser::delete_user);
-
-        // http post :8888/user/edit id:=1 nickname="漂流"
-        // say="仍需共生命的慷慨与繁华相爱，即使岁月以刻薄与荒芜相欺。" email=441594700@qq.com
-        router.post("/user/edit", AdminUser::edit_user);
 
         // http post :8888/user/permission id:=1 permission:=0
         router.post("/user/permission", AdminUser::change_permission);
