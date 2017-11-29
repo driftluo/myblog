@@ -168,7 +168,9 @@
                 for (var index in result.data) {
                     result.data[index].create_time = moment.utc(result.data[index].create_time).local().format();
                     result.data[index]["admin"] = result.admin;
-                    result.data[index]["user"] = result.user.id;
+                    if (result.user) {
+                        result.data[index]["user"] = result.user.id;
+                    }
                 }
                 var html = template("tpl-comment-list", result);
                 $("ul.comment").append(html);
@@ -197,10 +199,10 @@
                 {{@temp}}
             </div>
             {{ if $value.user === $value.user_id || $value.admin }}
-            <a class="pull-right delete" style="cursor: pointer;color: #777;">删除</a>
+            <a class="pull-right delete" style="cursor: pointer;color: #777; margin-right: 10px;">删除</a>
             {{ /if }}
 
-            {{ if $value.admin }}
+            {{ if $value.admin || ($value.user !== $value.user_id && $value.user !== undefined ) }}
             <a class="pull-right reply" style="margin-right: 10px; cursor: pointer;color: #777;">回复</a>
             {{ /if }}
         </li>
