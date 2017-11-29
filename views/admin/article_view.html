@@ -38,6 +38,10 @@ $(function() {
         $('pre code').each(function(i, block) {
             hljs.highlightBlock(block);
         });
+        $(".col-md-offset-1")
+            .append("<blockquote class='pull-right'><h5 class='post-meta'>Last Modified:</h5>" +
+                "<p class='pull-right post-meta'>" + moment.utc(result.data.modify_time).local().format() +
+                "</p></blockquote>");
         var tags = {data: []};
 
         $.each(result.data.tags, function (index, value) {

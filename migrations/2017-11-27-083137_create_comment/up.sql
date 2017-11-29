@@ -7,5 +7,6 @@ Create table comments (
     user_id uuid not null references users (id),
     user_nickname VARCHAR NOT NULL,
     re_user_id uuid references users (id),
-    re_user_nickname varchar
+    re_user_nickname varchar,
+    create_time timestamp NOT NULL default current_timestamp
 );

@@ -49,9 +49,9 @@
 
 {% block script %}
 <script>
-$(function () {
-    window.setTimeout(utc_to_local, 100);
-});
+    $(function () {
+        window.setTimeout(utc_to_local, 100);
+    });
     function utc_to_local() {
         var create_time = moment.utc("{{ user.create_time }}").local().format();
         $("#information").children().last().append(create_time);

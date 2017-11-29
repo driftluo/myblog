@@ -42,4 +42,9 @@ div.col-md-8 a:hover, div.col-md-10 a:hover {
 
 button {
     margin-top: 10px;
+    margin-left: 20px;
+}
+
+li[data-id] {
+    float: left;
 }

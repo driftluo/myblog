@@ -64,8 +64,10 @@ impl ArticleWeb {
         let article_id: Uuid = t_param!(params, "id").clone().parse().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let admin_cookies_status = req.ext().get::<AdminSession>().unwrap();
+        let user_cookies_status = req.ext().get::<UserSession>().unwrap();
         let mut web = Context::new();
         web.add("admin", admin_cookies_status);
+        web.add("user", user_cookies_status);
         match ArticlesWithTag::query_article(&pg_pool, article_id, false) {
             Ok(ref data) => web.add("article", data),
             Err(err) => println!("{}", err)

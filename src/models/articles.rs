@@ -8,6 +8,7 @@ use chrono::NaiveDateTime;
 use diesel;
 use diesel::{ FilterDsl, ExpressionMethods, ExecuteDsl, LoadDsl,
               SelectDsl, OrderDsl, LimitDsl, OffsetDsl, PgConnection };
+use diesel::expression::sql;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -79,7 +80,7 @@ pub struct ArticleList {
     pub title: String,
     pub published: bool,
     pub create_time: NaiveDateTime,
-    pub modify_time: NaiveDateTime,
+    pub modify_time: NaiveDateTime
 }
 
 impl ArticleList {
@@ -101,6 +102,16 @@ impl ArticleList {
                 .load::<ArticleList>(conn)
         };
 
+        match res {
+            Ok(data) => Ok(data),
+            Err(err) => Err(format!("{}", err))
+        }
+    }
+
+    pub fn query_with_tag(conn: &PgConnection, tag_id: Uuid) -> Result<Vec<ArticleList>, String> {
+        let raw_sql = format!("select id, title, published, create_time, modify_time from article_with_tag where ('{}' = any(tags_id)) order by create_time desc", tag_id);
+        let query = sql::<(diesel::types::Uuid, diesel::types::Text, diesel::types::Bool, diesel::types::Timestamp, diesel::types::Timestamp)>(&raw_sql);
+        let res = query.load::<Self>(conn);
         match res {
             Ok(data) => Ok(data),
             Err(err) => Err(format!("{}", err))

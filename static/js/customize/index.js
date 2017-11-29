@@ -33,7 +33,6 @@ function getList() {
             }
             for (var index in result.data) {
                 result.data[index].create_time = moment.utc(result.data[index].create_time).local().format();
-                result.data[index].modify_time = moment.utc(result.data[index].modify_time).local().format();
             }
             var html = template("tpl-article-list", result);
             $("div.col-md-8").append(html);
@@ -58,8 +57,14 @@ $(window).scroll(function () {
 });
 
 // According to the tag to get the corresponding article list
-// todo: finish it
 $("button").click(function () {
-    console.log($(this).parent().attr("data-id"));
     command.setFalse();
+    $.getJSON("/api/v1/article/view_all/" + $(this).parent().attr("data-id"), function (result) {
+        for (var index in result.data) {
+            result.data[index].create_time = moment.utc(result.data[index].create_time).local().format();
+        }
+        var html = template("tpl-article-list", result);
+        $("div.col-md-8").empty();
+        $("div.col-md-8").append(html);
+    } )
 });

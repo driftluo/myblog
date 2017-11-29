@@ -1,10 +1,11 @@
 use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult };
-use sapper_std::{ QueryParams, JsonParams, set_cookie };
+use sapper_std::{ QueryParams, PathParams, JsonParams, set_cookie, SessionVal };
 use sapper::header::ContentType;
 use serde_json;
 
 use super::super::{ ArticlesWithTag, RegisteredUser, NewUser, sha3_256_encode, random_string, get_password,
-                    ArticleList, Postgresql, Redis, LoginUser };
+                    ArticleList, Postgresql, Redis, LoginUser, Comments, AdminSession, UserSession,
+                    user_verification_cookie, admin_verification_cookie, UserInfo };
 use uuid::Uuid;
 
 pub struct Visitor;
@@ -20,6 +21,69 @@ impl Visitor {
                 json!({
                     "status": true,
                     "data": data
+                })
+            }
+            Err(err) => {
+                json!({
+                    "status": false,
+                    "error": err
+                })
+            }
+        };
+        res_json!(res)
+    }
+
+    fn list_all_article_filter_by_tag(req: &mut Request) -> SapperResult<Response> {
+        let params = get_path_params!(req);
+        let tag_id: Uuid = t_param!(params, "tag_id").clone().parse().unwrap();
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+        let res = match ArticleList::query_with_tag(&pg_pool, tag_id) {
+            Ok(data) => {
+                json!({
+                    "status": true,
+                    "data": data
+                })
+            }
+            Err(err) => {
+                json!({
+                    "status": false,
+                    "error": err
+                })
+            }
+        };
+        res_json!(res)
+    }
+
+    fn list_comments(req: &mut Request) -> SapperResult<Response> {
+        let path_params = get_path_params!(req);
+        let article_id: Uuid = t_param!(path_params, "id").clone().parse().unwrap();
+        let query_params = get_query_params!(req);
+        let limit = t_param_parse!(query_params, "limit", i64);
+        let offset = t_param_parse!(query_params, "offset", i64);
+
+        let admin_cookies_status = req.ext().get::<AdminSession>().unwrap();
+        let user_cookies_status = req.ext().get::<UserSession>().unwrap();
+
+
+        let redis_pool = req.ext().get::<Redis>().unwrap();
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+
+        let info = match user_cookies_status {
+          &true => {
+              let cookie = req.ext().get::<SessionVal>().unwrap();
+              Some(serde_json::from_str::<UserInfo>(&UserInfo::view_user_with_cookie(redis_pool, cookie, &false)).unwrap())
+          },
+            &false => {
+                None
+            }
+        };
+        let res = match Comments::query(&pg_pool, limit, offset, article_id) {
+            Ok(data) => {
+                json!({
+                    "status": true,
+                    "data": data,
+                    "admin": admin_cookies_status,
+                    "user": info
                 })
             }
             Err(err) => {
@@ -129,7 +193,19 @@ impl Visitor {
 }
 
 impl SapperModule for Visitor {
-    fn before(&self, _req: &mut Request) -> SapperResult<()> {
+    #[allow(unused_assignments)]
+    fn before(&self, req: &mut Request) -> SapperResult<()> {
+        let mut user_status = false;
+        let mut admin_status = false;
+        {
+            let cookie = req.ext().get::<SessionVal>();
+            let redis_pool = req.ext().get::<Redis>().unwrap();
+            user_status = user_verification_cookie(cookie, redis_pool);
+            admin_status = admin_verification_cookie(cookie, redis_pool);
+        }
+        req.ext_mut().insert::<UserSession>(user_status);
+        req.ext_mut().insert::<AdminSession>(admin_status);
+
         Ok(())
     }
 
@@ -140,6 +216,10 @@ impl SapperModule for Visitor {
     fn router(&self, router: &mut SapperRouter) -> SapperResult<()> {
         // http get /article/view_all limit==5 offset==0
         router.get("/article/view_all", Visitor::list_all_article);
+
+        router.get("/article/view_all/:tag_id", Visitor::list_all_article_filter_by_tag);
+
+        router.get("/article/view_comment/:id", Visitor::list_comments);
 
         // http get /article/view id==4
         router.get("/article/view", Visitor::view_article);

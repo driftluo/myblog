@@ -3,7 +3,7 @@ use sapper_std::{ JsonParams, SessionVal };
 use serde_json;
 
 use super::super::{ Postgresql, UserInfo, ChangePassword, Redis, user_verification_cookie,
-                    admin_verification_cookie, AdminSession, LoginUser, EditUser };
+                    admin_verification_cookie, AdminSession, LoginUser, EditUser, NewComments };
 
 pub struct User;
 
@@ -68,6 +68,23 @@ impl User {
         let res = json!({"status": LoginUser::sign_out(redis_pool, cookie, admin) });
         res_json!(res)
     }
+
+    fn new_comment(req: &mut Request) -> SapperResult<Response> {
+        let body: NewComments = get_json_params!(req);
+        let cookie = req.ext().get::<SessionVal>().unwrap();
+        let admin = req.ext().get::<AdminSession>().unwrap();
+        let redis_pool = req.ext().get::<Redis>().unwrap();
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+        let res = match body.insert(&pg_pool, redis_pool, cookie, admin) {
+            true => json!({
+                "status": true
+            }),
+            false => json!({
+                "status": false
+            })
+        };
+        res_json!(res)
+    }
 }
 
 impl SapperModule for User {
@@ -109,6 +126,8 @@ impl SapperModule for User {
         router.get("/user/sign_out", User::sign_out);
 
         router.post("/user/edit", User::edit);
+
+        router.post("/comment/new", User::new_comment);
 
         Ok(())
     }
