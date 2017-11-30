@@ -3,7 +3,7 @@ use sapper_std::{ JsonParams, SessionVal };
 use serde_json;
 
 use super::super::{ Postgresql, UserInfo, ChangePassword, Redis, user_verification_cookie,
-                    admin_verification_cookie, AdminSession, LoginUser, EditUser, NewComments };
+                    admin_verification_cookie, AdminSession, LoginUser, EditUser, NewComments, DeleteComment };
 
 pub struct User;
 
@@ -85,6 +85,24 @@ impl User {
         };
         res_json!(res)
     }
+
+    fn delete_comment(req: &mut Request) -> SapperResult<Response> {
+        let body: DeleteComment = get_json_params!(req);
+        let admin = req.ext().get::<AdminSession>().unwrap();
+        let cookie = req.ext().get::<SessionVal>().unwrap();
+        let redis_pool = req.ext().get::<Redis>().unwrap();
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+
+        let res = match body.delete(&pg_pool, redis_pool, cookie, admin) {
+            true => json!({
+                "status": true
+            }),
+            false => json!({
+                "status": false
+            })
+        };
+        res_json!(res)
+    }
 }
 
 impl SapperModule for User {
@@ -128,6 +146,8 @@ impl SapperModule for User {
         router.post("/user/edit", User::edit);
 
         router.post("/comment/new", User::new_comment);
+
+        router.post("/comment/delete", User::delete_comment);
 
         Ok(())
     }

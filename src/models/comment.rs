@@ -4,7 +4,8 @@ use super::super::comments::dsl::comments as all_comments;
 use chrono::NaiveDateTime;
 use uuid::Uuid;
 use diesel;
-use diesel::{ PgConnection, FilterDsl, ExpressionMethods, LoadDsl, ExecuteDsl, OffsetDsl, OrderDsl, LimitDsl };
+use diesel::{ PgConnection, FilterDsl, ExpressionMethods, LoadDsl, ExecuteDsl };
+use diesel::expression::sql;
 use std::sync::Arc;
 use serde_json;
 use super::super::{ RedisPool, UserInfo };
@@ -15,19 +16,15 @@ pub struct Comments {
     comment: String,
     article_id: Uuid,
     user_id: Uuid,
-    user_nickname: String,
-    re_user_id: Option<Uuid>,
-    re_user_nickname: Option<String>,
+    nickname: String,
     create_time: NaiveDateTime
 }
 
 impl Comments {
     pub fn query(conn: &PgConnection, limit: i64, offset: i64, id: Uuid) -> Result<Vec<Self>, String> {
-        let res = all_comments.filter(comments::article_id.eq(id))
-                    .order(comments::create_time)
-                    .limit(limit)
-                    .offset(offset)
-                    .get_results::<Comments>(conn);
+        let raw_sql = format!("select a.id, a.comment, a.article_id, a.user_id, b.nickname, a.create_time from comments a join users b on a.user_id=b.id where a.article_id='{}' order by a.create_time limit {} offset {};", id, limit, offset);
+        let query = sql::<(diesel::types::Uuid, diesel::types::Text, diesel::types::Uuid, diesel::types::Uuid, diesel::types::Text, diesel::types::Timestamp)>(&raw_sql);
+        let res = query.get_results::<Self>(conn);
         match res {
             Ok(data) => {
                 Ok(data)
@@ -53,9 +50,6 @@ struct InsertComments {
     comment: String,
     article_id: Uuid,
     user_id: Uuid,
-    user_nickname: String,
-    re_user_id: Option<Uuid>,
-    re_user_nickname: Option<String>
 }
 
 impl InsertComments {
@@ -70,19 +64,14 @@ impl InsertComments {
 pub struct NewComments {
     comment: String,
     article_id: Uuid,
-    re_user_id: Option<Uuid>,
-    re_user_nickname: Option<String>
 }
 
 impl NewComments {
-    fn into_insert_comments(self, user_id: Uuid, user_nickname: String) -> InsertComments {
+    fn into_insert_comments(self, user_id: Uuid) -> InsertComments {
         InsertComments {
             comment: self.comment,
             article_id: self.article_id,
             user_id,
-            user_nickname,
-            re_user_id: self.re_user_id,
-            re_user_nickname: self.re_user_nickname
         }
     }
 
@@ -92,6 +81,30 @@ impl NewComments {
             &false => { "user_".to_string() + cookie }
         };
         let info = serde_json::from_str::<UserInfo>(&redis_pool.hget::<String>(&redis_key, "info")).unwrap();
-        self.into_insert_comments(info.id, info.nickname).insert(conn)
+        self.into_insert_comments(info.id).insert(conn)
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct DeleteComment {
+    comment_id: Uuid,
+    user_id: Uuid
+}
+
+impl DeleteComment {
+    pub fn delete(self, conn: &PgConnection, redis_pool: &Arc<RedisPool>, cookie: &str, admin: &bool) -> bool {
+        match admin {
+            &true => {
+                Comments::delete_with_comment_id(conn, self.comment_id)
+            }
+            &false => {
+                let redis_key = "user_".to_string() + cookie;
+                let info = serde_json::from_str::<UserInfo>(&redis_pool.hget::<String>(&redis_key, "info")).unwrap();
+                match self.user_id == info.id {
+                    true => Comments::delete_with_comment_id(conn, self.comment_id),
+                    false => false
+                }
+            }
+        }
     }
 }

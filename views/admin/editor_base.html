@@ -14,59 +14,28 @@
     <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet"/>
     <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     <link rel="stylesheet" href="/css/monokai_default.css">
-    <style>
-        a:hover { text-decoration: none; cursor:pointer; }
-        ul.tag {
-            overflow: hidden;
-        }
-        ul.tag li {
-            float: left;
-            margin: 20px 15px 10px 0px;
-            line-height: 20px;
-            display: list-item;
-            text-align: -webkit-match-parent;
-            list-style: none;
-        }
-        ul.tag li a {
-            padding: 5px 10px;
-            border: 1px solid #d9d9d9;
-            border-radius: 14px;
-            box-sizing: border-box;
-            font-size: 12px;
-            font-weight: normal;
-            line-height: 1.5;
-            text-decoration: none;
-        }
-        .a_click {
-            background-color: #e78170;
-            color: #fff;
-            border: 0px;
-        }
-         pre {
-             padding: 0px;
-         }
-    </style>
+    <link rel="stylesheet" href="/css/editor_base.css">
 </head>
 <body>
 <div class="col-md-8 col-md-offset-2">
     {% if id %}
-        <h3>Title: </h3><input id="title" type="text" class="form-control" placeholder="标题" article-id={{ id }}>
+    <h3>Title: </h3><input id="title" type="text" class="form-control" placeholder="标题" article-id={{ id }}>
     {% else %}
-        <h3>Title: </h3><input id="title" type="text" class="form-control" placeholder="标题">
+    <h3>Title: </h3><input id="title" type="text" class="form-control" placeholder="标题">
     {% endif %}
     <div>
         <ul class="tag">
             {% if tags %}
-                {% for tag in tags %}
-                <li ><a data-id={{ tag.id }}>{{ tag.tag }}</a></li>
-                {% endfor %}
+            {% for tag in tags %}
+            <li><a data-id={{ tag.id }}>{{ tag.tag }}</a></li>
+            {% endfor %}
             {% endif %}
         </ul>
         <button id="tag_btn" class="btn btn-sm btn-info pull-right">添加标签</button>
     </div>
     <div style="margin-top: 20px;">
         <ul class="nav nav-tabs">
-            <li role="presentation" class="active" id="editor_note" ><a onclick="editorPage()" >Editor</a></li>
+            <li role="presentation" class="active" id="editor_note"><a onclick="editorPage()">Editor</a></li>
             <li role="presentation" id="preview_note"><a onclick="previewPage()">Preview</a></li>
         </ul>
     </div>
@@ -79,8 +48,8 @@
 
     <div>
         <button id="quit" type="button" class="btn btn-danger" style="margin-top: 15px;">
-        <span class="glyphicon glyphicon-trash"></span>
-        放弃
+            <span class="glyphicon glyphicon-trash"></span>
+            放弃
         </button>
 
         <button id='submit' type="button" class="btn btn-success pull-right" style="margin-top: 15px;">
@@ -93,7 +62,8 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span>
+                </button>
                 <h4 class="modal-title">错误</h4>
             </div>
             <div class="modal-body">
@@ -109,7 +79,8 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span>
+                </button>
                 <h4 class="modal-title">成功</h4>
             </div>
             <div class="modal-body">
@@ -125,7 +96,8 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span>
+                </button>
                 <h4 class="modal-title">新标签</h4>
             </div>
             <div class="modal-body">
@@ -158,88 +130,7 @@
     <p class="text-center">Copyright © Luo Chao 2017-</p>
 </footer>
 
-    <script>
-        marked.setOptions({
-            renderer: new marked.Renderer(),
-            gfm: true,
-            tables: true,
-            breaks: false,
-            pedantic: false,
-            sanitize: false,
-            smartLists: true,
-            smartypants: false,
-            highlight: function (code) {
-                return hljs.highlightAuto(code).value;
-            }
-        });
-
-        function editorPage() {
-            $("#preview_page").css("display", "none");
-            $("#preview_note").removeClass("active");
-            $("#editor_page").css("display", "block");
-            $("#editor_note").addClass("active");
-        }
-
-        function previewPage() {
-            $("#editor_page").css("display", "none");
-            $("#editor_note").removeClass("active");
-            $("#preview_page").css("display", "block");
-            $("#preview_note").addClass("active");
-            var html = marked($("#editor").val());
-            $("#preview_page").html(html);
-            $("pre code").addClass("hljs")
-        }
-        $("textarea").on(
-            'keydown',
-            function(e) {
-                if (e.keyCode === 9) {
-                    e.preventDefault();
-                    var indent = '    ';
-                    var start = this.selectionStart;
-                    var end = this.selectionEnd;
-                    var selected = window.getSelection().toString();
-                    selected = indent + selected.replace(/\n/g, '\n' + indent);
-                    this.value = this.value.substring(0, start) + selected
-                        + this.value.substring(end);
-                    this.setSelectionRange(start + indent.length, start
-                        + selected.length);
-                }
-            });
-
-        $("#quit").click(function (event) {
-            event.preventDefault();
-            window.location = "/admin/list"
-        });
-        $("#success_btn").click(function (event) {
-            event.preventDefault();
-            window.location = "/admin/list"
-        });
-
-        $("ul.tag").on("click","li", function(){
-            if ($(this).children().hasClass("a_click")) {
-                $(this).children().removeClass("a_click")
-            } else {
-                $(this).children().addClass("a_click")
-            }
-        });
-        $("#tag_btn").on("click", function () {
-            $("#tag-name").val("");
-            $("#tag").modal("show")
-        });
-        $("#add_tag").click(function () {
-            var tag_name = $("#tag-name").val().replace(/(^\s*)|(\s*$)/g, "");
-            var tags = $('ul.tag li a').map(function(){return $(this).html();}).toArray();
-            if (tag_name === "" || $.inArray(tag_name, tags) !== -1) {
-                $(".text-danger").remove();
-                $(this).parent().prev().append("<span class='text-danger'>标签已存在或为空</span>")
-            } else {
-                $('#tag').modal('hide');
-                $("ul.tag").append("<li><a class='a_click'>"+ tag_name +"</a></li>")
-            }
-
-        })
-
-    </script>
+<script src="/js/admin/editor_base.js"></script>
 {% block script %}
 {% endblock script %}
 </body>

@@ -10,12 +10,19 @@
         color: #fff;
         border: hidden;
     }
+
     .body-information {
-        margin-top:100px;
+        margin-top: 100px;
     }
-    a:hover { text-decoration: none; cursor:pointer; }
-    #information {display: block;}
-    #sign_out {display: none;}
+
+    a:hover {
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    #information {
+        display: block;
+    }
 </style>
 {% include "template/userinfo.html" %}
 {% endblock css %}
@@ -52,10 +59,11 @@
     $(function () {
         window.setTimeout(utc_to_local, 100);
     });
+
     function utc_to_local() {
         var create_time = moment.utc("{{ user.create_time }}").local().format();
         $("#information").children().last().append(create_time);
     }
 </script>
-<script src="/js/customize/navigationBar.js"></script>
+<script src="/js/index/navigationBar.js"></script>
 {% endblock script%}

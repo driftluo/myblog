@@ -256,3 +256,21 @@ struct Articles {
     pub create_time: NaiveDateTime,
     pub modify_time: NaiveDateTime,
 }
+
+#[derive(Queryable, Debug, Clone, Deserialize, Serialize)]
+pub struct PublishedStatistics {
+    pub dimension: String,
+    pub quantity: i64,
+}
+
+impl PublishedStatistics {
+    pub fn statistics_published_frequency_by_month(conn: &PgConnection) -> Result<Vec<Self>, String> {
+        let raw_sql = "select to_char(create_time, 'yyyy-mm') as dimension, count(*) as quantity from articles group by dimension;";
+        let query = sql::<(diesel::types::Text, diesel::types::BigInt)>(raw_sql);
+        let res = query.load::<Self>(conn);
+        match res {
+            Ok(data) => Ok(data),
+            Err(err) => Err(format!("{}", err))
+        }
+    }
+}

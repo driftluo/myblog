@@ -1,27 +1,5 @@
 "use strict";
 
-// Record the status of the request asynchronously again
-function Command() {
-    this.command = true;
-    this.order = 0;
-    this.status = true;
-    this.change = function () {
-        this.command = !this.command;
-    };
-    this.setFalse = function () {
-        this.command = false;
-    };
-    this.add = function () {
-        this.order += 1;
-    };
-    this.statusChange = function () {
-        this.status = !this.status
-    }
-}
-
-// New an object
-var command = new Command();
-
 // Asynchronous request for article list
 function getList() {
     if (command.command) {
@@ -44,9 +22,9 @@ function getList() {
 
 // First visit, asynchronously access article list
 $(document).ready(function () {
-        getList();
-        command.statusChange();
-    }
+    getList();
+    command.statusChange();
+}
 );
 
 // After scroll on the end, asynchronous access to follow-up article list

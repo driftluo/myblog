@@ -1,0 +1,30 @@
+.side-navbar {
+    background: rgba(217, 219, 252, 0.98);
+    color: #fff;
+    border: hidden;
+}
+
+.body-information {
+    margin-top: 100px;
+}
+
+a:hover {
+    text-decoration: none;
+    cursor: pointer;
+}
+
+#information {
+    display: block;
+}
+
+#sign_out {
+    display: none;
+}
+
+#modify {
+    display: none;
+}
+
+#change_password {
+    display: none;
+}

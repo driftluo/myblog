@@ -32,10 +32,10 @@ pub mod api;
 pub mod web;
 
 pub(crate) use schema::{ articles, users, article_with_tag, tags, article_tag_relation, comments };
-pub(crate) use models::{ NewArticle, ArticlesWithTag, ArticleList, ModifyPublish, EditArticle };
+pub(crate) use models::{ NewArticle, ArticlesWithTag, ArticleList, ModifyPublish, EditArticle, PublishedStatistics };
 pub(crate) use models::{ UserInfo, Users, NewUser, ChangePassword, RegisteredUser, EditUser, LoginUser, ChangePermission };
 pub(crate) use models::{ NewTag, Tags, TagCount };
-pub(crate) use models::{ Comments, NewComments };
+pub(crate) use models::{ Comments, NewComments, DeleteComment };
 pub(crate) use util::{ sha3_256_encode, random_string, markdown_render, get_password,
                        admin_verification_cookie, user_verification_cookie, UserSession, AdminSession };
 pub use util::{ create_redis_pool, RedisPool, Redis };
@@ -45,4 +45,5 @@ pub use api::User;
 pub use api::AdminArticle;
 pub use api::Tag;
 pub use api::AdminUser;
+pub use api::ChartData;
 pub use web::{ ArticleWeb, Admin };

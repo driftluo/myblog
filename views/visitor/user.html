@@ -4,22 +4,7 @@
 Home
 {% endblock title %}
 {% block css %}
-    <style>
-        .side-navbar {
-            background: rgba(217, 219, 252, 0.98);
-            /*background-color: #777777;*/
-            color: #fff;
-            border: hidden;
-        }
-        .body-information {
-            margin-top:100px;
-        }
-        a:hover { text-decoration: none; cursor:pointer; }
-        #information {display: block;}
-        #sign_out {display: none;}
-        #modify {display: none;}
-        #change_password {display: none;}
-    </style>
+<link href="/css/user.css" rel="stylesheet" />
 <script src="/js/arttemplate.js"></script>
 {% include "template/userinfo.html" %}
 {% endblock css %}
@@ -29,224 +14,76 @@ Home
 
 {% block body %}
 <div class="container">
-<div class="container col-sm-2 col-md-2 body-information">
-<nav class="navbar navbar-inverse side-navbar" id="sidebar-wrapper" role="navigation">
-    <ul class="nav sidebar-nav">
-        <li>
-            <a href="#"><i class="fa fa-fw fa-home"></i> Home</a>
-        </li>
-        <li>
-            <a id="information_btn"><i class="fa fa-fw fa-home"></i> Information</a>
-        </li>
-        <li>
-            <a id="modify_btn"><i class="fa fa-fw fa-home"></i> Modify</a>
-        </li>
-        <li>
-            <a id="change_password_btn"><i class="fa fa-fw fa-home"></i> Change Password</a>
-        </li>
-        <li>
-            <a id="sign_out_btn"><i class="fa fa-fw fa-home"></i> Sign out</a>
-        </li>
-    </ul>
-</nav>
-</div>
-<div class="container col-sm-8 col-md-8 body-information">
-    <div id="information">
+    <div class="container col-sm-2 col-md-2 body-information">
+        <nav class="navbar navbar-inverse side-navbar" id="sidebar-wrapper" role="navigation">
+            <ul class="nav sidebar-nav">
+                <li>
+                    <a href="#"><i class="fa fa-fw fa-home"></i> Home</a>
+                </li>
+                <li>
+                    <a id="information_btn"><i class="fa fa-fw fa-home"></i> Information</a>
+                </li>
+                <li>
+                    <a id="modify_btn"><i class="fa fa-fw fa-home"></i> Modify</a>
+                </li>
+                <li>
+                    <a id="change_password_btn"><i class="fa fa-fw fa-home"></i> Change Password</a>
+                </li>
+                <li>
+                    <a id="sign_out_btn"><i class="fa fa-fw fa-home"></i> Sign out</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    <div class="container col-sm-8 col-md-8 body-information">
+        <div id="information">
 
+        </div>
+        <div id="modify">
+            <h3>修改信息</h3>
+            <hr/>
+            <form>
+                <div class="form-group">
+                    <label>昵称:</label><input id="nickname" type="text" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>签名:</label><textarea id="say" class="form-control" rows="5"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Email:</label><input id="email" type="text" class="form-control">
+                </div>
+                <div class="form-group">
+                    <button type="button" class="btn btn-success pull-right">保存</button>
+                </div>
+            </form>
+        </div>
+        <div id="change_password">
+            <h3>修改密码</h3>
+            <hr/>
+            <form>
+                <div class="form-group">
+                    <label>旧密码:</label><input id="old_password" type="password" class="form-control" maxlength="20">
+                </div>
+                <div class="form-group">
+                    <label>新密码:</label><input id="new_password" type="password" class="form-control" maxlength="20">
+                </div>
+                <div class="form-group">
+                    <label>再次输入:</label><input id="re_password" type="password" class="form-control" maxlength="20">
+                </div>
+                <div class="form-group">
+                    <button type="button" class="btn btn-success pull-right">提交</button>
+                </div>
+            </form>
+        </div>
+        <div id="sign_out">
+            <h3>确定退出？</h3>
+            <hr/>
+            <button type="button" class="btn btn-warning">退出</button>
+        </div>
     </div>
-    <div id="modify">
-        <h3>修改信息</h3>
-        <hr/>
-        <form>
-            <div class="form-group">
-                <label>昵称:</label><input id="nickname" type="text" class="form-control">
-            </div>
-            <div class="form-group">
-                <label>签名:</label><textarea id="say" class="form-control" rows="5"></textarea>
-            </div>
-            <div class="form-group">
-                <label>Email:</label><input id="email" type="text" class="form-control" >
-            </div>
-            <div class="form-group">
-                <button type="button" class="btn btn-success pull-right">保存</button>
-            </div>
-        </form>
-    </div>
-    <div id="change_password">
-        <h3>修改密码</h3>
-        <hr/>
-        <form>
-            <div class="form-group">
-                <label>旧密码:</label><input id="old_password" type="password" class="form-control" maxlength="20">
-            </div>
-            <div class="form-group">
-                <label>新密码:</label><input id="new_password" type="password" class="form-control" maxlength="20">
-            </div>
-            <div class="form-group">
-                <label>再次输入:</label><input id="re_password" type="password" class="form-control" maxlength="20">
-            </div>
-            <div class="form-group">
-                <button type="button" class="btn btn-success pull-right">提交</button>
-            </div>
-        </form>
-    </div>
-    <div id="sign_out">
-        <h3>确定退出？</h3>
-        <hr />
-        <button type="button" class="btn btn-warning">退出</button>
-    </div>
-</div>
 </div>
 {% endblock body%}
 {% block script %}
-<script>
-    $("#information_btn").click(function () {
-        informationPage();
-    });
-    $("#sign_out_btn").click(function () {
-        $("#information").css("display", "none");
-        $("#sign_out").css("display", "block");
-        $("#modify").css("display", "none");
-        $("#change_password").css("display", "none")
-    });
-    $("#modify_btn").click(function () {
-        $("#information").css("display", "none");
-        $("#sign_out").css("display", "none");
-        $("#modify").css("display", "block");
-        $("#change_password").css("display", "none");
-        getInfo()
-    });
-    $("#change_password_btn").click(function () {
-        $("#information").css("display", "none");
-        $("#sign_out").css("display", "none");
-        $("#modify").css("display", "none");
-        $("#change_password").css("display", "block");
-        clearPassword()
-    });
-
-    $(document).ready(function () {
-            getUserInfo();
-        }
-    );
-
-    $("#sign_out :button").click(function () {
-        $.ajax({
-            url: "/api/v1/user/sign_out",
-            type: "get",
-            dataType: "json",
-            data: JSON.stringify({}),
-            headers: {"Content-Type": "application/json"},
-            success: function (res) {
-                if (res.status) {
-                    window.location = "/index"
-                }
-            }
-        })
-    });
-
-    $("#modify :button").click(function (event) {
-        event.preventDefault();
-        var nickname = $("#nickname").val().replace(/(^\s*)|(\s*$)/g, "");
-        var say = $("#say").val();
-        var email = $("#email").val().replace(/(^\s*)|(\s*$)/g, "");
-        $(".text-danger").remove();
-        if (emailVerification(email) && nickname !== "") {
-            $.ajax({
-                url: "/api/v1/user/edit",
-                type: "post",
-                dataType: "json",
-                data: JSON.stringify({"nickname": nickname, "say": say, "email": email}),
-                headers: {"Content-Type": "application/json"},
-                success: function (res) {
-                    if (res.status) {
-                        getUserInfo();
-                        informationPage();
-                    }
-                }
-            });
-        } else {
-            $(this).before("<span class='text-danger' style='display: block'>Email格式错误或昵称为空</span>")
-        }
-    });
-
-    $("#change_password :button").click(function (event) {
-        event.preventDefault();
-        $(".text-danger").remove();
-        var old_password = $("#old_password").val();
-        var re_password = $("#re_password").val();
-        var new_password = $("#new_password").val();
-        if (old_password.length < 5) {
-            $("#old_password").after("<span class='text-danger' style='display: block'>密码长度小于5</span>")
-        } else if (new_password.length < 5) {
-            $("#new_password").after("<span class='text-danger' style='display: block'>密码长度小于5</span>")
-        } else if (new_password !== re_password){
-            $("#re_password").after("<span class='text-danger' style='display: block'>两次密码不一致</span>")
-        } else {
-            old_password = randomString(6) + old_password;
-            new_password = randomString(6) + new_password;
-            $.ajax({
-                url: "/api/v1/user/change_pwd",
-                type: "post",
-                dataType: "json",
-                data: JSON.stringify({"old_password": old_password, "new_password": new_password}),
-                headers: {"Content-Type": "application/json"},
-                success: function (res) {
-                    if (res.status) {
-                        informationPage();
-                    } else {
-                        $("#re_password").after("<span class='text-danger' style='display: block'>密码错误</span>")
-                    }
-                }
-            });
-        }
-    });
-
-    function getUserInfo() {
-        $.getJSON("/api/v1/user/view", function (result) {
-            result.data.create_time = moment.utc(result.data.create_time).local().format();
-            var html = template("tpl-user", result);
-            $("#information").empty();
-            $("#information").append(html)
-        })
-    }
-
-    function getInfo() {
-        $("#nickname").val($(".nickname").text());
-        $("#say").val($(".say").text());
-        $("#email").val($(".email").text())
-    }
-
-    function emailVerification(email) {
-        var reg_email = /^([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+@([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+\.[a-zA-Z]{2,3}$/;
-        return reg_email.test(email);
-    }
-
-    function informationPage() {
-        $("#information").css("display", "block");
-        $("#sign_out").css("display", "none");
-        $("#modify").css("display", "none");
-        $("#change_password").css("display", "none")
-    }
-
-    function clearPassword() {
-        $("#old_password").val("");
-        $("#re_password").val("");
-        $("#new_password").val("");
-        $("#old_password").focus();
-    }
-
-    function randomString(len) {
-        len = len || 32;
-        var $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        var maxPos = $chars.length;
-        var pwd = '';
-        for (var i = 0; i < len; i++) {
-            //0~32的整数
-            pwd += $chars.charAt(Math.floor(Math.random() * (maxPos + 1)));
-        }
-        return pwd;
-    }
-</script>
-
-<script src="/js/customize/navigationBar.js"></script>
+<script src="/js/index/user.js"></script>
+<script src="/js/index/navigationBar.js"></script>
 {% endblock script%}

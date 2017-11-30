@@ -1,3 +1,5 @@
+"use strict";
+
 // Record the status of the request asynchronously again
 function Command() {
     this.command = true;

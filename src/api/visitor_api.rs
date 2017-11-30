@@ -68,10 +68,11 @@ impl Visitor {
         let redis_pool = req.ext().get::<Redis>().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        let info = match user_cookies_status {
+        let user_id = match user_cookies_status {
           &true => {
               let cookie = req.ext().get::<SessionVal>().unwrap();
-              Some(serde_json::from_str::<UserInfo>(&UserInfo::view_user_with_cookie(redis_pool, cookie, &false)).unwrap())
+              let info = serde_json::from_str::<UserInfo>(&UserInfo::view_user_with_cookie(redis_pool, cookie, admin_cookies_status)).unwrap();
+              Some(info.id)
           },
             &false => {
                 None
@@ -83,7 +84,7 @@ impl Visitor {
                     "status": true,
                     "data": data,
                     "admin": admin_cookies_status,
-                    "user": info
+                    "user": user_id
                 })
             }
             Err(err) => {

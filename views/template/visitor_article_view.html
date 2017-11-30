@@ -1,0 +1,40 @@
+<script id="tpl-tag-list" type="text/html">
+    {% raw %}
+    <div style="margin-bottom: 10px;">
+        {{each data }}
+        <span class='label label-info' tag-id={{ $value[0] }}><span class='glyphicon glyphicon-tags' style='margin-right: 5px;'></span>{{ $value[1] }}</span>
+        {{/each }}
+    </div>
+    {% endraw %}
+</script>
+<script id="tpl-comment-list" type="text/html">
+    {% raw %}
+    {{ each data }}
+    {{ set temp = $value.comment }}
+    <li class="list-unstyled">
+        <p class="head" user-id="{{ $value.user_id }}" comment-id="{{ $value.id }}"><a href="/user/{{ $value.user_id }}">{{ $value.nickname }}</a><span>{{ $value.create_time }}</span></p>
+        <div class="re-comment">
+            {{@temp}}
+        </div>
+        {{ if $value.user === $value.user_id || $value.admin }}
+        <a class="pull-right delete" style="cursor: pointer;color: #777; margin-right: 10px;">删除</a>
+        {{ /if }}
+
+        {{ if $value.user !== $value.user_id && $value.user !== undefined }}
+        <a class="pull-right reply" style="margin-right: 10px; cursor: pointer;color: #777;">回复</a>
+        {{ /if }}
+    </li>
+    {{ /each }}
+    {% endraw %}
+</script>
+<script id="tpl-reply" type="text/html">
+    {% raw %}
+    <blockquote class="post-meta" style="font-size: 14px">
+        <a href="{{ re_user_url }}">@{{ re_user_name }}:</a>
+        <div class="reply">
+            {{@re_comment}}
+        </div>
+    </blockquote>
+    <p><br/></p>
+    {% endraw %}
+</script>
