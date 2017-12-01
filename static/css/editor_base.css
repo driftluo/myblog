@@ -1,0 +1,38 @@
+a:hover {
+    text-decoration: none;
+    cursor: pointer;
+}
+
+ul.tag {
+    overflow: hidden;
+}
+
+ul.tag li {
+    float: left;
+    margin: 20px 15px 10px 0px;
+    line-height: 20px;
+    display: list-item;
+    text-align: -webkit-match-parent;
+    list-style: none;
+}
+
+ul.tag li a {
+    padding: 5px 10px;
+    border: 1px solid #d9d9d9;
+    border-radius: 14px;
+    box-sizing: border-box;
+    font-size: 12px;
+    font-weight: normal;
+    line-height: 1.5;
+    text-decoration: none;
+}
+
+.a_click {
+    background-color: #e78170;
+    color: #fff;
+    border: 0px;
+}
+
+pre {
+    padding: 0px;
+}

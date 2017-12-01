@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::default::Default;
 
 use dotenv;
-use typemap::Key;
+use sapper::Key;
 use r2d2;
 use r2d2::Pool;
 use r2d2_diesel::ConnectionManager;

@@ -4,17 +4,8 @@
 Login
 {% endblock title %}
 {% block css %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.17.0/jquery.validate.js" ></script>
-<style type="text/css">
-    .body-form {margin-top:100px;}
-    .form{background: rgba(255,255,255,0.2);}
-    #login_form{display: block;}
-    #register_form{display: none;}
-    .fa{display: inline-block;top: 27px;left: 6px;position: relative;color: #ccc;}
-    input[type="text"],input[type="password"]{padding-left:26px;}
-    .checkbox{padding-left:21px; padding-right:21px;}
-    a:hover { text-decoration: none; cursor:pointer; }
-</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.17.0/jquery.validate.js"></script>
+<link href='/css/login.css' rel='stylesheet'/>
 {% endblock css %}
 
 {% block header %}
@@ -28,17 +19,19 @@ Login
             <div>
                 <div class="form-group">
                     <i class="fa fa-user fa-lg"></i>
-                    <input class="form-control required" type="text" placeholder="Account" id="login_account" name="account" autofocus="autofocus" maxlength="20"/>
+                    <input class="form-control required" type="text" placeholder="Account" id="login_account"
+                           name="account" autofocus="autofocus" maxlength="20"/>
                 </div>
                 <div class="form-group">
                     <i class="fa fa-lock fa-lg"></i>
-                    <input class="form-control required" type="password" placeholder="Password" id="login_password" name="password" maxlength="20"/>
+                    <input class="form-control required" type="password" placeholder="Password" id="login_password"
+                           name="password" maxlength="20"/>
                 </div>
                 <div class="form-group">
                     <label class="checkbox">
-                        <input type="checkbox" name="remember" /> Remember 90 day
+                        <input type="checkbox" name="remember"/> Remember 90 day
                     </label>
-                    <hr />
+                    <hr/>
                     <a id="register_btn" class="">Create an account</a>
                 </div>
                 <div class="form-group">
@@ -54,19 +47,23 @@ Login
             <div>
                 <div class="form-group">
                     <i class="fa fa-user fa-lg"></i>
-                    <input class="form-control required" type="text" placeholder="Account" id="account" name="account" autofocus="autofocus"/>
+                    <input class="form-control required" type="text" placeholder="Account" id="account" name="account"
+                           autofocus="autofocus"/>
                 </div>
                 <div class="form-group">
                     <i class="fa fa-lock fa-lg"></i>
-                    <input class="form-control required" type="password" placeholder="Password" id="register_password" name="password"/>
+                    <input class="form-control required" type="password" placeholder="Password" id="register_password"
+                           name="password"/>
                 </div>
                 <div class="form-group">
                     <i class="fa fa-check fa-lg"></i>
-                    <input class="form-control required" type="password" placeholder="Re-type Your Password" name="rpassword"/>
+                    <input class="form-control required" type="password" placeholder="Re-type Your Password"
+                           name="rpassword"/>
                 </div>
                 <div class="form-group">
                     <i class="fa fa-envelope fa-lg"></i>
-                    <input class="form-control required" type="text" placeholder="Nickname" id="nickname" name="nickname"/>
+                    <input class="form-control required" type="text" placeholder="Nickname" id="nickname"
+                           name="nickname"/>
                 </div>
                 <div class="form-group">
                     <i class="fa fa-envelope fa-lg"></i>
@@ -83,7 +80,7 @@ Login
 {% endblock body%}
 
 {% block script %}
-<script src="/js/customize/login.js"></script>
-<script src="/js/customize/navigationBar.js"></script>
+<script src="/js/index/login.js"></script>
+<script src="/js/index/navigationBar.js"></script>
 {% endblock script%}
 

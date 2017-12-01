@@ -2,7 +2,7 @@
 $().ready(function () {
     loginValidate();
     registerValidate();
-    document.onkeydown = function(e) {
+    document.onkeydown = function (e) {
         var ev = document.all ? window.event : e;
         if (ev.keyCode === 13) {
             if ($("#login_form").css("display") === 'block') {
@@ -17,22 +17,24 @@ $().ready(function () {
 $("#register_btn").click(function () {
     $("#register_form").css("display", "block");
     $("#login_form").css("display", "none");
+    $("#account").focus();
 });
 $("#back_btn").click(function () {
     $("#register_form").css("display", "none");
     $("#login_form").css("display", "block");
+    $("#login_account").focus();
 });
 
-$("#login").click( function (event) {
-        event.preventDefault();
-        login()
-    }
+$("#login").click(function (event) {
+    event.preventDefault();
+    login()
+}
 );
 
 $("#sign_btn").click(function (event) {
-        event.preventDefault();
-        register()
-    }
+    event.preventDefault();
+    register()
+}
 );
 
 function login() {
@@ -44,13 +46,13 @@ function login() {
             url: "/api/v1/user/login",
             type: "post",
             dataType: "json",
-            data: JSON.stringify({"account": account, "password": password, "remember": remember}),
-            headers: {'Content-Type': 'application/json'},
+            data: JSON.stringify({ "account": account, "password": password, "remember": remember }),
+            headers: { 'Content-Type': 'application/json' },
             success: function (res) {
                 if (res.status) {
                     window.location = "/home"
                 } else {
-                    $(".text-danger").text("");
+                    $(".text-danger").remove();
                     $(".checkbox").parent().before("<span class='text-danger'>用户名或密码错误</span>")
                 }
             }
@@ -68,8 +70,8 @@ function register() {
             url: "/api/v1/user/new",
             type: "post",
             dataType: "json",
-            data: JSON.stringify({"account": account, "password": password, "nickname": nickname, "email": email}),
-            headers: {"Content-Type": "application/json"},
+            data: JSON.stringify({ "account": account, "password": password, "nickname": nickname, "email": email }),
+            headers: { "Content-Type": "application/json" },
             success: function (res) {
                 if (res.status) {
                     window.location = "/home"

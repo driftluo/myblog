@@ -1,9 +1,13 @@
 <script id="tpl-user" type="text/html">
     {% raw %}
-    <div><label>账号：</label>{{ data.account }}</div>
-    <div><label>昵称：</label>{{ data.nickname }}</div>
-    <div><label>签名：</label>{{ data.say }}</div>
-    <div><label>Email：</label>{{ data.email }}</div>
-    <div><label>创建时间：</label>{{ data.create_time }}</div>
+    <h3>用户信息</h3>
+    <hr/>
+    <div><label>账号：</label><p style="display:inline;">{{ data.account }}<p></div>
+    <div><label>昵称：</label><p class="nickname" style="display:inline;">{{ data.nickname }}</p></div>
+    <div><label>签名：</label>
+        <p style="display:inline;" class="say">{{ data.say }}</p>
+    </div>
+    <div><label>Email：</label><p style="display:inline;" class="email">{{ data.email }}</p></div>
+    <div><label>创建时间：</label><p style="display:inline;">{{ data.create_time }}</p></div>
     {% endraw %}
 </script>

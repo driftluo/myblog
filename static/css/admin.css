@@ -250,3 +250,10 @@
     display: block;
     opacity: 1;
 }
+
+.post-meta {
+    color: #777;
+    font-size: 15px;
+    font-style: italic;
+    margin-top: 0;
+}

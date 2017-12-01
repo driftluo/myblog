@@ -4,19 +4,7 @@
 Home
 {% endblock title %}
 {% block css %}
-    <style>
-        .side-navbar {
-            background: rgba(217, 219, 252, 0.98);
-            /*background-color: #777777;*/
-            color: #fff;
-            border: hidden;
-        }
-        .body-information {
-            margin-top:100px;
-        }
-        #information {display: block;}
-        #sign_out {display: none;}
-    </style>
+<link href="/css/user.css" rel="stylesheet" />
 <script src="/js/arttemplate.js"></script>
 {% include "template/userinfo.html" %}
 {% endblock css %}
@@ -25,72 +13,77 @@ Home
 {% endblock header %}
 
 {% block body %}
-<div class="container col-sm-2 col-md-2 body-information">
-<nav class="navbar navbar-inverse side-navbar" id="sidebar-wrapper" role="navigation">
-    <ul class="nav sidebar-nav">
-        <li>
-            <a href="#"><i class="fa fa-fw fa-home"></i> Home</a>
-        </li>
-        <li>
-            <a id="information_btn"><i class="fa fa-fw fa-home"></i> Information</a>
-        </li>
-        <li>
-            <a id="sign_out_btn"><i class="fa fa-fw fa-home"></i> Sign out</a>
-        </li>
-    </ul>
-</nav>
-</div>
-<div class="container col-sm-8 col-md-8 body-information">
-    <div id="information">
-        <h3>用户信息</h3>
-        <hr/>
+<div class="container">
+    <div class="container col-sm-2 col-md-2 body-information">
+        <nav class="navbar navbar-inverse side-navbar" id="sidebar-wrapper" role="navigation">
+            <ul class="nav sidebar-nav">
+                <li>
+                    <a href="#"><i class="fa fa-fw fa-home"></i> Home</a>
+                </li>
+                <li>
+                    <a id="information_btn"><i class="fa fa-fw fa-home"></i> Information</a>
+                </li>
+                <li>
+                    <a id="modify_btn"><i class="fa fa-fw fa-home"></i> Modify</a>
+                </li>
+                <li>
+                    <a id="change_password_btn"><i class="fa fa-fw fa-home"></i> Change Password</a>
+                </li>
+                <li>
+                    <a id="sign_out_btn"><i class="fa fa-fw fa-home"></i> Sign out</a>
+                </li>
+            </ul>
+        </nav>
     </div>
-    <div id="sign_out">
-        <h3>确定退出？</h3>
-        <hr />
-        <button type="button" class="btn btn-warning">退出</button>
+    <div class="container col-sm-8 col-md-8 body-information">
+        <div id="information">
+
+        </div>
+        <div id="modify">
+            <h3>修改信息</h3>
+            <hr/>
+            <form>
+                <div class="form-group">
+                    <label>昵称:</label><input id="nickname" type="text" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>签名:</label><textarea id="say" class="form-control" rows="5"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Email:</label><input id="email" type="text" class="form-control">
+                </div>
+                <div class="form-group">
+                    <button type="button" class="btn btn-success pull-right">保存</button>
+                </div>
+            </form>
+        </div>
+        <div id="change_password">
+            <h3>修改密码</h3>
+            <hr/>
+            <form>
+                <div class="form-group">
+                    <label>旧密码:</label><input id="old_password" type="password" class="form-control" maxlength="20">
+                </div>
+                <div class="form-group">
+                    <label>新密码:</label><input id="new_password" type="password" class="form-control" maxlength="20">
+                </div>
+                <div class="form-group">
+                    <label>再次输入:</label><input id="re_password" type="password" class="form-control" maxlength="20">
+                </div>
+                <div class="form-group">
+                    <button type="button" class="btn btn-success pull-right">提交</button>
+                </div>
+            </form>
+        </div>
+        <div id="sign_out">
+            <h3>确定退出？</h3>
+            <hr/>
+            <button type="button" class="btn btn-warning">退出</button>
+        </div>
     </div>
 </div>
 {% endblock body%}
-
 {% block script %}
-<script>
-    $("#information_btn").click(function () {
-        $("#information").css("display", "block");
-        $("#sign_out").css("display", "none");
-    });
-    $("#sign_out_btn").click(function () {
-        $("#information").css("display", "none");
-        $("#sign_out").css("display", "block");
-    });
-
-    $(document).ready(function () {
-        getUserInfo();
-        }
-    );
-
-    $("#sign_out :button").click(function () {
-        $.ajax({
-            url: "/api/v1/user/sign_out",
-            type: "get",
-            dataType: "json",
-            data: JSON.stringify({}),
-            headers: {"Content-Type": "application/json"},
-            success: function (res) {
-                if (res.status) {
-                    window.location = "/index"
-                }
-            }
-        })
-    });
-
-    function getUserInfo() {
-        $.getJSON("/api/v1/user/view", function (result) {
-            result.data.create_time = moment.utc(result.data.create_time).local().format();
-            var html = template("tpl-user", result);
-            $("#information").append(html)
-        })
-    }
-</script>
-<script src="/js/customize/navigationBar.js"></script>
+<script src="/js/index/user.js"></script>
+<script src="/js/index/navigationBar.js"></script>
 {% endblock script%}

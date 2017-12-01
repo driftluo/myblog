@@ -1,8 +1,9 @@
-use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult };
-use sapper_std::{ PathParams, JsonParams, SessionVal };
+use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult, Error as SapperError };
+use sapper_std::{ QueryParams, PathParams, JsonParams, SessionVal };
 use serde_json;
+use uuid::Uuid;
 
-use super::super::{ NewTag, RelationTag, Tags, Relations, TagCount, Postgresql, Redis, admin_verification_cookie };
+use super::super::{ NewTag, Tags, TagCount, Postgresql, Redis, admin_verification_cookie };
 
 pub struct Tag;
 
@@ -18,31 +19,9 @@ impl Tag {
         }
     }
 
-    fn create_relation(req: &mut Request) -> SapperResult<Response> {
-        let body: RelationTag = get_json_params!(req);
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-
-        if body.insert(&pg_pool) {
-            res_json!(json!({"status": true}))
-        } else {
-            res_json!(json!({"status": false}))
-        }
-    }
-
-    fn delete_relation(req: &mut Request) -> SapperResult<Response> {
-        let body: Relations = get_json_params!(req);
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-
-        if body.delete_relation(&pg_pool) {
-            res_json!(json!({"status": true}))
-        } else {
-            res_json!(json!({"status": false}))
-        }
-    }
-
     fn delete_tag(req: &mut Request) -> SapperResult<Response> {
         let params = get_path_params!(req);
-        let id: i32 = t_param!(params, "id").clone().parse().unwrap();
+        let id: Uuid = t_param!(params, "id").clone().parse().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let res = match Tags::delete_tag(&pg_pool, id) {
             Ok(num_deleted) => {
@@ -62,8 +41,11 @@ impl Tag {
     }
 
     fn view_tag(req: &mut Request) -> SapperResult<Response> {
+        let params = get_query_params!(req);
+        let limit = t_param_parse!(params, "limit", i64);
+        let offset = t_param_parse!(params, "offset", i64);
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-        let res = match TagCount::view_tag_count(&pg_pool) {
+        let res = match TagCount::view_all_tag_count(&pg_pool, limit, offset) {
             Ok(data) => {
                 json!({
                     "status": true,
@@ -102,17 +84,17 @@ impl Tag {
 }
 
 impl SapperModule for Tag {
-    fn before(&self, req: &mut Request) -> SapperResult<Option<Response>> {
+    fn before(&self, req: &mut Request) -> SapperResult<()> {
         let cookie = req.ext().get::<SessionVal>();
         let redis_pool = req.ext().get::<Redis>().unwrap();
         match admin_verification_cookie(cookie, redis_pool) {
-            true => { Ok(None) }
+            true => { Ok(()) }
             false => {
                 let res = json!({
                     "status": false,
                     "error": String::from("Verification error")
                 });
-                res_json!(res, true)
+                Err(SapperError::CustomJson(res.to_string()))
             }
         }
     }
@@ -122,7 +104,7 @@ impl SapperModule for Tag {
     }
 
     fn router(&self, router: &mut SapperRouter) -> SapperResult<()> {
-        // http get :8888/tag/view
+        // http get :8888/tag/view limit==5 offset==0
         router.get("/tag/view", Tag::view_tag);
 
         // http post :8888/tag/new tag="Rust"
@@ -133,12 +115,6 @@ impl SapperModule for Tag {
 
         // http post :8888/tag/edit id:=2 tag="Linux&&Rust"
         router.post("/tag/edit", Tag::edit_tag);
-
-        // http post :8888/relation/new tag="Python" article_id:=1 tag_id:=
-        router.post("/relation/new", Tag::create_relation);
-
-        // http post :8888/relation/delete tag_id:=2  article_id:=1
-        router.post("/relation/delete", Tag::delete_relation);
         Ok(())
     }
 }

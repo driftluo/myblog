@@ -5,18 +5,20 @@ Blog List
 {% endblock title %}
 
 {% block css %}
-
+<script src="/js/arttemplate.js"></script>
+{% include "template/article_index.html" %}
 {% endblock css %}
 
 {% block header %}
 {% endblock header %}
 
 {% block body %}
-<div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+<div class="col-lg-10 col-lg-offset-1 col-md-10 col-md-offset-1" style="margin-top: 100px">
 </div>
 {% endblock body%}
 
 {% block script %}
-<script src="/js/customize/listLoad.js"></script>
-<script src="/js/customize/navigationBar.js"></script>
+<script src="/js/index/index_command.js"></script>
+<script src="/js/index/listLoad.js"></script>
+<script src="/js/index/navigationBar.js"></script>
 {% endblock script%}

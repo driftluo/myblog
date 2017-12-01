@@ -3,15 +3,15 @@ extern crate blog;
 extern crate sapper_std;
 
 use sapper::{ SapperApp, SapperAppShell, Request, Response, Result as SapperResult };
-use blog::{ AdminArticle, Visitor, AdminUser, User, Tag, Redis, create_redis_pool, create_pg_pool, Postgresql };
+use blog::{ AdminArticle, Visitor, AdminUser, User, Tag, Redis, create_redis_pool, create_pg_pool, Postgresql, ChartData };
 use std::sync::Arc;
 
 struct ApiApp;
 
 impl SapperAppShell for ApiApp {
-    fn before(&self, req: &mut Request) -> SapperResult<Option<Response>> {
-        sapper_std::init(req, "blog_session")?;
-        Ok(None)
+    fn before(&self, req: &mut Request) -> SapperResult<()> {
+        sapper_std::init(req, Some("blog_session"))?;
+        Ok(())
     }
 
     fn after(&self, req: &Request, res: &mut Response) -> SapperResult<()> {
@@ -39,6 +39,7 @@ fn main() {
         .add_module(Box::new(AdminArticle))
         .add_module(Box::new(Tag))
         .add_module(Box::new(AdminUser))
+        .add_module(Box::new(ChartData))
         .static_service(false);
 
     println!("Start listen on {}", "127.0.0.1:8888");

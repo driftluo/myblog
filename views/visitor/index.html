@@ -5,7 +5,8 @@ driftluo's blog
 {% endblock title %}
 
 {% block css %}
-
+<script src="/js/arttemplate.js"></script>
+{% include "template/article_index.html" %}
 {% endblock css %}
 
 {% block header %}
@@ -22,15 +23,19 @@ driftluo's blog
 <div class="container col-sm-12 col-md-4 col-xs-4">
     <ul>
         {% if tags %}
-            {% for tag in tags %}
-            <li data-id={{ tag.id }} class="list-unstyled"><button class="btn btn-primary" type="button">{{ tag.tag }}&nbsp;<span class="badge">{{ tag.count }}</span></button></li>
-            {% endfor %}
+        {% for tag in tags %}
+        <li data-id={{ tag.id }} class="list-unstyled">
+            <button class="btn btn-primary" type="button">{{ tag.tag }}&nbsp;<span class="badge">{{ tag.count }}</span>
+            </button>
+        </li>
+        {% endfor %}
         {% endif %}
     </ul>
 </div>
 {% endblock body %}
 
 {% block script %}
-<script src="/js/customize/index.js"></script>
-<script src="/js/customize/navigationBar.js"></script>
+<script src="/js/index/index_command.js"></script>
+<script src="/js/index/index.js"></script>
+<script src="/js/index/navigationBar.js"></script>
 {% endblock script%}

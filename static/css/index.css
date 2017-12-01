@@ -30,12 +30,21 @@
     margin-top: 0;
 }
 
-div.col-md-8 a {
+div.col-md-8 a, div.col-md-10 a {
     text-decoration: none;
     color: black;
 }
 
-div.col-md-8 a:hover {
+div.col-md-8 a:hover, div.col-md-10 a:hover {
     color: #337ab7;
     transition: color 0.25s ease-in-out;
+}
+
+button {
+    margin-top: 10px;
+    margin-left: 20px;
+}
+
+li[data-id] {
+    float: left;
 }

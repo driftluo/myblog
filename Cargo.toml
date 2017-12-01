@@ -16,11 +16,10 @@ authors = ["piaoliu <441594700@qq.com>"]
  redis = '^0.8.0'
  r2d2 = '^0.7.4'
  r2d2_redis = '^0.6.0'
- typemap = '^0.3.3'
  r2d2-diesel = '^0.16.0'
 
 [dependencies.diesel]
-features = ["postgres", "chrono"]
+features = ["postgres", "chrono", "uuid"]
 version = "^0.16.0"
 
 [dependencies.chrono]
@@ -30,8 +29,10 @@ version = "^0.4.0"
 [dependencies.diesel_codegen]
 features = ["postgres"]
 version = "^0.16.0"
+#[dependencies.diesel_infer_schema]
+#features = ["postgres"]
+#version = "^0.99.0"
 
-[patch.crates-io]
-sapper_std = { path='../sapper_std' }
-sapper = { path = '../sapper' }
-sapper_session = { path = '../sapper_session'}
+[dependencies.uuid]
+features = ["serde", "v4"]
+version = "^0.5.1"

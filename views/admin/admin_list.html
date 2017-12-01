@@ -6,11 +6,6 @@ Article List
 
 {% block css %}
 <script src="/js/arttemplate.js"></script>
-<style>
-    .fixed-bottom {
-        position: relative;
-    }
-</style>
 {% include "template/article_list.html" %}
 {% endblock css %}
 
@@ -21,12 +16,13 @@ Article List
         <span class="glyphicon glyphicon-plus"></span>
         New
     </button>
-    <br />
-    <hr />
+    <br/>
+    <hr/>
     <div class="container col-sm-12 col-md-12 col-xs-12">
         <table class="table table-striped">
             <thead>
             <tr>
+                <th>序号</th>
                 <th>文章名</th>
                 <th>状态</th>
                 <th>创建时间</th>
@@ -43,27 +39,40 @@ Article List
         <nav aria-label="Page navigation">
             <ul class="pagination">
 
-                    <li class="previous"><a href="#"><span aria-hidden="true">&larr;</span> Previous</a></li>
-                    <li class="next"><a href="#">Next <span aria-hidden="true">&rarr;</span></a></li>
+                <li class="previous">
+                    <button class="btn btn-default" id="previous" disabled><span aria-hidden="true">&larr;</span>
+                        Previous
+                    </button>
+                </li>
+                <li class="next">
+                    <button class="btn btn-default" id="next">Next <span aria-hidden="true">&rarr;</span></button>
+                </li>
 
             </ul>
         </nav>
     </div>
 </div>
+<div id="delete_modal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title">提示</h4>
+            </div>
+            <div class="modal-body">
+                <p>确认要删除吗？</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger modal-delete" data-dismiss="modal">Yes</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock body %}
 
 {% block script %}
-<script>
-    $(document).ready(function () {
-            getArticleList();
-        }
-    );
-    function getArticleList() {
-        var html = template("tpl-article-list", {data:[{"a":1},{"a":2},{"a":1},{"a":2},{"a":3},{"a":4}, {"a":1},{"a":2},{"a":3},{"a":4}]});
-        $("tbody").append(html)
-    }
-    $("button.pull-right").click(function () {
-        window.location= "/admin/new"
-    })
-</script>
+<script src="/js/admin/article_list.js"></script>
+<script src="/js/admin/page.js"></script>
 {% endblock script %}

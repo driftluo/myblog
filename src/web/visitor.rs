@@ -1,8 +1,9 @@
 use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult };
-use sapper_std::{ Context, render, SessionVal };
+use sapper_std::{ Context, render, SessionVal, PathParams };
+use uuid::Uuid;
 
-use super::super::{ TagCount, Postgresql, Redis, AdminSession, UserSession,
-                    user_verification_cookie, admin_verification_cookie };
+use super::super::{ TagCount, Postgresql, Redis, AdminSession, UserSession, ArticlesWithTag,
+                    user_verification_cookie, admin_verification_cookie, UserInfo };
 
 pub struct ArticleWeb;
 
@@ -43,11 +44,41 @@ impl ArticleWeb {
             &true => res_html!("visitor/user.html", web)
         }
     }
+
+    fn user(req: &mut Request) -> SapperResult<Response> {
+        let params = get_path_params!(req);
+        let article_id: Uuid = t_param!(params, "id").clone().parse().unwrap();
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+        let admin_cookies_status = req.ext().get::<AdminSession>().unwrap();
+        let mut web = Context::new();
+        web.add("admin", admin_cookies_status);
+        match UserInfo::view_user(&pg_pool, article_id) {
+            Ok(ref data) => web.add("user", data),
+            Err(err) => println!("{}", err)
+        };
+        res_html!("visitor/user_info.html", web)
+    }
+
+    fn article_view(req: &mut Request) -> SapperResult<Response> {
+        let params = get_path_params!(req);
+        let article_id: Uuid = t_param!(params, "id").clone().parse().unwrap();
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+        let admin_cookies_status = req.ext().get::<AdminSession>().unwrap();
+        let user_cookies_status = req.ext().get::<UserSession>().unwrap();
+        let mut web = Context::new();
+        web.add("admin", admin_cookies_status);
+        web.add("user", user_cookies_status);
+        match ArticlesWithTag::query_article(&pg_pool, article_id, false) {
+            Ok(ref data) => web.add("article", data),
+            Err(err) => println!("{}", err)
+        }
+        res_html!("visitor/article_view.html", web)
+    }
 }
 
 impl SapperModule for ArticleWeb {
     #[allow(unused_assignments)]
-    fn before(&self, req: &mut Request) -> SapperResult<Option<Response>> {
+    fn before(&self, req: &mut Request) -> SapperResult<()> {
         let mut user_status = false;
         let mut admin_status = false;
         {
@@ -59,7 +90,7 @@ impl SapperModule for ArticleWeb {
         req.ext_mut().insert::<UserSession>(user_status);
         req.ext_mut().insert::<AdminSession>(admin_status);
 
-        Ok(None)
+        Ok(())
     }
 
     fn after(&self, _req: &Request, _res: &mut Response) -> SapperResult<()> {
@@ -81,6 +112,10 @@ impl SapperModule for ArticleWeb {
 
         // http get /login
         router.get("/home", ArticleWeb::home);
+
+        router.get("/user/:id", ArticleWeb::user);
+
+        router.get("/article/:id", ArticleWeb::article_view);
 
         Ok(())
     }

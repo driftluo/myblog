@@ -12,4 +12,6 @@ pub use self::admin_user_api::AdminUser;
 pub use self::admin_tag_api::Tag;
 pub use self::admin_article_api::AdminArticle;
 
+pub mod admin_chart_data_api;
 
+pub use self::admin_chart_data_api::ChartData;

@@ -9,9 +9,9 @@ use std::sync::Arc;
 struct WebApp;
 
 impl SapperAppShell for WebApp {
-    fn before(&self, req: &mut Request) -> SapperResult<Option<Response>> {
-        sapper_std::init(req, "blog_session")?;
-        Ok(None)
+    fn before(&self, req: &mut Request) -> SapperResult<()> {
+        sapper_std::init(req, Some("blog_session"))?;
+        Ok(())
     }
 
     fn after(&self, req: &Request, res: &mut Response) -> SapperResult<()> {

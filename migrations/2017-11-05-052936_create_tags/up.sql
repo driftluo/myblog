@@ -1,14 +1,14 @@
 -- Your SQL goes here
 
 Create table tags (
-  id serial primary key,
+  id uuid primary key default gen_random_uuid(),
   tag varchar not null
 );
 
 Create table article_tag_relation (
-  id serial primary key,
-  tag_id integer not null references tags (id),
-  article_id integer not null references articles (id)
+  id uuid primary key default gen_random_uuid(),
+  tag_id uuid not null references tags (id),
+  article_id uuid not null references articles (id)
 );
 
  Create or replace view article_with_tag as

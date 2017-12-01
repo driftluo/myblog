@@ -1,0 +1,69 @@
+{% extends "visitor/base.html" %}
+
+{% block title %}
+{{ user.nickname }}
+{% endblock title %}
+{% block css %}
+<style>
+    .side-navbar {
+        background: rgba(217, 219, 252, 0.98);
+        color: #fff;
+        border: hidden;
+    }
+
+    .body-information {
+        margin-top: 100px;
+    }
+
+    a:hover {
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    #information {
+        display: block;
+    }
+</style>
+{% include "template/userinfo.html" %}
+{% endblock css %}
+
+{% block header %}
+{% endblock header %}
+
+{% block body %}
+<div class="container col-sm-2 col-md-2 body-information">
+    <nav class="navbar navbar-inverse side-navbar" id="sidebar-wrapper" role="navigation">
+        <ul class="nav sidebar-nav">
+            <li>
+                <a id="information_btn"><i class="fa fa-fw fa-home"></i> Information</a>
+            </li>
+        </ul>
+    </nav>
+</div>
+<div class="container col-sm-8 col-md-8 body-information">
+    <div id="information">
+        <h3>{{ user.nickname }}</h3>
+        <hr/>
+        <div><label>昵称：</label>{{ user.nickname }}</div>
+        <div><label>签名：</label>
+            <p style="display:inline;">{{ user.say }}</p>
+        </div>
+        <div><label>Email：</label>{{ user.email }}</div>
+        <div><label>创建时间：</label></div>
+    </div>
+</div>
+{% endblock body%}
+
+{% block script %}
+<script>
+    $(function () {
+        window.setTimeout(utc_to_local, 100);
+    });
+
+    function utc_to_local() {
+        var create_time = moment.utc("{{ user.create_time }}").local().format();
+        $("#information").children().last().append(create_time);
+    }
+</script>
+<script src="/js/index/navigationBar.js"></script>
+{% endblock script%}

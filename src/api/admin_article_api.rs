@@ -1,8 +1,9 @@
-use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult };
+use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult, Error as SapperError };
 use sapper_std::{ PathParams, QueryParams, JsonParams, SessionVal };
 use serde_json;
+use uuid::Uuid;
 
-use super::super::{ NewArticle, Articles, Postgresql, EditArticle, Redis,
+use super::super::{ NewArticle, ArticlesWithTag, Postgresql, EditArticle, Redis,
                     ArticleList, ModifyPublish, admin_verification_cookie };
 
 pub struct AdminArticle;
@@ -21,10 +22,10 @@ impl AdminArticle {
 
     fn delete_article(req: &mut Request) -> SapperResult<Response> {
         let params = get_path_params!(req);
-        let article_id: i32 = t_param!(params, "id").clone().parse().unwrap();
+        let article_id: Uuid = t_param!(params, "id").clone().parse().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        let res = match Articles::delete_with_id(&pg_pool, article_id) {
+        let res = match ArticlesWithTag::delete_with_id(&pg_pool, article_id) {
             Ok(num_deleted) => {
                 json!({
                     "status": true,
@@ -43,10 +44,32 @@ impl AdminArticle {
 
     fn admin_view_article(req: &mut Request) -> SapperResult<Response> {
         let params = get_query_params!(req);
-        let article_id = t_param_parse!(params, "id", i32);
+        let article_id = t_param_parse!(params, "id", Uuid);
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        let res = match Articles::query_article(&pg_pool, article_id, true) {
+        let res = match ArticlesWithTag::query_article(&pg_pool, article_id, true) {
+            Ok(data) => {
+                json!({
+                    "status": true,
+                    "data": data
+                })
+            }
+            Err(err) => {
+                json!({
+                    "status": false,
+                    "error": err
+                })
+            }
+        };
+        res_json!(res)
+    }
+
+    fn admin_view_raw_article(req: &mut Request) -> SapperResult<Response> {
+        let params = get_query_params!(req);
+        let article_id = t_param_parse!(params, "id", Uuid);
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+
+        let res = match ArticlesWithTag::query_raw_article(&pg_pool, article_id) {
             Ok(data) => {
                 json!({
                     "status": true,
@@ -91,7 +114,7 @@ impl AdminArticle {
 
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        let res = match Articles::edit_article(&pg_pool, body) {
+        let res = match body.edit_article(&pg_pool) {
             Ok(num_update) => {
                 json!({
                     "status": true,
@@ -114,7 +137,7 @@ impl AdminArticle {
 
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        let res = match Articles::publish_article(&pg_pool, body) {
+        let res = match ArticlesWithTag::publish_article(&pg_pool, body) {
             Ok(num_update) => {
                 json!({
                     "status": true,
@@ -133,17 +156,17 @@ impl AdminArticle {
 }
 
 impl SapperModule for AdminArticle {
-    fn before(&self, req: &mut Request) -> SapperResult<Option<Response>> {
+    fn before(&self, req: &mut Request) -> SapperResult<()> {
         let cookie = req.ext().get::<SessionVal>();
         let redis_pool = req.ext().get::<Redis>().unwrap();
         match admin_verification_cookie(cookie, redis_pool) {
-            true => { Ok(None) }
+            true => { Ok(()) }
             false => {
                 let res = json!({
                     "status": false,
                     "error": String::from("Verification error")
                 });
-                res_json!(res, true)
+                Err(SapperError::CustomJson(res.to_string()))
             }
         }
     }
@@ -156,7 +179,9 @@ impl SapperModule for AdminArticle {
         // http get /article/admin/view id==4
         router.get("/article/admin/view", AdminArticle::admin_view_article);
 
-        // http get /article/admin/view_all limit==5
+        router.get("/article/admin/view_raw", AdminArticle::admin_view_raw_article);
+
+        // http get /article/admin/view_all limit==5 offset==0
         router.get("/article/admin/view_all", AdminArticle::admin_list_all_article);
 
         // http post /article/new title=something raw_content=something
