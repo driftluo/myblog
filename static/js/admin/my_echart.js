@@ -71,6 +71,18 @@ $(function () {
                     type: 'cross'
                 }
             },
+            dataZoom: [
+                {
+                    type: 'slider',    //支持鼠标滚轮缩放
+                    start: 0,            //默认数据初始缩放范围为10%到90%
+                    end: 100
+                },
+                {
+                    type: 'inside',    //支持单独的滑动条缩放
+                    start: 0,            //默认数据初始缩放范围为10%到90%
+                    end: 100
+                }
+            ],
             legend: {
                 left: 'left',
                 data: ['发布量']
@@ -81,6 +93,8 @@ $(function () {
             yAxis: {},
             series: [{
                 name: '发布量',
+                symbol:'emptycircle',
+                smooth:true,
                 type: 'line',
                 data: xdata
             }]

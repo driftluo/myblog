@@ -265,7 +265,7 @@ pub struct PublishedStatistics {
 
 impl PublishedStatistics {
     pub fn statistics_published_frequency_by_month(conn: &PgConnection) -> Result<Vec<Self>, String> {
-        let raw_sql = "select to_char(create_time, 'yyyy-mm') as dimension, count(*) as quantity from articles group by dimension;";
+        let raw_sql = "select to_char(create_time, 'yyyy-mm') as dimension, count(*) as quantity from articles group by dimension order by dimension;";
         let query = sql::<(diesel::types::Text, diesel::types::BigInt)>(raw_sql);
         let res = query.load::<Self>(conn);
         match res {
