@@ -3,7 +3,7 @@ use sapper_std::{ Context, render, SessionVal, PathParams };
 use uuid::Uuid;
 
 use super::super::{ TagCount, Postgresql, Redis, AdminSession, UserSession, ArticlesWithTag,
-                    user_verification_cookie, admin_verification_cookie, UserInfo };
+                    user_verification_cookie, admin_verification_cookie, UserInfo, visitor_log };
 
 pub struct ArticleWeb;
 
@@ -93,7 +93,9 @@ impl SapperModule for ArticleWeb {
         Ok(())
     }
 
-    fn after(&self, _req: &Request, _res: &mut Response) -> SapperResult<()> {
+    fn after(&self, req: &Request, _res: &mut Response) -> SapperResult<()> {
+        let redis_pool = req.ext().get::<Redis>().unwrap();
+        visitor_log(req, redis_pool);
         Ok(())
     }
 

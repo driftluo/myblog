@@ -30,11 +30,11 @@ $(function () {
             color: ['red', 'blue', 'yellow', 'black', 'purple', 'pink', 'orange'],
             itemStyle: {
                 normal: {
-                    shadowBlur: 200,
+                    shadowBlur: 50,
                     shadowColor: 'rgba(0, 0, 0, 0.5)'
                 },
                 emphasis: {
-                    shadowBlur: 200,
+                    shadowBlur: 50,
                     shadowColor: 'rgba(0, 0, 0, 0.5)'
                 }
             },

@@ -9,7 +9,7 @@ use tiny_keccak::Keccak;
 use std::fmt::Write;
 use comrak::{ markdown_to_html, ComrakOptions };
 use std::sync::Arc;
-use sapper::Key;
+use sapper::{ Key, Request };
 
 /// Get random value
 #[inline]
@@ -76,6 +76,12 @@ pub fn user_verification_cookie(cookie: Option<&String>, redis_pool: &Arc<RedisP
             false
         }
     }
+}
+
+#[inline]
+pub fn visitor_log(req: &Request, redis_pool: &Arc<RedisPool>) {
+    let ip = req.remote_addr();
+    redis_pool.lua_push("visitor_log", &ip.ip().to_string());
 }
 
 pub struct UserSession;

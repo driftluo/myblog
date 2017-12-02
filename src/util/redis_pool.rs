@@ -8,20 +8,27 @@ use dotenv;
 use r2d2::Pool;
 use sapper::Key;
 use r2d2_redis::RedisConnectionManager;
+use std::fs::File;
+use std::io::Read;
 
 pub struct RedisPool {
-    pool: Pool<RedisConnectionManager>
+    pool: Pool<RedisConnectionManager>,
+    script: redis::Script
 }
 
 impl RedisPool {
-    pub fn new<T>(address: T) -> Self
+    pub fn new<T>(address: T, path: &str) -> Self
         where T: redis::IntoConnectionInfo
     {
         let config = Default::default();
         let manager = RedisConnectionManager::new(address).unwrap();
         let pool = r2d2::Pool::new(config, manager).unwrap();
+        let mut file = File::open(path).unwrap();
+        let mut lua = String::new();
+        file.read_to_string(&mut lua).unwrap();
         RedisPool {
-            pool
+            pool,
+            script: redis::Script::new(&lua)
         }
     }
 
@@ -101,13 +108,17 @@ impl RedisPool {
     fn with_conn<F: FnOnce(&redis::Connection)>(&self, command: F) {
         command(&*self.pool.get().unwrap());
     }
+
+    pub fn lua_push(&self, redis_key: &str, ip: &str) -> bool {
+        self.script.arg(redis_key).arg(ip).invoke::<bool>(&*self.pool.get().unwrap()).unwrap()
+    }
 }
 
 pub fn create_redis_pool() -> RedisPool {
     dotenv::dotenv().ok();
 
     let database_url = env::var("REDIS_URL").expect("DATABASE_URL must be set");
-    RedisPool::new(database_url.as_str())
+    RedisPool::new(database_url.as_str(), "lua/visitor_log.lua")
 }
 
 pub struct Redis;
