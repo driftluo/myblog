@@ -38,9 +38,9 @@ pub(crate) use models::{ NewTag, Tags, TagCount };
 pub(crate) use models::{ Comments, NewComments, DeleteComment };
 pub(crate) use util::{ sha3_256_encode, random_string, markdown_render, get_password,
                        admin_verification_cookie, user_verification_cookie, UserSession, AdminSession };
+pub(crate) use util::visitor_log;
 pub use util::{ create_redis_pool, RedisPool, Redis };
 pub use util::{ create_pg_pool, Postgresql };
-pub use util::visitor_log;
 pub use api::Visitor;
 pub use api::User;
 pub use api::AdminArticle;

@@ -1,5 +1,5 @@
 use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult, Error as SapperError };
-use sapper_std::{ SessionVal };
+use sapper_std::{ SessionVal, QueryParams };
 
 use super::super::{ PublishedStatistics, Redis, Postgresql, admin_verification_cookie };
 
@@ -22,6 +22,18 @@ impl ChartData {
                 })
             }
         };
+        res_json!(res)
+    }
+
+    fn get_ip_chart(req: &mut Request) -> SapperResult<Response> {
+        let params = get_query_params!(req);
+        let limit = t_param_parse!(params, "limit", i64);
+        let offset = t_param_parse!(params, "offset", i64);
+        let redis_pool = req.ext().get::<Redis>().unwrap();
+        let res = json!({
+                "status": true,
+                "data": redis_pool.lrange::<Vec<String>>("visitor_log", 0 + offset, 0 + offset + limit - 1)
+        });
         res_json!(res)
     }
 }
@@ -48,6 +60,8 @@ impl SapperModule for ChartData {
 
     fn router(&self, router: &mut SapperRouter) -> SapperResult<()> {
         router.get("/article/month", ChartData::publish_by_month);
+
+        router.get("/ip/view", ChartData::get_ip_chart);
 
         Ok(())
     }

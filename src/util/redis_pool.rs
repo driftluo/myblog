@@ -91,14 +91,14 @@ impl RedisPool {
         redis::cmd("llen").arg(redis_key).query(&*self.pool.get().unwrap()).unwrap()
     }
 
-    pub fn ltrim(&self, redis_key: &str, start: i32, stop: i32)
+    pub fn ltrim(&self, redis_key: &str, start: i64, stop: i64)
     {
         let a = | conn: &redis::Connection | redis::cmd("ltrim").arg(redis_key)
             .arg(start).arg(stop).execute(conn);
         self.with_conn(a)
     }
 
-    pub fn lrange<T>(&self, redis_key: &str, start: i32, stop: i32) -> T
+    pub fn lrange<T>(&self, redis_key: &str, start: i64, stop: i64) -> T
         where T: redis::FromRedisValue
     {
         redis::cmd("lrange").arg(redis_key).arg(start).arg(stop)
