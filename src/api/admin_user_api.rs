@@ -3,7 +3,7 @@ use serde_json;
 use sapper_std::{ QueryParams, JsonParams, PathParams, SessionVal };
 use uuid::Uuid;
 
-use super::super::{ Users, UserInfo, Postgresql, Redis, ChangePermission, admin_verification_cookie };
+use super::super::{ Users, UserInfo, Postgresql, Redis, ChangePermission, admin_verification_cookie, DisabledUser };
 
 pub struct AdminUser;
 
@@ -71,6 +71,26 @@ impl AdminUser {
         };
         res_json!(res)
     }
+
+    fn change_disabled(req: &mut Request) -> SapperResult<Response> {
+        let body: DisabledUser = get_json_params!(req);
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+        let res = match Users::disabled_user(&pg_pool, body) {
+            Ok(num_update) => {
+                json!({
+                    "status": true,
+                    "num_update": num_update
+                })
+            }
+            Err(err) => {
+                json!({
+                    "status": false,
+                    "error": format!("{}", err)
+                })
+            }
+        };
+        res_json!(res)
+    }
 }
 
 impl SapperModule for AdminUser {
@@ -97,11 +117,14 @@ impl SapperModule for AdminUser {
         // http get /user/view_all limit==5 offset==0
         router.get("/user/view_all", AdminUser::view_user_list);
 
-        // http post :8888/user/delete/2
+        // http post :8888/user/delete/uuid
         router.post("/user/delete/:id", AdminUser::delete_user);
 
-        // http post :8888/user/permission id:=1 permission:=0
+        // http post :8888/user/permission id:=uuid permission:=0
         router.post("/user/permission", AdminUser::change_permission);
+
+        // http post :8888/user/permission id:=uuid disabled:=1
+        router.post("/user/disable", AdminUser::change_disabled);
 
         Ok(())
     }

@@ -33,7 +33,7 @@ pub mod web;
 
 pub(crate) use schema::{ articles, users, article_with_tag, tags, article_tag_relation, comments };
 pub(crate) use models::{ NewArticle, ArticlesWithTag, ArticleList, ModifyPublish, EditArticle, PublishedStatistics };
-pub(crate) use models::{ UserInfo, Users, NewUser, ChangePassword, RegisteredUser, EditUser, LoginUser, ChangePermission };
+pub(crate) use models::{ UserInfo, Users, NewUser, ChangePassword, RegisteredUser, EditUser, LoginUser, ChangePermission, DisabledUser };
 pub(crate) use models::{ NewTag, Tags, TagCount };
 pub(crate) use models::{ Comments, NewComments, DeleteComment };
 pub(crate) use util::{ sha3_256_encode, random_string, markdown_render, get_password,

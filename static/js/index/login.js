@@ -17,11 +17,13 @@ $().ready(function () {
 $("#register_btn").click(function () {
     $("#register_form").css("display", "block");
     $("#login_form").css("display", "none");
+    $("input[type!='button']").val("");
     $("#account").focus();
 });
 $("#back_btn").click(function () {
     $("#register_form").css("display", "none");
     $("#login_form").css("display", "block");
+    $("input[type!='button']").val("");
     $("#login_account").focus();
 });
 
@@ -53,7 +55,11 @@ function login() {
                     window.location = "/home"
                 } else {
                     $(".text-danger").remove();
-                    $(".checkbox").parent().before("<span class='text-danger'>用户名或密码错误</span>")
+                    if (res.error === "NotFound") {
+                        $(".checkbox").parent().before("<span class='text-danger'>用户被锁定或未创建</span>")
+                    } else {
+                        $(".checkbox").parent().before("<span class='text-danger'>用户名或密码错误</span>")
+                    }
                 }
             }
         })
@@ -75,6 +81,9 @@ function register() {
             success: function (res) {
                 if (res.status) {
                     window.location = "/home"
+                } else {
+                    $(".text-danger").remove();
+                    $("#sign_btn").parent().before("<span class='text-danger'>用户已创建</span>")
                 }
             }
         })
