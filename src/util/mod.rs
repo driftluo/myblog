@@ -80,8 +80,8 @@ pub fn user_verification_cookie(cookie: Option<&String>, redis_pool: &Arc<RedisP
 
 #[inline]
 pub fn visitor_log(req: &Request, redis_pool: &Arc<RedisPool>) {
-    let ip = req.remote_addr();
-    redis_pool.lua_push("visitor_log", &ip.ip().to_string());
+    let ip = String::from_utf8(req.headers().get_raw("X-Real-IP").unwrap()[0].as_slice().to_vec()).unwrap();
+    redis_pool.lua_push("visitor_log", &ip);
 }
 
 pub struct UserSession;
