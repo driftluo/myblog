@@ -62,6 +62,11 @@ impl Admin {
         let web = Context::new();
         res_html!("admin/users.html", web)
     }
+
+    fn visitor_ip_log(_req: &mut Request) -> SapperResult<Response> {
+        let web = Context::new();
+        res_html!("admin/ip.html", web)
+    }
 }
 
 impl SapperModule for Admin {
@@ -100,6 +105,8 @@ impl SapperModule for Admin {
         router.get("/admin/tags", Admin::tags);
 
         router.get("/admin/users", Admin::users);
+
+        router.get("/admin/ip", Admin::visitor_ip_log);
 
         Ok(())
     }

@@ -21,6 +21,7 @@ pub struct Users {
     pub nickname: String,
     pub say: Option<String>,
     pub email: String,
+    pub disabled: i16,
     pub create_time: NaiveDateTime
 }
 
@@ -53,6 +54,16 @@ impl Users {
             say: self.say,
             email: self.email,
             create_time: self.create_time
+        }
+    }
+
+    pub fn disabled_user(conn: &PgConnection, data: DisabledUser) -> Result<usize, String> {
+        let res = diesel::update(all_users.filter(users::id.eq(data.id)))
+            .set(users::disabled.eq(data.disabled))
+            .execute(conn);
+        match res {
+            Ok(data) => Ok(data),
+            Err(err) => Err(format!("{}", err))
         }
     }
 }
@@ -237,7 +248,7 @@ pub struct LoginUser {
 
 impl LoginUser {
     pub fn verification(&self, conn: &PgConnection, redis_pool: &Arc<RedisPool>, max_age: &Option<i64>) -> Result<String, String> {
-        let res = all_users.filter(users::account.eq(self.account.to_owned())).get_result::<Users>(conn);
+        let res = all_users.filter(users::disabled.eq(0)).filter(users::account.eq(self.account.to_owned())).get_result::<Users>(conn);
         match res {
             Ok(data) => {
                 if data.password == sha3_256_encode(get_password(&self.password) + &data.salt) {
@@ -286,4 +297,10 @@ impl LoginUser {
 
         redis_pool.del(&redis_key)
     }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct DisabledUser {
+    id: Uuid,
+    disabled: i16
 }

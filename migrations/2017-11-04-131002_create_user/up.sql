@@ -9,6 +9,7 @@ Create table users (
   nickname VARCHAR NOT NULL,
   say VARCHAR,
   email character varying(128) UNIQUE NOT NULL,
+  disabled smallint not null default 0,
   create_time timestamp NOT NULL default current_timestamp
 );
 

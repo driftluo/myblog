@@ -13,6 +13,8 @@
     <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet"/>
     <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     <link href="/css/index.css" rel="stylesheet"/>
+    <link href="http://at.alicdn.com/t/font_492194_3ot3r19j8yjbgldi.css" rel="stylesheet" />
+    <link href="http://at.alicdn.com/t/font_492194_nlr9fntm97djkyb9.css" rel="stylesheet"/>
     {% block css %}{% endblock css %}
 </head>
 <body>
@@ -30,7 +32,7 @@
                 <span class="icon-bar"></span>
             </button>
             <div class="navbar-header">
-                <a class="navbar-brand" href="/index">Blog</a>
+                <a class="navbar-brand" href="/index"><span class="glyphicon glyphicon-home"></span> Blog</a>
             </div>
         </div>
         <div id="navbar" class="navbar-collapse collapse">
@@ -38,11 +40,11 @@
                 <div>
                     <ul class="nav navbar-nav navbar-right">
                         {% if admin %}
-                        <li><a href="/admin">Admin</a></li>
+                        <li><a href="/admin"><i class="iconfont icon-administrator" ></i> Admin</a></li>
                         {% endif %}
-                        <li><a href="/home">Home</a></li>
-                        <li><a href="/list">Blog List</a></li>
-                        <li><a href="/about">About</a></li>
+                        <li><a href="/home"><span class="glyphicon glyphicon-user"></span> Home</a></li>
+                        <li><a href="/list"><span class="glyphicon glyphicon-book"></span> Blog List</a></li>
+                        <li><a href="/about"><i class="iconfont icon-about" ></i> About</a></li>
                     </ul>
                 </div>
             </div>
