@@ -9,7 +9,7 @@ function get_ip() {
             $("#next").attr({ "disabled": "disabled" });
         }
         for (var i in result.data) {
-            $.getJSON("http://www.freegeoip.net/json/" + result.data[i], function (res) {
+            $.getJSON("//www.freegeoip.net/json/" + result.data[i], function (res) {
                 var html = template("tpl-ip", res);
                 $("tbody").append(html);
             })
