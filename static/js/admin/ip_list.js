@@ -8,10 +8,19 @@ function get_ip() {
         if (result.data.length < 10) {
             $("#next").attr({ "disabled": "disabled" });
         }
-        for (var i in result.data) {
-            $.getJSON("http://www.freegeoip.net/json/" + result.data[i], function (res) {
-                var html = template("tpl-ip", res);
-                $("tbody").append(html);
+
+        for(var i = 0; i < result.data.length; i++){
+            var data = JSON.parse(result.data[i]);
+            data.timestamp = moment.utc(data.timestamp).local().format();
+            var html = template("tpl-ip", data);
+            $("tbody").append(html);
+            result.data[i] = data;
+        }
+
+        for (var i = 0; i < result.data.length; i++) {
+            $.getJSON("//www.freegeoip.net/json/" + result.data[i].ip, function (res) {
+                $(".region[data-ip='" + res.ip+ "']").text(res.region_name);
+                $(".country[data-ip='" + res.ip+ "']").text(res.country_name);
             })
         }
     })

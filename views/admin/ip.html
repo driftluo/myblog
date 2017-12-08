@@ -20,6 +20,7 @@ Ip
                 <th>IP</th>
                 <th>地区</th>
                 <th>国家</th>
+                <th>时间</th>
             </tr>
             </thead>
             <tbody>
@@ -52,8 +53,9 @@ Ip
     {% raw %}
     <tr>
         <td><p>{{ ip }}</p></td>
-        <td>{{ region_name }}</td>
-        <td>{{ country_name }}</td>
+        <td class="region" data-ip={{ ip }}></td>
+        <td class="country" data-ip={{ ip }}></td>
+        <td>{{ timestamp }}</td>
     </tr>
     {% endraw %}
 </script>

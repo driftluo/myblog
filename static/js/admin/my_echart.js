@@ -2,7 +2,6 @@
 
 $(function () {
     $.getJSON("/api/v1/tag/view?limit=50&&offset=0", function (result) {
-        console.log(result);
         var data = [];
         var data_tag = [];
         for (var i in result.data) {

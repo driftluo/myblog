@@ -40,6 +40,29 @@ $ diesel migration run
 ### [Nginx](http://nginx.org/en/download.html)
 nginx has been used in the development of the time
 
+##### config:
+```
+server {
+        listen       8880;
+        server_name  127.0.0.1;
+
+        location / {
+            proxy_pass http://127.0.0.1:8080;
+            proxy_redirect off;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+
+        location /api/v1/ {
+            proxy_pass http://127.0.0.1:8888/;
+            proxy_redirect off;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+```
+
 ### blog
 ```
 $ cargo run --bin blog_web // listen on 127.0.0.1:8080
