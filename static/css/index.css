@@ -30,12 +30,12 @@
     margin-top: 0;
 }
 
-div.col-md-8 a {
+div.col-md-8 a, div.list a {
     text-decoration: none;
     color: black;
 }
 
-div.col-md-8 a:hover, div.col-md-10 a:hover {
+div.col-md-8 a:hover, div.list a:hover {
     color: #337ab7;
     transition: color 0.25s ease-in-out;
 }

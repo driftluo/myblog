@@ -21,7 +21,7 @@ impl SapperAppShell for WebApp {
 }
 
 fn main() {
-    let redis_pool = Arc::new(create_redis_pool());
+    let redis_pool = Arc::new(create_redis_pool(Some("lua/visitor_log.lua")));
     let pg_pool = create_pg_pool();
     let mut app = SapperApp::new();
     app.address("127.0.0.1")

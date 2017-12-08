@@ -10,6 +10,7 @@ use std::fmt::Write;
 use comrak::{ markdown_to_html, ComrakOptions };
 use std::sync::Arc;
 use sapper::{ Key, Request };
+use chrono::Utc;
 
 /// Get random value
 #[inline]
@@ -81,7 +82,8 @@ pub fn user_verification_cookie(cookie: Option<&String>, redis_pool: &Arc<RedisP
 #[inline]
 pub fn visitor_log(req: &Request, redis_pool: &Arc<RedisPool>) {
     let ip = String::from_utf8(req.headers().get_raw("X-Real-IP").unwrap()[0].as_slice().to_vec()).unwrap();
-    redis_pool.lua_push("visitor_log", &ip);
+    let timestamp = Utc::now();
+    redis_pool.lua_push("visitor_log", &json!({"ip": &ip, "timestamp": &timestamp}).to_string());
 }
 
 pub struct UserSession;
