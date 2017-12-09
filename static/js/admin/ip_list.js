@@ -4,21 +4,23 @@ $(function () {
 });
 
 function get_ip() {
-    $.getJSON("/api/v1/ip/view?limit=10&offset=" + page.page * 10, function (result) {
+    $.getJSON("/api/v1/ip/view?limit=25&offset=" + page.page * 25, function (result) {
         if (result.data.length < 10) {
             $("#next").attr({ "disabled": "disabled" });
         }
-
+        var ip_unique, ip_list = [];
         for(var i = 0; i < result.data.length; i++){
             var data = JSON.parse(result.data[i]);
             data.timestamp = moment.utc(data.timestamp).local().format();
             var html = template("tpl-ip", data);
             $("tbody").append(html);
-            result.data[i] = data;
+            ip_list.push(data.ip)
         }
 
-        for (var i = 0; i < result.data.length; i++) {
-            $.getJSON("//www.freegeoip.net/json/" + result.data[i].ip, function (res) {
+        ip_unique = ip_list.filter(function (element,index,self) { return self.indexOf(element) === index; });
+
+        for (var i = 0; i < ip_unique.length; i++) {
+            $.getJSON("//www.freegeoip.net/json/" + ip_unique[i], function (res) {
                 $(".region[data-ip='" + res.ip+ "']").text(res.region_name);
                 $(".country[data-ip='" + res.ip+ "']").text(res.country_name);
             })
