@@ -109,7 +109,7 @@ impl ArticleList {
     }
 
     pub fn query_with_tag(conn: &PgConnection, tag_id: Uuid) -> Result<Vec<ArticleList>, String> {
-        let raw_sql = format!("select id, title, published, create_time, modify_time from article_with_tag where ('{}' = any(tags_id)) order by create_time desc", tag_id);
+        let raw_sql = format!("select id, title, published, create_time, modify_time from article_with_tag where ('{}' = any(tags_id)) and published = true order by create_time desc", tag_id);
         let query = sql::<(diesel::types::Uuid, diesel::types::Text, diesel::types::Bool, diesel::types::Timestamp, diesel::types::Timestamp)>(&raw_sql);
         let res = query.load::<Self>(conn);
         match res {

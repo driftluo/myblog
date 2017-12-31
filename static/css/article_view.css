@@ -29,3 +29,6 @@ pre {
 div.reply {
     margin-left: 20px;
 }
+body blockquote {
+    font-size: 14px;
+}
