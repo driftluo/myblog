@@ -1,9 +1,9 @@
-use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult };
-use sapper_std::{ Context, render, SessionVal, PathParams };
+use sapper::{Request, Response, Result as SapperResult, SapperModule, SapperRouter};
+use sapper_std::{render, Context, PathParams, SessionVal};
 use uuid::Uuid;
 
-use super::super::{ TagCount, Postgresql, Redis, AdminSession, UserSession, ArticlesWithTag,
-                    user_verification_cookie, admin_verification_cookie, UserInfo, visitor_log };
+use super::super::{admin_verification_cookie, user_verification_cookie, visitor_log, AdminSession,
+                   ArticlesWithTag, Postgresql, Redis, TagCount, UserInfo, UserSession};
 
 pub struct ArticleWeb;
 
@@ -13,7 +13,7 @@ impl ArticleWeb {
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         match TagCount::view_tag_count(&pg_pool) {
             Ok(data) => web.add("tags", &data),
-            Err(err) => println!("No tags, {}", err)
+            Err(err) => println!("No tags, {}", err),
         }
         let admin_cookies_status = req.ext().get::<AdminSession>().unwrap();
         web.add("admin", admin_cookies_status);
@@ -40,8 +40,8 @@ impl ArticleWeb {
         let admin_cookies_status = req.ext().get::<AdminSession>().unwrap();
         web.add("admin", admin_cookies_status);
         match user_cookies_status {
-           &false => res_html!("visitor/login.html", web),
-            &true => res_html!("visitor/user.html", web)
+            &false => res_html!("visitor/login.html", web),
+            &true => res_html!("visitor/user.html", web),
         }
     }
 
@@ -54,7 +54,7 @@ impl ArticleWeb {
         web.add("admin", admin_cookies_status);
         match UserInfo::view_user(&pg_pool, article_id) {
             Ok(ref data) => web.add("user", data),
-            Err(err) => println!("{}", err)
+            Err(err) => println!("{}", err),
         };
         res_html!("visitor/user_info.html", web)
     }
@@ -70,7 +70,7 @@ impl ArticleWeb {
         web.add("user", user_cookies_status);
         match ArticlesWithTag::query_article(&pg_pool, article_id, false) {
             Ok(ref data) => web.add("article", data),
-            Err(err) => println!("{}", err)
+            Err(err) => println!("{}", err),
         }
         res_html!("visitor/article_view.html", web)
     }

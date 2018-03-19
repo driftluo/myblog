@@ -1,9 +1,10 @@
-extern crate sapper;
 extern crate blog;
+extern crate sapper;
 extern crate sapper_std;
 
-use sapper::{ SapperApp, SapperAppShell, Request, Response, Result as SapperResult };
-use blog::{ AdminArticle, Visitor, AdminUser, User, Tag, Redis, create_redis_pool, create_pg_pool, Postgresql, ChartData };
+use sapper::{Request, Response, Result as SapperResult, SapperApp, SapperAppShell};
+use blog::{create_pg_pool, create_redis_pool, AdminArticle, AdminUser, ChartData, Postgresql,
+           Redis, Tag, User, Visitor};
 use std::sync::Arc;
 
 struct ApiApp;
@@ -26,13 +27,11 @@ fn main() {
     let mut app = SapperApp::new();
     app.address("127.0.0.1")
         .port(8888)
-        .init_global(
-        Box::new(move |req: &mut Request| {
-                req.ext_mut().insert::<Redis>(redis_pool.clone());
-                req.ext_mut().insert::<Postgresql>(pg_pool.clone());
-                Ok(())
-            })
-        )
+        .init_global(Box::new(move |req: &mut Request| {
+            req.ext_mut().insert::<Redis>(redis_pool.clone());
+            req.ext_mut().insert::<Postgresql>(pg_pool.clone());
+            Ok(())
+        }))
         .with_shell(Box::new(ApiApp))
         .add_module(Box::new(Visitor))
         .add_module(Box::new(User))

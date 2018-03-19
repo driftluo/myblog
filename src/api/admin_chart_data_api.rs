@@ -1,7 +1,8 @@
-use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult, Error as SapperError };
-use sapper_std::{ SessionVal, QueryParams };
+use sapper::{Error as SapperError, Request, Response, Result as SapperResult, SapperModule,
+             SapperRouter};
+use sapper_std::{QueryParams, SessionVal};
 
-use super::super::{ PublishedStatistics, Redis, Postgresql, admin_verification_cookie };
+use super::super::{admin_verification_cookie, Postgresql, PublishedStatistics, Redis};
 
 pub struct ChartData;
 
@@ -9,18 +10,14 @@ impl ChartData {
     fn publish_by_month(req: &mut Request) -> SapperResult<Response> {
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let res = match PublishedStatistics::statistics_published_frequency_by_month(&pg_pool) {
-            Ok(data) => {
-                json!({
+            Ok(data) => json!({
                     "status": true,
                     "data": data
-                })
-            }
-            Err(err) => {
-                json!({
+                }),
+            Err(err) => json!({
                     "status": false,
                     "error": err
-                })
-            }
+                }),
         };
         res_json!(res)
     }
@@ -43,7 +40,7 @@ impl SapperModule for ChartData {
         let cookie = req.ext().get::<SessionVal>();
         let redis_pool = req.ext().get::<Redis>().unwrap();
         match admin_verification_cookie(cookie, redis_pool) {
-            true => { Ok(()) }
+            true => Ok(()),
             false => {
                 let res = json!({
                     "status": false,

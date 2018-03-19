@@ -1,11 +1,12 @@
-use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult };
-use sapper_std::{ QueryParams, PathParams, JsonParams, set_cookie, SessionVal };
+use sapper::{Request, Response, Result as SapperResult, SapperModule, SapperRouter};
+use sapper_std::{set_cookie, JsonParams, PathParams, QueryParams, SessionVal};
 use sapper::header::ContentType;
 use serde_json;
 
-use super::super::{ ArticlesWithTag, RegisteredUser, NewUser, sha3_256_encode, random_string, get_password,
-                    ArticleList, Postgresql, Redis, LoginUser, Comments, AdminSession, UserSession,
-                    user_verification_cookie, admin_verification_cookie, UserInfo };
+use super::super::{admin_verification_cookie, get_password, random_string,
+                   user_verification_cookie, AdminSession, ArticleList, ArticlesWithTag, Comments,
+                   LoginUser, NewUser, Postgresql, Redis, RegisteredUser, UserInfo, UserSession,
+                   sha3_256_encode};
 use uuid::Uuid;
 
 pub struct Visitor;
@@ -17,18 +18,14 @@ impl Visitor {
         let offset = t_param_parse!(params, "offset", i64);
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let res = match ArticleList::query_list_article(&pg_pool, limit, offset, false) {
-            Ok(data) => {
-                json!({
+            Ok(data) => json!({
                     "status": true,
                     "data": data
-                })
-            }
-            Err(err) => {
-                json!({
+                }),
+            Err(err) => json!({
                     "status": false,
                     "error": err
-                })
-            }
+                }),
         };
         res_json!(res)
     }
@@ -38,18 +35,14 @@ impl Visitor {
         let tag_id: Uuid = t_param!(params, "tag_id").clone().parse().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let res = match ArticleList::query_with_tag(&pg_pool, tag_id) {
-            Ok(data) => {
-                json!({
+            Ok(data) => json!({
                     "status": true,
                     "data": data
-                })
-            }
-            Err(err) => {
-                json!({
+                }),
+            Err(err) => json!({
                     "status": false,
                     "error": err
-                })
-            }
+                }),
         };
         res_json!(res)
     }
@@ -64,35 +57,32 @@ impl Visitor {
         let admin_cookies_status = req.ext().get::<AdminSession>().unwrap();
         let user_cookies_status = req.ext().get::<UserSession>().unwrap();
 
-
         let redis_pool = req.ext().get::<Redis>().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
         let user_id = match user_cookies_status {
-          &true => {
-              let cookie = req.ext().get::<SessionVal>().unwrap();
-              let info = serde_json::from_str::<UserInfo>(&UserInfo::view_user_with_cookie(redis_pool, cookie, admin_cookies_status)).unwrap();
-              Some(info.id)
-          },
-            &false => {
-                None
+            &true => {
+                let cookie = req.ext().get::<SessionVal>().unwrap();
+                let info = serde_json::from_str::<UserInfo>(&UserInfo::view_user_with_cookie(
+                    redis_pool,
+                    cookie,
+                    admin_cookies_status,
+                )).unwrap();
+                Some(info.id)
             }
+            &false => None,
         };
         let res = match Comments::query(&pg_pool, limit, offset, article_id) {
-            Ok(data) => {
-                json!({
+            Ok(data) => json!({
                     "status": true,
                     "data": data,
                     "admin": admin_cookies_status,
                     "user": user_id
-                })
-            }
-            Err(err) => {
-                json!({
+                }),
+            Err(err) => json!({
                     "status": false,
                     "error": err
-                })
-            }
+                }),
         };
         res_json!(res)
     }
@@ -103,18 +93,14 @@ impl Visitor {
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
         let res = match ArticlesWithTag::query_article(&pg_pool, article_id, false) {
-            Ok(data) => {
-                json!({
+            Ok(data) => json!({
                     "status": true,
                     "data": data
-                })
-            }
-            Err(err) => {
-                json!({
+                }),
+            Err(err) => json!({
                     "status": false,
                     "error": err
-                })
-            }
+                }),
         };
         res_json!(res)
     }
@@ -129,7 +115,7 @@ impl Visitor {
 
         let max_age: Option<i64> = match body.get_remember() {
             true => Some(24 * 90),
-            false => None
+            false => None,
         };
 
         match body.verification(&pg_pool, redis_pool, &max_age) {
@@ -140,9 +126,15 @@ impl Visitor {
 
                 response.write_body(serde_json::to_string(&res).unwrap());
 
-                let _ = set_cookie(&mut response, "blog_session".to_string(), cookies,
-                                   None, Some("/".to_string()), None, max_age);
-
+                let _ = set_cookie(
+                    &mut response,
+                    "blog_session".to_string(),
+                    cookies,
+                    None,
+                    Some("/".to_string()),
+                    None,
+                    max_age,
+                );
             }
             Err(err) => {
                 let res = json!({
@@ -177,8 +169,15 @@ impl Visitor {
 
                 response.write_body(serde_json::to_string(&res).unwrap());
 
-                let _ = set_cookie(&mut response, "blog_session".to_string(), cookies,
-                                   None, Some("/".to_string()), None, Some(24));
+                let _ = set_cookie(
+                    &mut response,
+                    "blog_session".to_string(),
+                    cookies,
+                    None,
+                    Some("/".to_string()),
+                    None,
+                    Some(24),
+                );
             }
             Err(err) => {
                 let res = json!({
@@ -218,7 +217,10 @@ impl SapperModule for Visitor {
         // http get /article/view_all limit==5 offset==0
         router.get("/article/view_all", Visitor::list_all_article);
 
-        router.get("/article/view_all/:tag_id", Visitor::list_all_article_filter_by_tag);
+        router.get(
+            "/article/view_all/:tag_id",
+            Visitor::list_all_article_filter_by_tag,
+        );
 
         router.get("/article/view_comment/:id", Visitor::list_comments);
 

@@ -1,9 +1,11 @@
-use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult, Error as SapperError };
-use sapper_std::{ JsonParams, SessionVal };
+use sapper::{Error as SapperError, Request, Response, Result as SapperResult, SapperModule,
+             SapperRouter};
+use sapper_std::{JsonParams, SessionVal};
 use serde_json;
 
-use super::super::{ Postgresql, UserInfo, ChangePassword, Redis, user_verification_cookie,
-                    admin_verification_cookie, AdminSession, LoginUser, EditUser, NewComments, DeleteComment };
+use super::super::{admin_verification_cookie, user_verification_cookie, AdminSession,
+                   ChangePassword, DeleteComment, EditUser, LoginUser, NewComments, Postgresql,
+                   Redis, UserInfo};
 
 pub struct User;
 
@@ -15,7 +17,9 @@ impl User {
         let mut res = json!({
                     "status": true,
                 });
-        res["data"] = serde_json::from_str(&UserInfo::view_user_with_cookie(redis_pool, cookie, admin)).unwrap();
+        res["data"] =
+            serde_json::from_str(&UserInfo::view_user_with_cookie(redis_pool, cookie, admin))
+                .unwrap();
         res_json!(res)
     }
 
@@ -26,18 +30,14 @@ impl User {
         let redis_pool = req.ext().get::<Redis>().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let res = match body.change_password(&pg_pool, redis_pool, cookie, admin) {
-            Ok(data) => {
-                json!({
+            Ok(data) => json!({
                     "status": true,
                     "data": data
-                })
-            }
-            Err(err) => {
-                json!({
+                }),
+            Err(err) => json!({
                     "status": false,
                     "error": err
-                })
-            }
+                }),
         };
         res_json!(res)
     }
@@ -56,7 +56,7 @@ impl User {
             Err(err) => json!({
                 "status": false,
                 "error": err
-            })
+            }),
         };
         res_json!(res)
     }
@@ -65,7 +65,7 @@ impl User {
         let cookie = req.ext().get::<SessionVal>().unwrap();
         let admin = req.ext().get::<AdminSession>().unwrap();
         let redis_pool = req.ext().get::<Redis>().unwrap();
-        let res = json!({"status": LoginUser::sign_out(redis_pool, cookie, admin) });
+        let res = json!({ "status": LoginUser::sign_out(redis_pool, cookie, admin) });
         res_json!(res)
     }
 
@@ -81,7 +81,7 @@ impl User {
             }),
             false => json!({
                 "status": false
-            })
+            }),
         };
         res_json!(res)
     }
@@ -99,7 +99,7 @@ impl User {
             }),
             false => json!({
                 "status": false
-            })
+            }),
         };
         res_json!(res)
     }
@@ -119,7 +119,7 @@ impl SapperModule for User {
         req.ext_mut().insert::<AdminSession>(admin_status);
 
         match user_status {
-            true => { Ok(()) }
+            true => Ok(()),
             false => {
                 let res = json!({
                     "status": false,

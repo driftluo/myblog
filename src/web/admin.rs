@@ -1,8 +1,9 @@
-use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult, Error as SapperError };
-use sapper_std::{ Context, render, SessionVal, QueryParams };
+use sapper::{Error as SapperError, Request, Response, Result as SapperResult, SapperModule,
+             SapperRouter};
+use sapper_std::{render, Context, QueryParams, SessionVal};
 use uuid::Uuid;
 
-use super::super::{ admin_verification_cookie, Redis, Postgresql, ArticlesWithTag, Tags };
+use super::super::{admin_verification_cookie, ArticlesWithTag, Postgresql, Redis, Tags};
 
 pub struct Admin;
 
@@ -22,7 +23,7 @@ impl Admin {
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         match Tags::view_list_tag(&pg_pool) {
             Ok(ref data) => web.add("tags", data),
-            Err(err) => println!("No tags, {}", err)
+            Err(err) => println!("No tags, {}", err),
         }
         res_html!("admin/article_new.html", web)
     }
@@ -35,7 +36,7 @@ impl Admin {
 
         match ArticlesWithTag::query_article(&pg_pool, article_id, true) {
             Ok(ref data) => web.add("article", data),
-            Err(err) => println!("{}", err)
+            Err(err) => println!("{}", err),
         }
         res_html!("admin/article_view.html", web)
     }
@@ -48,7 +49,7 @@ impl Admin {
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         match Tags::view_list_tag(&pg_pool) {
             Ok(ref data) => web.add("tags", data),
-            Err(err) => println!("No tags, {}", err)
+            Err(err) => println!("No tags, {}", err),
         }
         res_html!("admin/article_edit.html", web)
     }
@@ -75,7 +76,7 @@ impl SapperModule for Admin {
         let cookie = req.ext().get::<SessionVal>();
         let redis_pool = req.ext().get::<Redis>().unwrap();
         match admin_verification_cookie(cookie, redis_pool) {
-            true => { Ok(()) }
+            true => Ok(()),
             false => {
                 let res = json!({
                     "status": false,
