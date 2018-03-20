@@ -60,8 +60,8 @@ impl Visitor {
         let redis_pool = req.ext().get::<Redis>().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        let user_id = match user_cookies_status {
-            &true => {
+        let user_id = match *user_cookies_status {
+            true => {
                 let cookie = req.ext().get::<SessionVal>().unwrap();
                 let info = serde_json::from_str::<UserInfo>(&UserInfo::view_user_with_cookie(
                     redis_pool,
@@ -70,7 +70,7 @@ impl Visitor {
                 )).unwrap();
                 Some(info.id)
             }
-            &false => None,
+            false => None,
         };
         let res = match Comments::query(&pg_pool, limit, offset, article_id) {
             Ok(data) => json!({
@@ -113,9 +113,10 @@ impl Visitor {
         let mut response = Response::new();
         response.headers_mut().set(ContentType::json());
 
-        let max_age: Option<i64> = match body.get_remember() {
-            true => Some(24 * 90),
-            false => None,
+        let max_age: Option<i64> = if body.get_remember() {
+            Some(24 * 90)
+        } else {
+            None
         };
 
         match body.verification(&pg_pool, redis_pool, &max_age) {

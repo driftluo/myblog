@@ -1,5 +1,8 @@
 #![recursion_limit = "128"]
+#![cfg_attr(feature = "clippy", feature(plugin))]
+#![cfg_attr(feature = "clippy", plugin(clippy))]
 
+extern crate ammonia;
 extern crate chrono;
 extern crate comrak;
 #[macro_use]

@@ -88,9 +88,9 @@ impl NewComments {
         cookie: &str,
         admin: &bool,
     ) -> bool {
-        let redis_key = match admin {
-            &true => "admin_".to_string() + cookie,
-            &false => "user_".to_string() + cookie,
+        let redis_key = match *admin {
+            true => "admin_".to_string() + cookie,
+            false => "user_".to_string() + cookie,
         };
         let info = serde_json::from_str::<UserInfo>(&redis_pool.hget::<String>(&redis_key, "info"))
             .unwrap();
@@ -112,16 +112,17 @@ impl DeleteComment {
         cookie: &str,
         admin: &bool,
     ) -> bool {
-        match admin {
-            &true => Comments::delete_with_comment_id(conn, self.comment_id),
-            &false => {
+        match *admin {
+            true => Comments::delete_with_comment_id(conn, self.comment_id),
+            false => {
                 let redis_key = "user_".to_string() + cookie;
                 let info = serde_json::from_str::<UserInfo>(&redis_pool
                     .hget::<String>(&redis_key, "info"))
                     .unwrap();
-                match self.user_id == info.id {
-                    true => Comments::delete_with_comment_id(conn, self.comment_id),
-                    false => false,
+                if self.user_id == info.id {
+                    Comments::delete_with_comment_id(conn, self.comment_id)
+                } else {
+                    false
                 }
             }
         }

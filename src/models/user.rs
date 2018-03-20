@@ -35,7 +35,7 @@ impl Users {
 
     pub fn change_permission(conn: &PgConnection, data: ChangePermission) -> Result<usize, String> {
         let res = diesel::update(all_users.filter(users::id.eq(data.id)))
-            .set((users::groups.eq(data.permission)))
+            .set(users::groups.eq(data.permission))
             .execute(conn);
         match res {
             Ok(num_update) => Ok(num_update),
@@ -161,9 +161,9 @@ impl UserInfo {
         cookie: &str,
         admin: &bool,
     ) -> String {
-        let redis_key = match admin {
-            &true => "admin_".to_string() + cookie,
-            &false => "user_".to_string() + cookie,
+        let redis_key = match *admin {
+            true => "admin_".to_string() + cookie,
+            false => "user_".to_string() + cookie,
         };
         redis_pool.hget::<String>(&redis_key, "info")
     }
@@ -234,11 +234,7 @@ impl ChangePassword {
         let old_user = all_users.filter(users::id.eq(id)).get_result::<Users>(conn);
         match old_user {
             Ok(old) => {
-                if old.password == sha3_256_encode(get_password(&self.old_password) + &old.salt) {
-                    true
-                } else {
-                    false
-                }
+                old.password == sha3_256_encode(get_password(&self.old_password) + &old.salt)
             }
             Err(_) => false,
         }
@@ -260,9 +256,9 @@ impl EditUser {
         cookie: &str,
         admin: &bool,
     ) -> Result<usize, String> {
-        let redis_key = match admin {
-            &true => "admin_".to_string() + cookie,
-            &false => "user_".to_string() + cookie,
+        let redis_key = match *admin {
+            true => "admin_".to_string() + cookie,
+            false => "user_".to_string() + cookie,
         };
         let info = serde_json::from_str::<UserInfo>(&redis_pool.hget::<String>(&redis_key, "info"))
             .unwrap();
@@ -310,9 +306,9 @@ impl LoginUser {
         match res {
             Ok(data) => {
                 if data.password == sha3_256_encode(get_password(&self.password) + &data.salt) {
-                    let ttl = match max_age {
-                        &Some(t) => t * 3600,
-                        &None => 24 * 60 * 60,
+                    let ttl = match *max_age {
+                        Some(t) => t * 3600,
+                        None => 24 * 60 * 60,
                     };
 
                     match data.groups {
@@ -346,7 +342,7 @@ impl LoginUser {
                         }
                     }
                 } else {
-                    Err(format!("用户或密码错误"))
+                    Err(String::from("用户或密码错误"))
                 }
             }
             Err(err) => Err(format!("{}", err)),
@@ -358,9 +354,9 @@ impl LoginUser {
     }
 
     pub fn sign_out(redis_pool: &Arc<RedisPool>, cookies: &str, admin: &bool) -> bool {
-        let redis_key = match admin {
-            &true => "admin_".to_string() + cookies,
-            &false => "user_".to_string() + cookies,
+        let redis_key = match *admin {
+            true => "admin_".to_string() + cookies,
+            false => "user_".to_string() + cookies,
         };
 
         redis_pool.del(&redis_key)

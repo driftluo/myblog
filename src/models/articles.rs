@@ -175,9 +175,9 @@ impl NewArticle {
     pub fn insert(self, conn: &PgConnection) -> bool {
         let article = self.convert_insert_article().insert(conn);
         if self.new_tags.is_some() || self.exist_tags.is_some() {
-            return RelationTag::new(article.id, self.new_tags, self.exist_tags).insert_all(conn);
+            RelationTag::new(article.id, self.new_tags, self.exist_tags).insert_all(conn)
         } else {
-            return true;
+            true
         }
     }
 

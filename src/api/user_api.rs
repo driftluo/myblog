@@ -75,14 +75,9 @@ impl User {
         let admin = req.ext().get::<AdminSession>().unwrap();
         let redis_pool = req.ext().get::<Redis>().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-        let res = match body.insert(&pg_pool, redis_pool, cookie, admin) {
-            true => json!({
-                "status": true
-            }),
-            false => json!({
-                "status": false
-            }),
-        };
+        let res = json!({
+                "status": body.insert(&pg_pool, redis_pool, cookie, admin)
+        });
         res_json!(res)
     }
 
@@ -93,14 +88,9 @@ impl User {
         let redis_pool = req.ext().get::<Redis>().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        let res = match body.delete(&pg_pool, redis_pool, cookie, admin) {
-            true => json!({
-                "status": true
-            }),
-            false => json!({
-                "status": false
-            }),
-        };
+        let res = json!({
+                "status": body.delete(&pg_pool, redis_pool, cookie, admin)
+            });
         res_json!(res)
     }
 }

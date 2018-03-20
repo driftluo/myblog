@@ -39,9 +39,9 @@ impl ArticleWeb {
         let user_cookies_status = req.ext().get::<UserSession>().unwrap();
         let admin_cookies_status = req.ext().get::<AdminSession>().unwrap();
         web.add("admin", admin_cookies_status);
-        match user_cookies_status {
-            &false => res_html!("visitor/login.html", web),
-            &true => res_html!("visitor/user.html", web),
+        match *user_cookies_status {
+            false => res_html!("visitor/login.html", web),
+            true => res_html!("visitor/user.html", web),
         }
     }
 

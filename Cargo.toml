@@ -16,6 +16,7 @@ authors = ["piaoliu <441594700@qq.com>"]
  redis = '^0.8.0'
  r2d2 = '^0.8.1'
  r2d2_redis = '^0.7.0'
+ ammonia = "^1.1.0"
 
 [dependencies.diesel]
 features = ["postgres", "chrono", "uuid", "r2d2"]
@@ -32,3 +33,15 @@ version = "^1.1.0"
 [dependencies.uuid]
 features = ["serde", "v4"]
 version = "^0.5.0"
+
+[dependencies.clippy]
+optional = true
+version = "*"
+
+[patch.crates-io]
+sapper_std = { git = 'https://github.com/sappworks/sapper_std.git' }
+sapper_tmpl = { git = 'https://github.com/sappworks/sapper_tmpl.git' }
+
+[features]
+default = []
+monitor = ["sapper_std/monitor"]
