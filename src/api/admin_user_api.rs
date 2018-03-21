@@ -1,9 +1,11 @@
-use sapper::{ SapperModule, SapperRouter, Response, Request, Result as SapperResult, Error as SapperError };
+use sapper::{Error as SapperError, Request, Response, Result as SapperResult, SapperModule,
+             SapperRouter};
 use serde_json;
-use sapper_std::{ QueryParams, JsonParams, PathParams, SessionVal };
+use sapper_std::{JsonParams, PathParams, QueryParams, SessionVal};
 use uuid::Uuid;
 
-use super::super::{ Users, UserInfo, Postgresql, Redis, ChangePermission, admin_verification_cookie, DisabledUser };
+use super::super::{admin_verification_cookie, ChangePermission, DisabledUser, Postgresql, Redis,
+                   UserInfo, Users};
 
 pub struct AdminUser;
 
@@ -14,18 +16,14 @@ impl AdminUser {
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
         let res = match Users::delete(&pg_pool, user_id) {
-            Ok(num_deleted) => {
-                json!({
+            Ok(num_deleted) => json!({
                     "status": true,
                     "num_deleted": num_deleted
-                    })
-            },
-            Err(err) => {
-                json!({
+                    }),
+            Err(err) => json!({
                     "status": false,
                     "error": err
-                    })
-            }
+                    }),
         };
         res_json!(res)
     }
@@ -36,18 +34,14 @@ impl AdminUser {
         let offset = t_param_parse!(params, "offset", i64);
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let res = match UserInfo::view_user_list(&pg_pool, limit, offset) {
-            Ok(data) => {
-                json!({
+            Ok(data) => json!({
                     "status": true,
                     "data": data
-                })
-            }
-            Err(err) => {
-                json!({
+                }),
+            Err(err) => json!({
                     "status": false,
                     "error": err
-                })
-            }
+                }),
         };
         res_json!(res)
     }
@@ -56,18 +50,14 @@ impl AdminUser {
         let body: ChangePermission = get_json_params!(req);
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let res = match Users::change_permission(&pg_pool, body) {
-            Ok(num_update) => {
-                json!({
+            Ok(num_update) => json!({
                     "status": true,
                     "num_update": num_update
-                })
-            }
-            Err(err) => {
-                json!({
+                }),
+            Err(err) => json!({
                     "status": false,
                     "error": format!("{}", err)
-                })
-            }
+                }),
         };
         res_json!(res)
     }
@@ -76,18 +66,14 @@ impl AdminUser {
         let body: DisabledUser = get_json_params!(req);
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let res = match Users::disabled_user(&pg_pool, body) {
-            Ok(num_update) => {
-                json!({
+            Ok(num_update) => json!({
                     "status": true,
                     "num_update": num_update
-                })
-            }
-            Err(err) => {
-                json!({
+                }),
+            Err(err) => json!({
                     "status": false,
                     "error": format!("{}", err)
-                })
-            }
+                }),
         };
         res_json!(res)
     }
@@ -98,7 +84,7 @@ impl SapperModule for AdminUser {
         let cookie = req.ext().get::<SessionVal>();
         let redis_pool = req.ext().get::<Redis>().unwrap();
         match admin_verification_cookie(cookie, redis_pool) {
-            true => { Ok(()) }
+            true => Ok(()),
             false => {
                 let res = json!({
                     "status": false,

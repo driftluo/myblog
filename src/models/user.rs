@@ -1,15 +1,14 @@
 use super::super::users;
 use super::super::users::dsl::users as all_users;
 
-use chrono::{ NaiveDateTime, Local };
+use chrono::{Local, NaiveDateTime};
 use diesel;
-use diesel::{ FilterDsl, ExpressionMethods, ExecuteDsl, LoadDsl, OrderDsl,
-              SelectDsl, FindDsl, PgConnection, LimitDsl, OffsetDsl };
+use diesel::prelude::*;
 use uuid::Uuid;
 use serde_json;
 use std::sync::Arc;
 
-use super::super::{ sha3_256_encode, random_string, get_password, RedisPool };
+use super::super::{get_password, random_string, RedisPool, sha3_256_encode};
 
 #[derive(Queryable, Debug, Clone, Deserialize, Serialize)]
 pub struct Users {
@@ -22,26 +21,25 @@ pub struct Users {
     pub say: Option<String>,
     pub email: String,
     pub disabled: i16,
-    pub create_time: NaiveDateTime
+    pub create_time: NaiveDateTime,
 }
 
 impl Users {
     pub fn delete(conn: &PgConnection, id: Uuid) -> Result<usize, String> {
-        let res = diesel::delete(all_users.find(id))
-            .execute(conn);
+        let res = diesel::delete(all_users.find(id)).execute(conn);
         match res {
             Ok(data) => Ok(data),
-            Err(err) => Err(format!("{}", err))
+            Err(err) => Err(format!("{}", err)),
         }
     }
 
     pub fn change_permission(conn: &PgConnection, data: ChangePermission) -> Result<usize, String> {
         let res = diesel::update(all_users.filter(users::id.eq(data.id)))
-            .set((users::groups.eq(data.permission)))
+            .set(users::groups.eq(data.permission))
             .execute(conn);
         match res {
             Ok(num_update) => Ok(num_update),
-            Err(err) => Err(format!("{}", err))
+            Err(err) => Err(format!("{}", err)),
         }
     }
 
@@ -53,7 +51,7 @@ impl Users {
             groups: self.groups,
             say: self.say,
             email: self.email,
-            create_time: self.create_time
+            create_time: self.create_time,
         }
     }
 
@@ -63,7 +61,7 @@ impl Users {
             .execute(conn);
         match res {
             Ok(data) => Ok(data),
-            Err(err) => Err(format!("{}", err))
+            Err(err) => Err(format!("{}", err)),
         }
     }
 }
@@ -87,27 +85,32 @@ impl NewUser {
             salt,
             nickname: reg.nickname,
             say: reg.say,
-            email: reg.email
+            email: reg.email,
         }
     }
 
-    pub fn insert(&self, conn: &PgConnection, redis_pool: &Arc<RedisPool>) -> Result<String, String> {
-        match diesel::insert(self)
-            .into(users::table)
-            .get_result::<Users>(conn) {
-            Ok(info) => {
-                self.set_cookies(redis_pool, info.into_user_info())
-            }
-            Err(err) => {
-                Err(format!("{}", err))
-            }
+    pub fn insert(
+        &self,
+        conn: &PgConnection,
+        redis_pool: &Arc<RedisPool>,
+    ) -> Result<String, String> {
+        match diesel::insert_into(users::table)
+            .values(self)
+            .get_result::<Users>(conn)
+        {
+            Ok(info) => self.set_cookies(redis_pool, info.into_user_info()),
+            Err(err) => Err(format!("{}", err)),
         }
     }
 
     fn set_cookies(&self, redis_pool: &Arc<RedisPool>, info: UserInfo) -> Result<String, String> {
         let cookie = sha3_256_encode(random_string(8));
         let redis_key = "user_".to_string() + &cookie;
-        redis_pool.hset(&("user_".to_string() + &cookie), "login_time", Local::now().timestamp());
+        redis_pool.hset(
+            &("user_".to_string() + &cookie),
+            "login_time",
+            Local::now().timestamp(),
+        );
         redis_pool.hset(&redis_key, "info", json!(info).to_string());
         redis_pool.expire(&redis_key, 24 * 3600);
         Ok(cookie)
@@ -131,35 +134,62 @@ pub struct UserInfo {
     pub groups: i16,
     pub say: Option<String>,
     pub email: String,
-    pub create_time: NaiveDateTime
+    pub create_time: NaiveDateTime,
 }
 
 impl UserInfo {
     pub fn view_user(conn: &PgConnection, id: Uuid) -> Result<Self, String> {
         let res = all_users
-            .select((users::id, users::account, users::nickname, users::groups, users::say, users::email, users::create_time))
+            .select((
+                users::id,
+                users::account,
+                users::nickname,
+                users::groups,
+                users::say,
+                users::email,
+                users::create_time,
+            ))
             .filter(users::id.eq(id))
             .get_result::<UserInfo>(conn);
         match res {
             Ok(data) => Ok(data),
-            Err(err) => Err(format!("{}", err))
+            Err(err) => Err(format!("{}", err)),
         }
     }
-    pub fn view_user_with_cookie(redis_pool: &Arc<RedisPool>, cookie: &str, admin: &bool) -> String {
-        let redis_key = match admin {
-            &true => { "admin_".to_string() + cookie }
-            &false => { "user_".to_string() + cookie }
+    pub fn view_user_with_cookie(
+        redis_pool: &Arc<RedisPool>,
+        cookie: &str,
+        admin: &bool,
+    ) -> String {
+        let redis_key = match *admin {
+            true => "admin_".to_string() + cookie,
+            false => "user_".to_string() + cookie,
         };
         redis_pool.hget::<String>(&redis_key, "info")
     }
 
-    pub fn view_user_list(conn: &PgConnection, limit: i64, offset: i64) -> Result<Vec<Self>, String> {
+    pub fn view_user_list(
+        conn: &PgConnection,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<Self>, String> {
         let res = all_users
-            .select((users::id, users::account, users::nickname, users::groups, users::say, users::email, users::create_time))
-            .limit(limit).offset(offset).order(users::create_time).load::<UserInfo>(conn);
+            .select((
+                users::id,
+                users::account,
+                users::nickname,
+                users::groups,
+                users::say,
+                users::email,
+                users::create_time,
+            ))
+            .limit(limit)
+            .offset(offset)
+            .order(users::create_time)
+            .load::<UserInfo>(conn);
         match res {
             Ok(data) => Ok(data),
-            Err(err) => Err(format!("{}", err))
+            Err(err) => Err(format!("{}", err)),
         }
     }
 }
@@ -167,19 +197,26 @@ impl UserInfo {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ChangePassword {
     pub old_password: String,
-    pub new_password: String
+    pub new_password: String,
 }
 
 impl ChangePassword {
-    pub fn change_password(&self, conn: &PgConnection, redis_pool: &Arc<RedisPool>, cookie: &str, admin: &bool) -> Result<usize, String> {
+    pub fn change_password(
+        &self,
+        conn: &PgConnection,
+        redis_pool: &Arc<RedisPool>,
+        cookie: &str,
+        admin: &bool,
+    ) -> Result<usize, String> {
         let redis_key = match admin {
-            &true => { "admin_".to_string() + cookie }
-            &false => { "user_".to_string() + cookie }
+            &true => "admin_".to_string() + cookie,
+            &false => "user_".to_string() + cookie,
         };
-        let info = serde_json::from_str::<UserInfo>(&redis_pool.hget::<String>(&redis_key, "info")).unwrap();
+        let info = serde_json::from_str::<UserInfo>(&redis_pool.hget::<String>(&redis_key, "info"))
+            .unwrap();
 
         if !self.verification(conn, &info.id) {
-            return Err("Verification error".to_string())
+            return Err("Verification error".to_string());
         }
 
         let salt = random_string(6);
@@ -189,7 +226,7 @@ impl ChangePassword {
             .execute(conn);
         match res {
             Ok(num_update) => Ok(num_update),
-            Err(err) => Err(format!("{}", err))
+            Err(err) => Err(format!("{}", err)),
         }
     }
 
@@ -197,11 +234,9 @@ impl ChangePassword {
         let old_user = all_users.filter(users::id.eq(id)).get_result::<Users>(conn);
         match old_user {
             Ok(old) => {
-                if old.password == sha3_256_encode(get_password(&self.old_password) + &old.salt) {
-                    true
-                } else { false }
+                old.password == sha3_256_encode(get_password(&self.old_password) + &old.salt)
             }
-            Err(_) => false
+            Err(_) => false,
         }
     }
 }
@@ -214,21 +249,32 @@ pub struct EditUser {
 }
 
 impl EditUser {
-    pub fn edit_user(self, conn: &PgConnection, redis_pool: &Arc<RedisPool>, cookie: &str, admin: &bool) -> Result<usize, String> {
-        let redis_key = match admin {
-            &true => { "admin_".to_string() + cookie }
-            &false => { "user_".to_string() + cookie }
+    pub fn edit_user(
+        self,
+        conn: &PgConnection,
+        redis_pool: &Arc<RedisPool>,
+        cookie: &str,
+        admin: &bool,
+    ) -> Result<usize, String> {
+        let redis_key = match *admin {
+            true => "admin_".to_string() + cookie,
+            false => "user_".to_string() + cookie,
         };
-        let info = serde_json::from_str::<UserInfo>(&redis_pool.hget::<String>(&redis_key, "info")).unwrap();
+        let info = serde_json::from_str::<UserInfo>(&redis_pool.hget::<String>(&redis_key, "info"))
+            .unwrap();
         let res = diesel::update(all_users.filter(users::id.eq(info.id)))
-            .set((users::nickname.eq(self.nickname), users::say.eq(self.say), users::email.eq(self.email)))
+            .set((
+                users::nickname.eq(self.nickname),
+                users::say.eq(self.say),
+                users::email.eq(self.email),
+            ))
             .get_result::<Users>(conn);
         match res {
             Ok(data) => {
                 redis_pool.hset(&redis_key, "info", json!(data.into_user_info()).to_string());
                 Ok(1)
             }
-            Err(err) => Err(format!("{}", err))
+            Err(err) => Err(format!("{}", err)),
         }
     }
 }
@@ -243,18 +289,26 @@ pub struct ChangePermission {
 pub struct LoginUser {
     account: String,
     password: String,
-    remember: bool
+    remember: bool,
 }
 
 impl LoginUser {
-    pub fn verification(&self, conn: &PgConnection, redis_pool: &Arc<RedisPool>, max_age: &Option<i64>) -> Result<String, String> {
-        let res = all_users.filter(users::disabled.eq(0)).filter(users::account.eq(self.account.to_owned())).get_result::<Users>(conn);
+    pub fn verification(
+        &self,
+        conn: &PgConnection,
+        redis_pool: &Arc<RedisPool>,
+        max_age: &Option<i64>,
+    ) -> Result<String, String> {
+        let res = all_users
+            .filter(users::disabled.eq(0))
+            .filter(users::account.eq(self.account.to_owned()))
+            .get_result::<Users>(conn);
         match res {
             Ok(data) => {
                 if data.password == sha3_256_encode(get_password(&self.password) + &data.salt) {
-                    let ttl = match max_age {
-                        &Some(t) => t * 3600,
-                        &None => 24 * 60 * 60
+                    let ttl = match *max_age {
+                        Some(t) => t * 3600,
+                        None => 24 * 60 * 60,
                     };
 
                     match data.groups {
@@ -262,26 +316,36 @@ impl LoginUser {
                             let cookie = sha3_256_encode(random_string(8));
                             let redis_key = "admin_".to_string() + &cookie;
                             redis_pool.hset(&redis_key, "login_time", Local::now().timestamp());
-                            redis_pool.hset(&redis_key, "info", json!(data.into_user_info()).to_string());
+                            redis_pool.hset(
+                                &redis_key,
+                                "info",
+                                json!(data.into_user_info()).to_string(),
+                            );
                             redis_pool.expire(&redis_key, ttl);
                             Ok(cookie)
                         }
                         _ => {
                             let cookie = sha3_256_encode(random_string(8));
                             let redis_key = "user_".to_string() + &cookie;
-                            redis_pool.hset(&("user_".to_string() + &cookie), "login_time", Local::now().timestamp());
-                            redis_pool.hset(&redis_key, "info", json!(data.into_user_info()).to_string());
+                            redis_pool.hset(
+                                &("user_".to_string() + &cookie),
+                                "login_time",
+                                Local::now().timestamp(),
+                            );
+                            redis_pool.hset(
+                                &redis_key,
+                                "info",
+                                json!(data.into_user_info()).to_string(),
+                            );
                             redis_pool.expire(&redis_key, ttl);
                             Ok(cookie)
                         }
                     }
                 } else {
-                    Err(format!("用户或密码错误"))
+                    Err(String::from("用户或密码错误"))
                 }
             }
-            Err(err) => {
-                Err(format!("{}", err))
-            }
+            Err(err) => Err(format!("{}", err)),
         }
     }
 
@@ -290,9 +354,9 @@ impl LoginUser {
     }
 
     pub fn sign_out(redis_pool: &Arc<RedisPool>, cookies: &str, admin: &bool) -> bool {
-        let redis_key = match admin {
-            &true => { "admin_".to_string() + cookies }
-            &false => { "user_".to_string() + cookies }
+        let redis_key = match *admin {
+            true => "admin_".to_string() + cookies,
+            false => "user_".to_string() + cookies,
         };
 
         redis_pool.del(&redis_key)
@@ -302,5 +366,5 @@ impl LoginUser {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct DisabledUser {
     id: Uuid,
-    disabled: i16
+    disabled: i16,
 }
