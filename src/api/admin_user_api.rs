@@ -1,11 +1,10 @@
 use sapper::{Error as SapperError, Request, Response, Result as SapperResult, SapperModule,
              SapperRouter};
 use serde_json;
-use sapper_std::{JsonParams, PathParams, QueryParams, SessionVal};
+use sapper_std::{JsonParams, PathParams, QueryParams};
 use uuid::Uuid;
 
-use super::super::{admin_verification_cookie, ChangePermission, DisabledUser, Postgresql, Redis,
-                   UserInfo, Users};
+use super::super::{ChangePermission, DisabledUser, Permissions, Postgresql, UserInfo, Users};
 
 pub struct AdminUser;
 
@@ -81,11 +80,10 @@ impl AdminUser {
 
 impl SapperModule for AdminUser {
     fn before(&self, req: &mut Request) -> SapperResult<()> {
-        let cookie = req.ext().get::<SessionVal>();
-        let redis_pool = req.ext().get::<Redis>().unwrap();
-        match admin_verification_cookie(cookie, redis_pool) {
-            true => Ok(()),
-            false => {
+        let permission = req.ext().get::<Permissions>().unwrap();
+        match *permission {
+            Some(0) => Ok(()),
+            _ => {
                 let res = json!({
                     "status": false,
                     "error": String::from("Verification error")
@@ -93,10 +91,6 @@ impl SapperModule for AdminUser {
                 Err(SapperError::CustomJson(res.to_string()))
             }
         }
-    }
-
-    fn after(&self, _req: &Request, _res: &mut Response) -> SapperResult<()> {
-        Ok(())
     }
 
     fn router(&self, router: &mut SapperRouter) -> SapperResult<()> {

@@ -39,7 +39,7 @@
             <div class="container-fluid">
                 <div>
                     <ul class="nav navbar-nav navbar-right">
-                        {% if admin %}
+                        {% if user and user.groups == 0 %}
                         <li><a href="/admin"><i class="iconfont icon-administrator" ></i> Admin</a></li>
                         {% endif %}
                         <li><a href="/home"><span class="glyphicon glyphicon-user"></span> Home</a></li>

@@ -1,25 +1,25 @@
 use sapper::{Error as SapperError, Request, Response, Result as SapperResult, SapperModule,
              SapperRouter};
-use sapper_std::{render, Context, QueryParams, SessionVal};
+use sapper_std::{render, QueryParams};
 use uuid::Uuid;
 
-use super::super::{admin_verification_cookie, ArticlesWithTag, Postgresql, Redis, Tags};
+use super::super::{ArticlesWithTag, Permissions, Postgresql, Tags, WebContext};
 
 pub struct Admin;
 
 impl Admin {
-    fn admin(_req: &mut Request) -> SapperResult<Response> {
-        let web = Context::new();
+    fn admin(req: &mut Request) -> SapperResult<Response> {
+        let web = req.ext().get::<WebContext>().unwrap().clone();
         res_html!("admin/admin.html", web)
     }
 
-    fn admin_list(_req: &mut Request) -> SapperResult<Response> {
-        let web = Context::new();
+    fn admin_list(req: &mut Request) -> SapperResult<Response> {
+        let web = req.ext().get::<WebContext>().unwrap().clone();
         res_html!("admin/admin_list.html", web)
     }
 
     fn new(req: &mut Request) -> SapperResult<Response> {
-        let mut web = Context::new();
+        let mut web = req.ext().get::<WebContext>().unwrap().clone();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         match Tags::view_list_tag(&pg_pool) {
             Ok(ref data) => web.add("tags", data),
@@ -32,7 +32,7 @@ impl Admin {
         let params = get_query_params!(req);
         let article_id = t_param_parse!(params, "id", Uuid);
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-        let mut web = Context::new();
+        let mut web = req.ext().get::<WebContext>().unwrap().clone();
 
         match ArticlesWithTag::query_article(&pg_pool, article_id, true) {
             Ok(ref data) => web.add("article", data),
@@ -44,7 +44,7 @@ impl Admin {
     fn article_edit(req: &mut Request) -> SapperResult<Response> {
         let params = get_query_params!(req);
         let article_id = t_param_parse!(params, "id", String);
-        let mut web = Context::new();
+        let mut web = req.ext().get::<WebContext>().unwrap().clone();
         web.add("id", &article_id);
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         match Tags::view_list_tag(&pg_pool) {
@@ -54,41 +54,29 @@ impl Admin {
         res_html!("admin/article_edit.html", web)
     }
 
-    fn tags(_req: &mut Request) -> SapperResult<Response> {
-        let web = Context::new();
+    fn tags(req: &mut Request) -> SapperResult<Response> {
+        let web = req.ext().get::<WebContext>().unwrap().clone();
         res_html!("admin/tags.html", web)
     }
 
-    fn users(_req: &mut Request) -> SapperResult<Response> {
-        let web = Context::new();
+    fn users(req: &mut Request) -> SapperResult<Response> {
+        let web = req.ext().get::<WebContext>().unwrap().clone();
         res_html!("admin/users.html", web)
     }
 
-    fn visitor_ip_log(_req: &mut Request) -> SapperResult<Response> {
-        let web = Context::new();
+    fn visitor_ip_log(req: &mut Request) -> SapperResult<Response> {
+        let web = req.ext().get::<WebContext>().unwrap().clone();
         res_html!("admin/ip.html", web)
     }
 }
 
 impl SapperModule for Admin {
-    #[allow(unused_assignments)]
     fn before(&self, req: &mut Request) -> SapperResult<()> {
-        let cookie = req.ext().get::<SessionVal>();
-        let redis_pool = req.ext().get::<Redis>().unwrap();
-        match admin_verification_cookie(cookie, redis_pool) {
-            true => Ok(()),
-            false => {
-                let res = json!({
-                    "status": false,
-                    "error": String::from("Verification error")
-                });
-                Err(SapperError::CustomJson(res.to_string()))
-            }
+        let permission = req.ext().get::<Permissions>().unwrap();
+        match *permission {
+            Some(0) => Ok(()),
+            _ => Err(SapperError::TemporaryRedirect("/login".to_owned())),
         }
-    }
-
-    fn after(&self, _req: &Request, _res: &mut Response) -> SapperResult<()> {
-        Ok(())
     }
 
     fn router(&self, router: &mut SapperRouter) -> SapperResult<()> {

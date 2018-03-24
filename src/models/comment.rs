@@ -81,19 +81,9 @@ impl NewComments {
         }
     }
 
-    pub fn insert(
-        self,
-        conn: &PgConnection,
-        redis_pool: &Arc<RedisPool>,
-        cookie: &str,
-        admin: &bool,
-    ) -> bool {
-        let redis_key = match *admin {
-            true => "admin_".to_string() + cookie,
-            false => "user_".to_string() + cookie,
-        };
-        let info = serde_json::from_str::<UserInfo>(&redis_pool.hget::<String>(&redis_key, "info"))
-            .unwrap();
+    pub fn insert(self, conn: &PgConnection, redis_pool: &Arc<RedisPool>, cookie: &str) -> bool {
+        let info =
+            serde_json::from_str::<UserInfo>(&redis_pool.hget::<String>(cookie, "info")).unwrap();
         self.into_insert_comments(info.id).insert(conn)
     }
 }
@@ -110,14 +100,13 @@ impl DeleteComment {
         conn: &PgConnection,
         redis_pool: &Arc<RedisPool>,
         cookie: &str,
-        admin: &bool,
+        permission: &Option<i16>,
     ) -> bool {
-        match *admin {
-            true => Comments::delete_with_comment_id(conn, self.comment_id),
-            false => {
-                let redis_key = "user_".to_string() + cookie;
+        match *permission {
+            Some(0) => Comments::delete_with_comment_id(conn, self.comment_id),
+            _ => {
                 let info = serde_json::from_str::<UserInfo>(&redis_pool
-                    .hget::<String>(&redis_key, "info"))
+                    .hget::<String>(cookie, "info"))
                     .unwrap();
                 if self.user_id == info.id {
                     Comments::delete_with_comment_id(conn, self.comment_id)

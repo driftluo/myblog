@@ -12,6 +12,9 @@ use std::sync::Arc;
 use sapper::{Key, Request};
 use chrono::Utc;
 use ammonia::clean;
+use sapper_std::{Context, SessionVal};
+use super::UserInfo;
+use serde_json;
 
 /// Get random value
 #[inline]
@@ -53,26 +56,23 @@ pub fn get_password(raw: &str) -> String {
     password.to_string()
 }
 
-#[inline]
-pub fn admin_verification_cookie(cookie: Option<&String>, redis_pool: &Arc<RedisPool>) -> bool {
+pub fn get_identity_and_web_context(req: &Request) -> (Option<i16>, Context) {
+    let mut web = Context::new();
+    let cookie = req.ext().get::<SessionVal>();
+    let redis_pool = req.ext().get::<Redis>().unwrap();
     match cookie {
         Some(cookie) => {
-            let redis_key = "admin_".to_string() + cookie;
-            redis_pool.exists(&redis_key)
+            if redis_pool.exists(cookie) {
+                let info = serde_json::from_str::<UserInfo>(&redis_pool
+                    .hget::<String>(cookie, "info"))
+                    .unwrap();
+                web.add("user", &info);
+                (Some(info.groups), web)
+            } else {
+                (None, web)
+            }
         }
-        None => false,
-    }
-}
-
-#[inline]
-pub fn user_verification_cookie(cookie: Option<&String>, redis_pool: &Arc<RedisPool>) -> bool {
-    match cookie {
-        Some(cookie) => {
-            let admin_redis_key = "admin_".to_string() + cookie;
-            let user_redis_key = "user_".to_string() + cookie;
-            redis_pool.exists(&admin_redis_key) || redis_pool.exists(&user_redis_key)
-        }
-        None => false,
+        None => (None, web),
     }
 }
 
@@ -90,14 +90,14 @@ pub fn visitor_log(req: &Request, redis_pool: &Arc<RedisPool>) {
     );
 }
 
-pub struct UserSession;
+pub struct Permissions;
 
-impl Key for UserSession {
-    type Value = bool;
+impl Key for Permissions {
+    type Value = Option<i16>;
 }
 
-pub struct AdminSession;
+pub struct WebContext;
 
-impl Key for AdminSession {
-    type Value = bool;
+impl Key for WebContext {
+    type Value = Context;
 }

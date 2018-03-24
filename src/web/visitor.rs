@@ -1,59 +1,57 @@
 use sapper::{Request, Response, Result as SapperResult, SapperModule, SapperRouter};
-use sapper_std::{render, Context, PathParams, SessionVal};
+use sapper_std::{render, PathParams};
 use uuid::Uuid;
 
-use super::super::{admin_verification_cookie, user_verification_cookie, visitor_log, AdminSession,
-                   ArticlesWithTag, Postgresql, Redis, TagCount, UserInfo, UserSession};
+use super::super::{ArticlesWithTag, Permissions, Postgresql, TagCount, UserInfo, WebContext};
+#[cfg(not(feature = "monitor"))]
+use super::super::{visitor_log, Redis};
 
 pub struct ArticleWeb;
 
 impl ArticleWeb {
     fn index(req: &mut Request) -> SapperResult<Response> {
-        let mut web = Context::new();
+        let mut web = req.ext().get::<WebContext>().unwrap().clone();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+
         match TagCount::view_tag_count(&pg_pool) {
             Ok(data) => web.add("tags", &data),
             Err(err) => println!("No tags, {}", err),
         }
-        let admin_cookies_status = req.ext().get::<AdminSession>().unwrap();
-        web.add("admin", admin_cookies_status);
+
         res_html!("visitor/index.html", web)
     }
 
     fn about(req: &mut Request) -> SapperResult<Response> {
-        let mut web = Context::new();
-        let admin_cookies_status = req.ext().get::<AdminSession>().unwrap();
-        web.add("admin", admin_cookies_status);
+        let web = req.ext().get::<WebContext>().unwrap().clone();
+
         res_html!("visitor/about.html", web)
     }
 
     fn list(req: &mut Request) -> SapperResult<Response> {
-        let mut web = Context::new();
-        let admin_cookies_status = req.ext().get::<AdminSession>().unwrap();
-        web.add("admin", admin_cookies_status);
+        let web = req.ext().get::<WebContext>().unwrap().clone();
+
         res_html!("visitor/list.html", web)
     }
 
     fn home(req: &mut Request) -> SapperResult<Response> {
-        let mut web = Context::new();
-        let user_cookies_status = req.ext().get::<UserSession>().unwrap();
-        let admin_cookies_status = req.ext().get::<AdminSession>().unwrap();
-        web.add("admin", admin_cookies_status);
-        match *user_cookies_status {
-            false => res_html!("visitor/login.html", web),
-            true => res_html!("visitor/user.html", web),
+        let web = req.ext().get::<WebContext>().unwrap().clone();
+        let permission = req.ext().get::<Permissions>().unwrap();
+
+        match *permission {
+            Some(_) => res_html!("visitor/user.html", web),
+            None => res_html!("visitor/login.html", web),
         }
     }
 
+    /// Query other user information
     fn user(req: &mut Request) -> SapperResult<Response> {
         let params = get_path_params!(req);
-        let article_id: Uuid = t_param!(params, "id").clone().parse().unwrap();
+        let user_id: Uuid = t_param!(params, "id").clone().parse().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-        let admin_cookies_status = req.ext().get::<AdminSession>().unwrap();
-        let mut web = Context::new();
-        web.add("admin", admin_cookies_status);
-        match UserInfo::view_user(&pg_pool, article_id) {
-            Ok(ref data) => web.add("user", data),
+        let mut web = req.ext().get::<WebContext>().unwrap().clone();
+
+        match UserInfo::view_user(&pg_pool, user_id) {
+            Ok(ref data) => web.add("user_info", data),
             Err(err) => println!("{}", err),
         };
         res_html!("visitor/user_info.html", web)
@@ -63,11 +61,8 @@ impl ArticleWeb {
         let params = get_path_params!(req);
         let article_id: Uuid = t_param!(params, "id").clone().parse().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-        let admin_cookies_status = req.ext().get::<AdminSession>().unwrap();
-        let user_cookies_status = req.ext().get::<UserSession>().unwrap();
-        let mut web = Context::new();
-        web.add("admin", admin_cookies_status);
-        web.add("user", user_cookies_status);
+        let mut web = req.ext().get::<WebContext>().unwrap().clone();
+
         match ArticlesWithTag::query_article(&pg_pool, article_id, false) {
             Ok(ref data) => web.add("article", data),
             Err(err) => println!("{}", err),
@@ -77,22 +72,7 @@ impl ArticleWeb {
 }
 
 impl SapperModule for ArticleWeb {
-    #[allow(unused_assignments)]
-    fn before(&self, req: &mut Request) -> SapperResult<()> {
-        let mut user_status = false;
-        let mut admin_status = false;
-        {
-            let cookie = req.ext().get::<SessionVal>();
-            let redis_pool = req.ext().get::<Redis>().unwrap();
-            user_status = user_verification_cookie(cookie, redis_pool);
-            admin_status = admin_verification_cookie(cookie, redis_pool);
-        }
-        req.ext_mut().insert::<UserSession>(user_status);
-        req.ext_mut().insert::<AdminSession>(admin_status);
-
-        Ok(())
-    }
-
+    #[cfg(not(feature = "monitor"))]
     fn after(&self, req: &Request, _res: &mut Response) -> SapperResult<()> {
         let redis_pool = req.ext().get::<Redis>().unwrap();
         visitor_log(req, redis_pool);
