@@ -3,8 +3,8 @@ extern crate sapper;
 extern crate sapper_std;
 
 use sapper::{Request, Response, Result as SapperResult, SapperApp, SapperAppShell};
-use blog::{create_pg_pool, create_redis_pool, AdminArticle, AdminUser, ChartData, Postgresql,
-           Redis, Tag, User, Visitor};
+use blog::{create_pg_pool, create_redis_pool, get_identity_and_web_context, AdminArticle,
+           AdminUser, ChartData, Permissions, Postgresql, Redis, Tag, User, Visitor};
 use std::sync::Arc;
 
 struct ApiApp;
@@ -12,6 +12,8 @@ struct ApiApp;
 impl SapperAppShell for ApiApp {
     fn before(&self, req: &mut Request) -> SapperResult<()> {
         sapper_std::init(req, Some("blog_session"))?;
+        let (identity, _) = get_identity_and_web_context(req);
+        req.ext_mut().insert::<Permissions>(identity);
         Ok(())
     }
 

@@ -38,10 +38,11 @@ pub(crate) use models::{ChangePassword, ChangePermission, DisabledUser, EditUser
                         NewUser, RegisteredUser, UserInfo, Users};
 pub(crate) use models::{NewTag, TagCount, Tags};
 pub(crate) use models::{Comments, DeleteComment, NewComments};
-pub(crate) use util::{admin_verification_cookie, get_password, markdown_render, random_string,
-                      user_verification_cookie, AdminSession, UserSession, sha3_256_encode};
+pub(crate) use util::{get_password, markdown_render, random_string, sha3_256_encode};
+#[cfg(not(feature = "monitor"))]
 pub(crate) use util::visitor_log;
-pub use util::{create_redis_pool, Redis, RedisPool};
+pub use util::{create_redis_pool, get_identity_and_web_context, Permissions, Redis, RedisPool,
+               WebContext};
 pub use util::{create_pg_pool, Postgresql};
 pub use api::Visitor;
 pub use api::User;

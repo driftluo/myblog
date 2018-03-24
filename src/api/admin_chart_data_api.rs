@@ -1,8 +1,8 @@
 use sapper::{Error as SapperError, Request, Response, Result as SapperResult, SapperModule,
              SapperRouter};
-use sapper_std::{QueryParams, SessionVal};
+use sapper_std::QueryParams;
 
-use super::super::{admin_verification_cookie, Postgresql, PublishedStatistics, Redis};
+use super::super::{Permissions, Postgresql, PublishedStatistics, Redis};
 
 pub struct ChartData;
 
@@ -37,11 +37,10 @@ impl ChartData {
 
 impl SapperModule for ChartData {
     fn before(&self, req: &mut Request) -> SapperResult<()> {
-        let cookie = req.ext().get::<SessionVal>();
-        let redis_pool = req.ext().get::<Redis>().unwrap();
-        match admin_verification_cookie(cookie, redis_pool) {
-            true => Ok(()),
-            false => {
+        let permission = req.ext().get::<Permissions>().unwrap();
+        match *permission {
+            Some(0) => Ok(()),
+            _ => {
                 let res = json!({
                     "status": false,
                     "error": String::from("Verification error")
@@ -49,10 +48,6 @@ impl SapperModule for ChartData {
                 Err(SapperError::CustomJson(res.to_string()))
             }
         }
-    }
-
-    fn after(&self, _req: &Request, _res: &mut Response) -> SapperResult<()> {
-        Ok(())
     }
 
     fn router(&self, router: &mut SapperRouter) -> SapperResult<()> {

@@ -3,9 +3,8 @@ use sapper_std::{set_cookie, JsonParams, PathParams, QueryParams, SessionVal};
 use sapper::header::ContentType;
 use serde_json;
 
-use super::super::{admin_verification_cookie, get_password, random_string,
-                   user_verification_cookie, AdminSession, ArticleList, ArticlesWithTag, Comments,
-                   LoginUser, NewUser, Postgresql, Redis, RegisteredUser, UserInfo, UserSession,
+use super::super::{get_password, random_string, ArticleList, ArticlesWithTag, Comments, LoginUser,
+                   NewUser, Permissions, Postgresql, Redis, RegisteredUser, UserInfo,
                    sha3_256_encode};
 use uuid::Uuid;
 
@@ -54,29 +53,34 @@ impl Visitor {
         let limit = t_param_parse!(query_params, "limit", i64);
         let offset = t_param_parse!(query_params, "offset", i64);
 
-        let admin_cookies_status = req.ext().get::<AdminSession>().unwrap();
-        let user_cookies_status = req.ext().get::<UserSession>().unwrap();
-
+        let permission = req.ext().get::<Permissions>().unwrap();
         let redis_pool = req.ext().get::<Redis>().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        let user_id = match *user_cookies_status {
-            true => {
+        let (user_id, admin) = match *permission {
+            Some(0) => {
                 let cookie = req.ext().get::<SessionVal>().unwrap();
                 let info = serde_json::from_str::<UserInfo>(&UserInfo::view_user_with_cookie(
                     redis_pool,
                     cookie,
-                    admin_cookies_status,
                 )).unwrap();
-                Some(info.id)
+                (Some(info.id), true)
             }
-            false => None,
+            Some(_) => {
+                let cookie = req.ext().get::<SessionVal>().unwrap();
+                let info = serde_json::from_str::<UserInfo>(&UserInfo::view_user_with_cookie(
+                    redis_pool,
+                    cookie,
+                )).unwrap();
+                (Some(info.id), false)
+            }
+            _ => (None, false),
         };
         let res = match Comments::query(&pg_pool, limit, offset, article_id) {
             Ok(data) => json!({
                     "status": true,
                     "data": data,
-                    "admin": admin_cookies_status,
+                    "admin": admin,
                     "user": user_id
                 }),
             Err(err) => json!({
@@ -194,26 +198,6 @@ impl Visitor {
 }
 
 impl SapperModule for Visitor {
-    #[allow(unused_assignments)]
-    fn before(&self, req: &mut Request) -> SapperResult<()> {
-        let mut user_status = false;
-        let mut admin_status = false;
-        {
-            let cookie = req.ext().get::<SessionVal>();
-            let redis_pool = req.ext().get::<Redis>().unwrap();
-            user_status = user_verification_cookie(cookie, redis_pool);
-            admin_status = admin_verification_cookie(cookie, redis_pool);
-        }
-        req.ext_mut().insert::<UserSession>(user_status);
-        req.ext_mut().insert::<AdminSession>(admin_status);
-
-        Ok(())
-    }
-
-    fn after(&self, _req: &Request, _res: &mut Response) -> SapperResult<()> {
-        Ok(())
-    }
-
     fn router(&self, router: &mut SapperRouter) -> SapperResult<()> {
         // http get /article/view_all limit==5 offset==0
         router.get("/article/view_all", Visitor::list_all_article);
