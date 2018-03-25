@@ -96,7 +96,7 @@ impl Visitor {
         let article_id = t_param_parse!(params, "id", Uuid);
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
 
-        let res = match ArticlesWithTag::query_article(&pg_pool, article_id, false) {
+        let res = match ArticlesWithTag::query_without_article(&pg_pool, article_id, false) {
             Ok(data) => json!({
                     "status": true,
                     "data": data
