@@ -3,9 +3,8 @@ use sapper_std::{set_cookie, JsonParams, PathParams, QueryParams, SessionVal};
 use sapper::header::ContentType;
 use serde_json;
 
-use super::super::{get_password, random_string, ArticleList, ArticlesWithTag, Comments, LoginUser,
-                   NewUser, Permissions, Postgresql, Redis, RegisteredUser, UserInfo,
-                   sha3_256_encode};
+use super::super::{ArticleList, ArticlesWithTag, Comments, LoginUser,
+                   Permissions, Postgresql, Redis, RegisteredUser, UserInfo};
 use uuid::Uuid;
 
 pub struct Visitor;
@@ -155,18 +154,15 @@ impl Visitor {
     }
 
     fn create_user(req: &mut Request) -> SapperResult<Response> {
-        let mut body: RegisteredUser = get_json_params!(req);
-        let salt = random_string(6);
-        body.password = sha3_256_encode(get_password(&body.password) + &salt);
+        let body: RegisteredUser = get_json_params!(req);
 
-        let new_user = NewUser::new(body, salt);
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let redis_pool = req.ext().get::<Redis>().unwrap();
 
         let mut response = Response::new();
         response.headers_mut().set(ContentType::json());
 
-        match new_user.insert(&pg_pool, redis_pool) {
+        match body.insert(&pg_pool, redis_pool) {
             Ok(cookies) => {
                 let res = json!({
                     "status": true,

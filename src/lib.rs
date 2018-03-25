@@ -35,7 +35,7 @@ pub(crate) use schema::{article_tag_relation, article_with_tag, articles, commen
 pub(crate) use models::{ArticleList, ArticlesWithTag, EditArticle, ModifyPublish, NewArticle,
                         PublishedStatistics};
 pub(crate) use models::{ChangePassword, ChangePermission, DisabledUser, EditUser, LoginUser,
-                        NewUser, RegisteredUser, UserInfo, Users};
+                        RegisteredUser, UserInfo, Users};
 pub(crate) use models::{NewTag, TagCount, Tags};
 pub(crate) use models::{Comments, DeleteComment, NewComments};
 pub(crate) use util::{get_password, markdown_render, random_string, sha3_256_encode};

@@ -68,7 +68,7 @@ impl Users {
 
 #[derive(Insertable, Debug, Clone, Deserialize, Serialize)]
 #[table_name = "users"]
-pub struct NewUser {
+struct NewUser {
     pub account: String,
     pub password: String,
     pub salt: String,
@@ -78,10 +78,12 @@ pub struct NewUser {
 }
 
 impl NewUser {
-    pub fn new(reg: RegisteredUser, salt: String) -> Self {
+    fn new(reg: RegisteredUser) -> Self {
+        let salt = random_string(6);
+
         NewUser {
             account: reg.account,
-            password: reg.password,
+            password: sha3_256_encode(get_password(&reg.password) + &salt),
             salt,
             nickname: reg.nickname,
             say: reg.say,
@@ -89,7 +91,7 @@ impl NewUser {
         }
     }
 
-    pub fn insert(
+    fn insert(
         &self,
         conn: &PgConnection,
         redis_pool: &Arc<RedisPool>,
@@ -119,6 +121,12 @@ pub struct RegisteredUser {
     pub nickname: String,
     pub say: Option<String>,
     pub email: String,
+}
+
+impl RegisteredUser {
+    pub fn insert(self, conn: &PgConnection, redis_pool: &Arc<RedisPool>) -> Result<String, String> {
+        NewUser::new(self).insert(conn, redis_pool)
+    }
 }
 
 #[derive(Queryable, Debug, Clone, Deserialize, Serialize)]
