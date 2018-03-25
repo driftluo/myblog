@@ -23,8 +23,8 @@
 {% endblock header%}
 
 {% block body %}
-<div class="col-sm-offset-1 col-sm-10 col-md-offset-1 col-md-10 col-xs-offset-1 col-xs-10" data-id={{ article.id }}>
-
+<div class="col-md-offset-1 col-md-10" data-id={{ article.id }}>
+  {{ article.content | safe }}
 </div>
 <div class="col-sm-offset-1 col-sm-10 col-md-offset-1 col-md-10 col-xs-offset-1 col-xs-10 comment_ground">
     <h4>评论区</h4>
@@ -36,7 +36,7 @@
 </div>
 
 {% if user %}
-<div class="col-sm-offset-1 col-sm-10 col-md-offset-1 col-md-10 col-xs-offset-1 col-xs-10" style="margin-top: 20px;">
+<div class=" col-md-offset-1 col-md-10" style="margin-top: 20px;">
     <div id="editor">
 
     </div>
@@ -44,7 +44,7 @@
     <button class="btn btn-primary pull-right comment">评论</button>
 </div>
 {% else %}
-<div class="col-sm-offset-1 col-sm-10 col-md-offset-1 col-md-10 col-xs-offset-1 col-xs-10" style="margin-top: 20px;">
+<div class="col-md-offset-1 col-md-10" style="margin-top: 20px;">
     <p>请<a href="/home">登录</a>后评论</p>
 </div>
 {% endif %}

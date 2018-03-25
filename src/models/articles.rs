@@ -53,6 +53,26 @@ impl ArticlesWithTag {
             Err(err) => Err(format!("{}", err)),
         }
     }
+    pub fn query_without_article(
+        conn: &PgConnection,
+        id: Uuid,
+        admin: bool,
+    ) -> Result<ArticlesWithoutContent, String> {
+        let res = if admin {
+            all_article_with_tag
+                .filter(article_with_tag::id.eq(id))
+                .get_result::<RawArticlesWithTag>(conn)
+        } else {
+            all_article_with_tag
+                .filter(article_with_tag::id.eq(id))
+                .filter(article_with_tag::published.eq(true))
+                .get_result::<RawArticlesWithTag>(conn)
+        };
+        match res {
+            Ok(data) => Ok(data.into_without_content()),
+            Err(err) => Err(format!("{}", err)),
+        }
+    }
 
     pub fn query_raw_article(conn: &PgConnection, id: Uuid) -> Result<ArticlesWithTag, String> {
         let res = all_article_with_tag
@@ -266,6 +286,17 @@ impl RawArticlesWithTag {
             modify_time: self.modify_time,
         }
     }
+
+    fn into_without_content(self) -> ArticlesWithoutContent {
+        ArticlesWithoutContent {
+            id: self.id,
+            published: self.published,
+            tags_id: self.tags_id,
+            tags: self.tags,
+            create_time: self.create_time,
+            modify_time: self.modify_time,
+        }
+    }
 }
 
 #[derive(Queryable, Debug, Clone)]
@@ -297,4 +328,14 @@ impl PublishedStatistics {
             Err(err) => Err(format!("{}", err)),
         }
     }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct ArticlesWithoutContent {
+    pub id: Uuid,
+    pub published: bool,
+    pub tags_id: Vec<Option<Uuid>>,
+    pub tags: Vec<Option<String>>,
+    pub create_time: NaiveDateTime,
+    pub modify_time: NaiveDateTime,
 }

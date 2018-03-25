@@ -21,7 +21,7 @@ $ curl https://sh.rustup.rs -sSf | sh
 ### [Diesel Cli](https://github.com/diesel-rs/diesel)
 This project use Diesel as Orm framework, so you need to install its command line tool via Rust package manager(eg, Cargo)
 ```
-$ cargo install diesel_cli --no-default-features --features postgres --vers 0.16.0
+$ cargo install diesel_cli --no-default-features --features postgres
 ```
 
 ### [Postgresql](https://www.postgresql.org/)

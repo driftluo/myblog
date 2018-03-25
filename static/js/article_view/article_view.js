@@ -1,14 +1,24 @@
 "use strict";
 $(function () {
-    getArticle();
+    getTagAndModifyTime();
+    hightlight($("pre code"));
     getComments();
     command.statusChange();
 });
 
+
+// loading comments
 $("#load").click(function () {
     command.statusChange();
     getComments();
 });
+
+// Highlight code
+function hightlight($doms) {
+    $doms.each(function(i, block) {
+        hljs.highlightBlock(block);
+    });
+}
 
 $("body").on("click", "ul.comment li a.delete", function () {
     var user_id = $(this).parent().children().first().attr("user-id");
@@ -42,13 +52,9 @@ $("body").on("click", "ul.comment li a.reply", function () {
     editor.txt.html(html)
 });
 
-function getArticle() {
+function getTagAndModifyTime() {
     var id = $(".col-md-offset-1[data-id]").attr("data-id");
     $.getJSON("/api/v1/article/view?id=" + id, function (result) {
-        $(".col-md-offset-1[data-id]").append(result.data.content);
-        $('pre code').each(function (i, block) {
-            hljs.highlightBlock(block);
-        });
         $(".col-md-offset-1[data-id]")
             .append("<blockquote class='pull-right'><h5 class='post-meta'>Last Modified:</h5>" +
             "<p class='pull-right post-meta'>" + moment.utc(result.data.modify_time).local().format() +
