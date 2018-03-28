@@ -24,6 +24,9 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate tiny_keccak;
 extern crate uuid;
+extern crate hyper;
+extern crate hyper_native_tls;
+extern crate serde_urlencoded;
 
 pub mod schema;
 pub mod models;
@@ -35,10 +38,11 @@ pub(crate) use schema::{article_tag_relation, article_with_tag, articles, commen
 pub(crate) use models::{ArticleList, ArticlesWithTag, EditArticle, ModifyPublish, NewArticle,
                         PublishedStatistics};
 pub(crate) use models::{ChangePassword, ChangePermission, DisabledUser, EditUser, LoginUser,
-                        NewUser, RegisteredUser, UserInfo, Users};
+                        RegisteredUser, UserInfo, Users};
 pub(crate) use models::{NewTag, TagCount, Tags};
 pub(crate) use models::{Comments, DeleteComment, NewComments};
 pub(crate) use util::{get_password, markdown_render, random_string, sha3_256_encode};
+pub(crate) use util::{get_github_account_nickname_address, get_github_token, get_github_primary_email};
 #[cfg(not(feature = "monitor"))]
 pub(crate) use util::visitor_log;
 pub use util::{create_redis_pool, get_identity_and_web_context, Permissions, Redis, RedisPool,
