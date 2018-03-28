@@ -1,10 +1,11 @@
 use sapper::{Request, Response, Result as SapperResult, SapperModule, SapperRouter};
 use sapper_std::{set_cookie, JsonParams, PathParams, QueryParams, SessionVal};
-use sapper::header::ContentType;
+use sapper::header::{ContentType, Location};
+use sapper::status;
 use serde_json;
 
-use super::super::{ArticleList, ArticlesWithTag, Comments, LoginUser,
-                   Permissions, Postgresql, Redis, RegisteredUser, UserInfo};
+use super::super::{ArticleList, ArticlesWithTag, Comments, LoginUser, Permissions, Postgresql,
+                   Redis, RegisteredUser, UserInfo, get_github_token, get_github_account_nickname_address};
 use uuid::Uuid;
 
 pub struct Visitor;
@@ -153,6 +154,53 @@ impl Visitor {
         Ok(response)
     }
 
+    fn login_with_github(req: &mut Request) -> SapperResult<Response> {
+        let params = get_query_params!(req);
+        let code = t_param_parse!(params, "code", String);
+
+        let redis_pool = req.ext().get::<Redis>().unwrap();
+        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+
+        let token = get_github_token(&code)?;
+
+        let mut response = Response::new();
+        response.headers_mut().set(ContentType::json());
+
+        let (account, nickname, github_address) = get_github_account_nickname_address(&token)?;
+        match LoginUser::login_with_github(&pg_pool, redis_pool, github_address, nickname, account, &token) {
+            Ok(cookie) => {
+                let res = json!({
+                    "status": true,
+                });
+
+                response.set_status(status::Found);
+                response.write_body(serde_json::to_string(&res).unwrap());
+                response.headers_mut().set(Location("/home".to_owned()));
+
+                let _ = set_cookie(
+                    &mut response,
+                    "blog_session".to_string(),
+                    cookie,
+                    None,
+                    Some("/".to_string()),
+                    None,
+                    Some(24),
+                );
+            }
+
+            Err(err) => {
+                let res = json!({
+                    "status": false,
+                    "error": format!("{}", err)
+                });
+
+                response.write_body(serde_json::to_string(&res).unwrap());
+            }
+        }
+
+        Ok(response)
+    }
+
     fn create_user(req: &mut Request) -> SapperResult<Response> {
         let body: RegisteredUser = get_json_params!(req);
 
@@ -207,6 +255,8 @@ impl SapperModule for Visitor {
 
         // http get /article/view id==4
         router.get("/article/view", Visitor::view_article);
+
+        router.get("/login_with_github", Visitor::login_with_github);
 
         // http post :8888/user/login account=admin password=admin
         router.post("/user/login", Visitor::login);

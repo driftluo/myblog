@@ -1,8 +1,10 @@
 pub mod redis_pool;
 pub mod postgresql_pool;
+pub mod github_information;
 
 pub use self::redis_pool::{create_redis_pool, Redis, RedisPool};
 pub use self::postgresql_pool::{create_pg_pool, Postgresql};
+pub use self::github_information::{get_github_primary_email, get_github_token, get_github_account_nickname_address};
 
 use rand::{thread_rng, Rng};
 use tiny_keccak::Keccak;
@@ -56,6 +58,9 @@ pub fn get_password(raw: &str) -> String {
     password.to_string()
 }
 
+/// Get visitor's permission and user info
+/// `0` means Admin
+/// `1` means User
 pub fn get_identity_and_web_context(req: &Request) -> (Option<i16>, Context) {
     let mut web = Context::new();
     let cookie = req.ext().get::<SessionVal>();
@@ -76,6 +81,7 @@ pub fn get_identity_and_web_context(req: &Request) -> (Option<i16>, Context) {
     }
 }
 
+/// Get visitors' ip and time, and then push it to redis key `visitor_log`
 #[inline]
 pub fn visitor_log(req: &Request, redis_pool: &Arc<RedisPool>) {
     let ip = String::from_utf8(

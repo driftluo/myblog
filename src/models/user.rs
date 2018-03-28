@@ -8,7 +8,7 @@ use uuid::Uuid;
 use serde_json;
 use std::sync::Arc;
 
-use super::super::{get_password, random_string, RedisPool, sha3_256_encode};
+use super::super::{get_password, random_string, RedisPool, sha3_256_encode, get_github_primary_email};
 
 #[derive(Queryable, Debug, Clone, Deserialize, Serialize)]
 pub struct Users {
@@ -22,6 +22,7 @@ pub struct Users {
     pub email: String,
     pub disabled: i16,
     pub create_time: NaiveDateTime,
+    pub github: Option<String>,
 }
 
 impl Users {
@@ -52,6 +53,7 @@ impl Users {
             say: self.say,
             email: self.email,
             create_time: self.create_time,
+            github: self.github,
         }
     }
 
@@ -75,6 +77,7 @@ struct NewUser {
     pub nickname: String,
     pub say: Option<String>,
     pub email: String,
+    pub github: Option<String>,
 }
 
 impl NewUser {
@@ -88,14 +91,23 @@ impl NewUser {
             nickname: reg.nickname,
             say: reg.say,
             email: reg.email,
+            github: None,
         }
     }
 
-    fn insert(
-        &self,
-        conn: &PgConnection,
-        redis_pool: &Arc<RedisPool>,
-    ) -> Result<String, String> {
+    fn new_with_github(email: String, github: String, account: String, nickname: String) -> Self {
+        NewUser {
+            account: account,
+            password: sha3_256_encode(random_string(8)),
+            salt: random_string(6),
+            email: email,
+            say: None,
+            nickname: nickname,
+            github: Some(github),
+        }
+    }
+
+    fn insert(&self, conn: &PgConnection, redis_pool: &Arc<RedisPool>) -> Result<String, String> {
         match diesel::insert_into(users::table)
             .values(self)
             .get_result::<Users>(conn)
@@ -124,7 +136,11 @@ pub struct RegisteredUser {
 }
 
 impl RegisteredUser {
-    pub fn insert(self, conn: &PgConnection, redis_pool: &Arc<RedisPool>) -> Result<String, String> {
+    pub fn insert(
+        self,
+        conn: &PgConnection,
+        redis_pool: &Arc<RedisPool>,
+    ) -> Result<String, String> {
         NewUser::new(self).insert(conn, redis_pool)
     }
 }
@@ -138,6 +154,7 @@ pub struct UserInfo {
     pub say: Option<String>,
     pub email: String,
     pub create_time: NaiveDateTime,
+    pub github: Option<String>,
 }
 
 impl UserInfo {
@@ -151,6 +168,7 @@ impl UserInfo {
                 users::say,
                 users::email,
                 users::create_time,
+                users::github,
             ))
             .filter(users::id.eq(id))
             .get_result::<UserInfo>(conn);
@@ -177,6 +195,7 @@ impl UserInfo {
                 users::say,
                 users::email,
                 users::create_time,
+                users::github,
             ))
             .limit(limit)
             .offset(offset)
@@ -315,6 +334,68 @@ impl LoginUser {
 
     pub fn sign_out(redis_pool: &Arc<RedisPool>, cookies: &str) -> bool {
         redis_pool.del(&cookies)
+    }
+
+    pub fn login_with_github(
+        conn: &PgConnection,
+        redis_pool: &Arc<RedisPool>,
+        github: String,
+        nickname: String,
+        account: String,
+        token: &str,
+    ) -> Result<String, String> {
+        let ttl = 24 * 60 * 60;
+        match all_users
+            .filter(users::disabled.eq(0))
+            .filter(users::github.eq(&github))
+            .get_result::<Users>(conn)
+            {
+                // github already exists
+                Ok(data) => {
+                    let cookie = sha3_256_encode(random_string(8));
+                    redis_pool.hset(&cookie, "login_time", Local::now().timestamp());
+                    redis_pool.hset(&cookie, "info", json!(data.into_user_info()).to_string());
+                    redis_pool.expire(&cookie, ttl);
+                    Ok(cookie)
+                }
+                Err(_) => {
+                    let email = match get_github_primary_email(token) {
+                        Ok(data) => data,
+                        Err(e) => return Err(e),
+                    };
+
+                    match all_users
+                        .filter(users::disabled.eq(0))
+                        .filter(users::email.eq(&email))
+                        .get_result::<Users>(conn)
+                        {
+                            // Account already exists but not linked
+                            Ok(data) => {
+                                let res = diesel::update(all_users.filter(users::id.eq(data.id)))
+                                    .set(users::github.eq(github))
+                                    .get_result::<Users>(conn);
+                                match res {
+                                    Ok(info) => {
+                                        let cookie = sha3_256_encode(random_string(8));
+                                        redis_pool.hset(&cookie, "login_time", Local::now().timestamp());
+                                        redis_pool.hset(
+                                            &cookie,
+                                            "info",
+                                            json!(info.into_user_info()).to_string(),
+                                        );
+                                        redis_pool.expire(&cookie, ttl);
+                                        Ok(cookie)
+                                    }
+                                    Err(err) => Err(format!("{}", err)),
+                                }
+                            }
+                            // sign up
+                            Err(_) => {
+                                NewUser::new_with_github(email, github, account,nickname).insert(conn, redis_pool)
+                            }
+                        }
+                }
+            }
     }
 }
 
