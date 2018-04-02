@@ -11,7 +11,7 @@ function get_ip() {
         var ip_unique, ip_list = [];
         for(var i = 0; i < result.data.length; i++){
             var data = JSON.parse(result.data[i]);
-            data.timestamp = moment.utc(data.timestamp).local().format();
+            data.timestamp = moment.utc(data.timestamp).local().format("YYYY-MM-DD HH:mm:ss");
             var html = template("tpl-ip", data);
             $("tbody").append(html);
             ip_list.push(data.ip)

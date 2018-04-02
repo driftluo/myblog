@@ -9,8 +9,8 @@ function getArticleList() {
             $("#next").attr({ "disabled": "disabled" });
         }
         for (var index in result.data) {
-            result.data[index].create_time = moment.utc(result.data[index].create_time).local().format();
-            result.data[index].modify_time = moment.utc(result.data[index].modify_time).local().format();
+            result.data[index].create_time = moment.utc(result.data[index].create_time).local().format("YYYY-MM-DD HH:mm:ss");
+            result.data[index].modify_time = moment.utc(result.data[index].modify_time).local().format("YYYY-MM-DD HH:mm:ss");
         }
         var html = template("tpl-article-list", result);
         $("tbody").append(html);

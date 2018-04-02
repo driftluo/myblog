@@ -139,6 +139,20 @@ impl RedisPool {
         self.with_conn(a)
     }
 
+    pub fn lrem<T>(&self, redis_key: &str, count: i64, value: T)
+        where
+            T: redis::ToRedisArgs,
+    {
+        let a = |conn: &redis::Connection| {
+            redis::cmd("lrem")
+                .arg(redis_key)
+                .arg(count)
+                .arg(value)
+                .execute(conn)
+        };
+        self.with_conn(a)
+    }
+
     pub fn lrange<T>(&self, redis_key: &str, start: i64, stop: i64) -> T
     where
         T: redis::FromRedisValue,
