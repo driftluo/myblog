@@ -290,6 +290,7 @@ impl RawArticlesWithTag {
     fn into_without_content(self) -> ArticlesWithoutContent {
         ArticlesWithoutContent {
             id: self.id,
+            title: self.title,
             published: self.published,
             tags_id: self.tags_id,
             tags: self.tags,
@@ -333,6 +334,7 @@ impl PublishedStatistics {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ArticlesWithoutContent {
     pub id: Uuid,
+    pub title: String,
     pub published: bool,
     pub tags_id: Vec<Option<Uuid>>,
     pub tags: Vec<Option<String>>,

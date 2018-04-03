@@ -41,6 +41,7 @@ pub(crate) use models::{ChangePassword, ChangePermission, DisabledUser, EditUser
                         RegisteredUser, UserInfo, Users};
 pub(crate) use models::{NewTag, TagCount, Tags};
 pub(crate) use models::{Comments, DeleteComment, NewComments};
+pub(crate) use models::UserNotify;
 pub(crate) use util::{get_password, markdown_render, random_string, sha3_256_encode};
 pub(crate) use util::{get_github_account_nickname_address, get_github_token, get_github_primary_email};
 #[cfg(not(feature = "monitor"))]

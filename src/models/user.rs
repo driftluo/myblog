@@ -177,6 +177,7 @@ impl UserInfo {
             Err(err) => Err(format!("{}", err)),
         }
     }
+
     pub fn view_user_with_cookie(redis_pool: &Arc<RedisPool>, cookie: &str) -> String {
         redis_pool.hget::<String>(cookie, "info")
     }
@@ -205,6 +206,22 @@ impl UserInfo {
             Ok(data) => Ok(data),
             Err(err) => Err(format!("{}", err)),
         }
+    }
+
+    pub fn view_admin(conn: &PgConnection) -> Self {
+        all_users
+            .select((
+                users::id,
+                users::account,
+                users::nickname,
+                users::groups,
+                users::say,
+                users::email,
+                users::create_time,
+                users::github,
+            ))
+            .filter(users::account.eq("admin"))
+            .get_result::<UserInfo>(conn).unwrap()
     }
 }
 
@@ -333,7 +350,7 @@ impl LoginUser {
     }
 
     pub fn sign_out(redis_pool: &Arc<RedisPool>, cookies: &str) -> bool {
-        redis_pool.del(&cookies)
+        redis_pool.del(cookies)
     }
 
     pub fn login_with_github(

@@ -70,6 +70,7 @@ impl InsertComments {
 pub struct NewComments {
     comment: String,
     article_id: Uuid,
+    reply_user_id: Option<Uuid>,
 }
 
 impl NewComments {
@@ -85,6 +86,14 @@ impl NewComments {
         let info =
             serde_json::from_str::<UserInfo>(&redis_pool.hget::<String>(cookie, "info")).unwrap();
         self.into_insert_comments(info.id).insert(conn)
+    }
+
+    pub fn reply_user_id(&mut self) -> Option<Uuid> {
+        self.reply_user_id.take()
+    }
+
+    pub fn article_id(&self) -> Uuid {
+        self.article_id
     }
 }
 

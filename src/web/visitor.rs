@@ -1,10 +1,11 @@
 use sapper::{Request, Response, Result as SapperResult, SapperModule, SapperRouter};
-use sapper_std::{render, PathParams};
+use sapper_std::{render, PathParams, SessionVal};
 use uuid::Uuid;
+use serde_json;
 
-use super::super::{ArticlesWithTag, Permissions, Postgresql, TagCount, UserInfo, WebContext};
+use super::super::{ArticlesWithTag, Permissions, Postgresql, TagCount, UserInfo, WebContext, UserNotify, Redis};
 #[cfg(not(feature = "monitor"))]
-use super::super::{visitor_log, Redis};
+use super::super::visitor_log;
 
 pub struct ArticleWeb;
 
@@ -61,10 +62,24 @@ impl ArticleWeb {
         let params = get_path_params!(req);
         let article_id: Uuid = t_param!(params, "id").clone().parse().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+        let redis_pool = req.ext().get::<Redis>().unwrap();
         let mut web = req.ext().get::<WebContext>().unwrap().clone();
 
         match ArticlesWithTag::query_article(&pg_pool, article_id, false) {
-            Ok(ref data) => web.add("article", data),
+            Ok(ref data) => {
+                web.add("article", data);
+
+                // remove user's notify about this article
+                req.ext().get::<SessionVal>().and_then(| cookie| {
+                    if redis_pool.exists(cookie) {
+                        let info = serde_json::from_str::<UserInfo>(&redis_pool
+                            .hget::<String>(cookie, "info"))
+                            .unwrap();
+                        UserNotify::remove_notifys_with_article_and_user(info.id, data.id, &redis_pool);
+                    };
+                    Some(())
+                });
+            },
             Err(err) => println!("{}", err),
         }
         res_html!("visitor/article_view.html", web)

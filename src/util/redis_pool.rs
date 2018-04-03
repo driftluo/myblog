@@ -43,6 +43,13 @@ impl RedisPool {
         }
     }
 
+    pub fn keys(&self, pattern: &str) -> Vec<String> {
+        redis::cmd("keys")
+            .arg(pattern)
+            .query(&*self.pool.get().unwrap())
+            .unwrap()
+    }
+
     pub fn exists(&self, redis_key: &str) -> bool {
         redis::cmd("exists")
             .arg(redis_key)
@@ -56,9 +63,12 @@ impl RedisPool {
         self.with_conn(a);
     }
 
-    pub fn del(&self, redis_key: &str) -> bool {
+    pub fn del<T>(&self, redis_keys: T) -> bool
+    where
+        T: redis::ToRedisArgs,
+    {
         redis::cmd("del")
-            .arg(redis_key)
+            .arg(redis_keys)
             .query(&*self.pool.get().unwrap())
             .unwrap()
     }
