@@ -17,7 +17,11 @@ impl UserNotify {
     /// Cache user's comment notify to redis
     pub fn cache(&self, redis_pool: &Arc<RedisPool>) {
         let content = serde_json::to_string(self).unwrap();
-        let notify_key = format!("notify:{}:{}", self.article_id.hyphenated().to_string(), self.user_id.hyphenated().to_string());
+        let notify_key = format!(
+            "notify:{}:{}",
+            self.article_id.hyphenated().to_string(),
+            self.user_id.hyphenated().to_string()
+        );
         // remove old value
         redis_pool.lrem(&notify_key, 0, &content);
         // put new value to list top
@@ -44,13 +48,12 @@ impl UserNotify {
                 })
                 .collect();
             notify.extend(notifys);
-
         }
 
         if notify.is_empty() {
-            Some(notify)
-        } else {
             None
+        } else {
+            Some(notify)
         }
     }
 
@@ -60,7 +63,11 @@ impl UserNotify {
         article_id: Uuid,
         redis_pool: &Arc<RedisPool>,
     ) {
-        let notify_key = format!("notify:{}:{}", article_id.hyphenated().to_string(), user_id.hyphenated().to_string());
+        let notify_key = format!(
+            "notify:{}:{}",
+            article_id.hyphenated().to_string(),
+            user_id.hyphenated().to_string()
+        );
         redis_pool.del(notify_key);
     }
 

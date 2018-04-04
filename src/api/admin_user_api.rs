@@ -4,7 +4,7 @@ use serde_json;
 use sapper_std::{JsonParams, PathParams, QueryParams};
 use uuid::Uuid;
 
-use super::super::{ChangePermission, DisabledUser, Permissions, Postgresql, UserInfo, Users};
+use super::super::{ChangePermission, DisabledUser, Permissions, Postgresql, Redis, UserInfo, Users};
 
 pub struct AdminUser;
 
@@ -13,8 +13,9 @@ impl AdminUser {
         let params = get_path_params!(req);
         let user_id: Uuid = t_param!(params, "id").clone().parse().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+        let redis_pool = req.ext().get::<Redis>().unwrap();
 
-        let res = match Users::delete(&pg_pool, user_id) {
+        let res = match Users::delete(&pg_pool, redis_pool, user_id) {
             Ok(num_deleted) => json!({
                     "status": true,
                     "num_deleted": num_deleted

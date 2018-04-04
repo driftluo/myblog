@@ -73,6 +73,19 @@ impl RedisPool {
             .unwrap()
     }
 
+    pub fn set(&self, redis_key: &str, value: &str) {
+        let a =
+            |conn: &redis::Connection| redis::cmd("set").arg(redis_key).arg(value).execute(conn);
+        self.with_conn(a);
+    }
+
+    pub fn get(&self, redis_key: &str) -> String {
+        redis::cmd("get")
+            .arg(redis_key)
+            .query(&*self.pool.get().unwrap())
+            .unwrap()
+    }
+
     pub fn hset<T>(&self, redis_key: &str, hash_key: &str, value: T)
     where
         T: redis::ToRedisArgs,
@@ -150,8 +163,8 @@ impl RedisPool {
     }
 
     pub fn lrem<T>(&self, redis_key: &str, count: i64, value: T)
-        where
-            T: redis::ToRedisArgs,
+    where
+        T: redis::ToRedisArgs,
     {
         let a = |conn: &redis::Connection| {
             redis::cmd("lrem")

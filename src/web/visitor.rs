@@ -3,7 +3,8 @@ use sapper_std::{render, PathParams, SessionVal};
 use uuid::Uuid;
 use serde_json;
 
-use super::super::{ArticlesWithTag, Permissions, Postgresql, TagCount, UserInfo, WebContext, UserNotify, Redis};
+use super::super::{ArticlesWithTag, Permissions, Postgresql, Redis, TagCount, UserInfo,
+                   UserNotify, WebContext};
 #[cfg(not(feature = "monitor"))]
 use super::super::visitor_log;
 
@@ -70,16 +71,19 @@ impl ArticleWeb {
                 web.add("article", data);
 
                 // remove user's notify about this article
-                req.ext().get::<SessionVal>().and_then(| cookie| {
+                req.ext().get::<SessionVal>().and_then(|cookie| {
                     if redis_pool.exists(cookie) {
-                        let info = serde_json::from_str::<UserInfo>(&redis_pool
-                            .hget::<String>(cookie, "info"))
+                        let info = serde_json::from_str::<UserInfo>(&redis_pool.hget::<String>(cookie, "info"))
                             .unwrap();
-                        UserNotify::remove_notifys_with_article_and_user(info.id, data.id, &redis_pool);
+                        UserNotify::remove_notifys_with_article_and_user(
+                            info.id,
+                            data.id,
+                            &redis_pool,
+                        );
                     };
                     Some(())
                 });
-            },
+            }
             Err(err) => println!("{}", err),
         }
         res_html!("visitor/article_view.html", web)

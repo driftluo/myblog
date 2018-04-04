@@ -49,6 +49,7 @@ $("body").on("click", "ul.comment li a.reply", function () {
     data.re_user_name = re_user.text();
     data.re_user_url = re_user.attr('href');
     var html = template("tpl-reply", data);
+    $(".w-e-text").focus();
     editor.txt.html(html)
 });
 

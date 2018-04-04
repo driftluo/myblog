@@ -1,0 +1,38 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}
+Notify
+{% endblock title %}
+
+{% block body %}
+<div class="col-md-offset-1 col-md-10" style="margin-top: 50px">
+    <br/>
+    <hr/>
+    <div class="container col-sm-12 col-md-12 col-xs-12">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>文章</th>
+                    <th>回复类型</th>
+                    <th>发送人</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% if notifys | length > 0 %}
+                {% for notify in notifys %}
+                    <tr>
+                        <td><a href="/article/{{ notify.article_id }}">{{ notify.article_title }}</a></td>
+                        <td>
+                            {% if notify.notify_type == "reply" %} 回复
+                            {% elif notify.notify_type == "comment" %} 评论
+                            {% endif %}
+                        </td>
+                        <td>{{ notify.send_user_name }}</td>
+                    </tr>
+                {% endfor %}
+            {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock body %}

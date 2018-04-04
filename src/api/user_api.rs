@@ -3,8 +3,8 @@ use sapper::{Error as SapperError, Request, Response, Result as SapperResult, Sa
 use sapper_std::{JsonParams, SessionVal};
 use serde_json;
 
-use super::super::{ChangePassword, DeleteComment, EditUser, LoginUser, NewComments, Permissions,
-                   Postgresql, Redis, UserInfo, UserNotify, ArticlesWithTag};
+use super::super::{ArticlesWithTag, ChangePassword, DeleteComment, EditUser, LoginUser,
+                   NewComments, Permissions, Postgresql, Redis, UserInfo, UserNotify};
 
 pub struct User;
 
@@ -69,12 +69,16 @@ impl User {
         let redis_pool = req.ext().get::<Redis>().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let user =
-            serde_json::from_str::<UserInfo>(&UserInfo::view_user_with_cookie(redis_pool, cookie)).unwrap();
-        let admin = UserInfo::view_admin(&pg_pool);
-        let article = ArticlesWithTag::query_without_article(&pg_pool, body.article_id(), false).unwrap();
+            serde_json::from_str::<UserInfo>(&UserInfo::view_user_with_cookie(redis_pool, cookie))
+                .unwrap();
+        let admin = UserInfo::view_admin(&pg_pool, redis_pool);
+        let article =
+            ArticlesWithTag::query_without_article(&pg_pool, body.article_id(), false).unwrap();
 
-        if let Some(reply_user_id) = body.reply_user_id() {
-            if user.id != reply_user_id {
+        match body.reply_user_id() {
+            // Reply comment
+            Some(reply_user_id) => {
+                // Notification replyee
                 let user_reply_notify = UserNotify {
                     user_id: reply_user_id,
                     send_user_name: user.nickname.clone(),
@@ -83,18 +87,32 @@ impl User {
                     notify_type: "reply".into(),
                 };
                 user_reply_notify.cache(&redis_pool);
-            }
-        }
 
-        if user.groups != 0 {
-            let comment_notify = UserNotify {
-                user_id: admin.id,
-                send_user_name: user.nickname.clone(),
-                article_id: article.id,
-                article_title: article.title.clone(),
-                notify_type: "comment".into(),
-            };
-            comment_notify.cache(&redis_pool);
+                // If the sender is not an admin and also the responder is also not admin, notify admin
+                if reply_user_id != admin.id && user.groups != 0 {
+                    let comment_notify = UserNotify {
+                        user_id: admin.id,
+                        send_user_name: user.nickname.clone(),
+                        article_id: article.id,
+                        article_title: article.title.clone(),
+                        notify_type: "comment".into(),
+                    };
+                    comment_notify.cache(&redis_pool);
+                }
+            }
+            // Normal comment
+            None => {
+                if user.groups != 0 {
+                    let comment_notify = UserNotify {
+                        user_id: admin.id,
+                        send_user_name: user.nickname.clone(),
+                        article_id: article.id,
+                        article_title: article.title.clone(),
+                        notify_type: "comment".into(),
+                    };
+                    comment_notify.cache(&redis_pool);
+                }
+            }
         }
 
         let res = json!({

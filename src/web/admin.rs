@@ -68,6 +68,11 @@ impl Admin {
         let web = req.ext().get::<WebContext>().unwrap().clone();
         res_html!("admin/ip.html", web)
     }
+
+    fn notify(req: &mut Request) -> SapperResult<Response> {
+        let web = req.ext().get::<WebContext>().unwrap().clone();
+        res_html!("admin/notify.html", web)
+    }
 }
 
 impl SapperModule for Admin {
@@ -96,6 +101,8 @@ impl SapperModule for Admin {
         router.get("/admin/users", Admin::users);
 
         router.get("/admin/ip", Admin::visitor_ip_log);
+
+        router.get("/admin/notify", Admin::notify);
 
         Ok(())
     }

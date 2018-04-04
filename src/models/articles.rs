@@ -1,14 +1,15 @@
 use super::super::articles::dsl::articles as all_articles;
 use super::super::{article_with_tag, articles};
 use super::super::article_with_tag::dsl::article_with_tag as all_article_with_tag;
-use super::super::markdown_render;
-use super::{RelationTag, Relations};
+use super::super::{markdown_render, RedisPool};
+use super::{RelationTag, Relations, UserNotify};
 
 use chrono::NaiveDateTime;
 use diesel;
 use diesel::prelude::*;
 use diesel::sql_types::{BigInt, Text};
 use uuid::Uuid;
+use std::sync::Arc;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ArticlesWithTag {
@@ -23,11 +24,18 @@ pub struct ArticlesWithTag {
 }
 
 impl ArticlesWithTag {
-    pub fn delete_with_id(conn: &PgConnection, id: Uuid) -> Result<usize, String> {
+    pub fn delete_with_id(
+        conn: &PgConnection,
+        redis_pool: &Arc<RedisPool>,
+        id: Uuid,
+    ) -> Result<usize, String> {
         Relations::delete_all(conn, id, "article");
-        let res = diesel::delete(all_articles.filter(articles::id.eq(id))).execute(conn);
+        let res = diesel::delete(all_articles.filter(articles::id.eq(&id))).execute(conn);
         match res {
-            Ok(data) => Ok(data),
+            Ok(data) => {
+                UserNotify::remove_with_article(id, redis_pool);
+                Ok(data)
+            }
             Err(err) => Err(format!("{}", err)),
         }
     }
@@ -314,8 +322,10 @@ struct Articles {
 #[derive(Queryable, Debug, Clone, Deserialize, Serialize, QueryableByName)]
 #[table_name = "articles"]
 pub struct PublishedStatistics {
-    #[sql_type = "Text"] pub dimension: String,
-    #[sql_type = "BigInt"] pub quantity: i64,
+    #[sql_type = "Text"]
+    pub dimension: String,
+    #[sql_type = "BigInt"]
+    pub quantity: i64,
 }
 
 impl PublishedStatistics {
