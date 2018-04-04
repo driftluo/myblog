@@ -5,7 +5,7 @@ use serde_json;
 use uuid::Uuid;
 
 use super::super::{ArticleList, ArticlesWithTag, EditArticle, ModifyPublish, NewArticle,
-                   Permissions, Postgresql};
+                   Permissions, Postgresql, Redis};
 
 pub struct AdminArticle;
 
@@ -25,8 +25,9 @@ impl AdminArticle {
         let params = get_path_params!(req);
         let article_id: Uuid = t_param!(params, "id").clone().parse().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+        let redis_pool = req.ext().get::<Redis>().unwrap();
 
-        let res = match ArticlesWithTag::delete_with_id(&pg_pool, article_id) {
+        let res = match ArticlesWithTag::delete_with_id(&pg_pool, redis_pool, article_id) {
             Ok(num_deleted) => json!({
                     "status": true,
                     "num_deleted": num_deleted

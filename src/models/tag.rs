@@ -49,9 +49,12 @@ impl Tags {
 #[derive(Queryable, Debug, Clone, Deserialize, Serialize, QueryableByName)]
 #[table_name = "article_tag_relation"]
 pub struct TagCount {
-    #[sql_type = "sql_uuid"] id: Uuid,
-    #[sql_type = "Text"] tag: String,
-    #[sql_type = "BigInt"] count: i64,
+    #[sql_type = "sql_uuid"]
+    id: Uuid,
+    #[sql_type = "Text"]
+    tag: String,
+    #[sql_type = "BigInt"]
+    count: i64,
 }
 
 impl TagCount {

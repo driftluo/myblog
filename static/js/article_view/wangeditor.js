@@ -6,11 +6,14 @@ $("button.comment").click(function () {
     if (editor.txt.text() !== "") {
         var comment = editor.txt.html();
         var article_id = $(".col-md-offset-1[data-id]").attr("data-id");
+        if ($(".w-e-text .post-meta a").length > 0) {
+            var reply_user_id = $(".w-e-text .post-meta a").attr("href").split("/")[2];
+        }
         $.ajax({
             url: "/api/v1/comment/new",
             type: "post",
             dataType: "json",
-            data: JSON.stringify({ "comment": comment, "article_id": article_id }),
+            data: JSON.stringify({ "comment": comment, "article_id": article_id, "reply_user_id": reply_user_id }),
             headers: { "Content-Type": "application/json" },
             success: function (res) {
                 if (res.status) {

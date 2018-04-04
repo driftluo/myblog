@@ -4,8 +4,9 @@ use sapper::header::{ContentType, Location};
 use sapper::status;
 use serde_json;
 
-use super::super::{ArticleList, ArticlesWithTag, Comments, LoginUser, Permissions, Postgresql,
-                   Redis, RegisteredUser, UserInfo, get_github_token, get_github_account_nickname_address};
+use super::super::{get_github_account_nickname_address, get_github_token, ArticleList,
+                   ArticlesWithTag, Comments, LoginUser, Permissions, Postgresql, Redis,
+                   RegisteredUser, UserInfo};
 use uuid::Uuid;
 
 pub struct Visitor;
@@ -167,7 +168,14 @@ impl Visitor {
         response.headers_mut().set(ContentType::json());
 
         let (account, nickname, github_address) = get_github_account_nickname_address(&token)?;
-        match LoginUser::login_with_github(&pg_pool, redis_pool, github_address, nickname, account, &token) {
+        match LoginUser::login_with_github(
+            &pg_pool,
+            redis_pool,
+            github_address,
+            nickname,
+            account,
+            &token,
+        ) {
             Ok(cookie) => {
                 let res = json!({
                     "status": true,

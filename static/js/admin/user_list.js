@@ -9,7 +9,7 @@ function getUserList() {
             $("#next").attr({ "disabled": "disabled" });
         }
         for (var index in result.data) {
-            result.data[index].create_time = moment.utc(result.data[index].create_time).local().format();
+            result.data[index].create_time = moment.utc(result.data[index].create_time).local().format("YYYY-MM-DD HH:mm:ss");
             if (result.data[index].groups === 0) {
                 result.data[index].group_name = "Admin"
             } else {

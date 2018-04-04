@@ -17,7 +17,8 @@ pub struct Comments {
     comment: String,
     article_id: Uuid,
     user_id: Uuid,
-    #[sql_type = "Text"] nickname: String,
+    #[sql_type = "Text"]
+    nickname: String,
     create_time: NaiveDateTime,
 }
 
@@ -70,6 +71,7 @@ impl InsertComments {
 pub struct NewComments {
     comment: String,
     article_id: Uuid,
+    reply_user_id: Option<Uuid>,
 }
 
 impl NewComments {
@@ -85,6 +87,14 @@ impl NewComments {
         let info =
             serde_json::from_str::<UserInfo>(&redis_pool.hget::<String>(cookie, "info")).unwrap();
         self.into_insert_comments(info.id).insert(conn)
+    }
+
+    pub fn reply_user_id(&mut self) -> Option<Uuid> {
+        self.reply_user_id.take()
+    }
+
+    pub fn article_id(&self) -> Uuid {
+        self.article_id
     }
 }
 
@@ -105,8 +115,7 @@ impl DeleteComment {
         match *permission {
             Some(0) => Comments::delete_with_comment_id(conn, self.comment_id),
             _ => {
-                let info = serde_json::from_str::<UserInfo>(&redis_pool
-                    .hget::<String>(cookie, "info"))
+                let info = serde_json::from_str::<UserInfo>(&redis_pool.hget::<String>(cookie, "info"))
                     .unwrap();
                 if self.user_id == info.id {
                     Comments::delete_with_comment_id(conn, self.comment_id)

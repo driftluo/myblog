@@ -42,6 +42,24 @@
                         {% if user and user.groups == 0 %}
                         <li><a href="/admin"><i class="iconfont icon-administrator" ></i> Admin</a></li>
                         {% endif %}
+                        {% if user and notifys | length > 0 %}
+                        <li role="presentation" class="dropdown">
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false"><span class="glyphicon glyphicon-bell"></span> Notifys <span class="caret"></span>{{ notifys | length }}</a>
+
+                            <ul class="dropdown-menu">
+                                {% for notify in notifys %}
+                                <a href="/article/{{ notify.article_id }}" target="_blank" style="display: block; color: black !important; text-decoration:none;}">
+                                    {{ notify.send_user_name }}
+                                    {% if notify.notify_type == "reply" %} 回复
+                                    {% elif notify.notify_type == "comment" %} 评论
+                                    {% else %} 搞事情！{% endif %}
+                                    了你，文章: {{ notify.article_title }}
+                                </a>
+                                {% endfor %}
+                            </ul>
+
+                        </li>
+                        {% endif %}
                         <li><a href="/home"><span class="glyphicon glyphicon-user"></span> Home</a></li>
                         <li><a href="/list"><span class="glyphicon glyphicon-book"></span> Blog List</a></li>
                         <li><a href="/about"><i class="iconfont icon-about" ></i> About</a></li>

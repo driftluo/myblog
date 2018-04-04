@@ -7,8 +7,10 @@ use diesel::prelude::*;
 use uuid::Uuid;
 use serde_json;
 use std::sync::Arc;
+use super::UserNotify;
 
-use super::super::{get_password, random_string, RedisPool, sha3_256_encode, get_github_primary_email};
+use super::super::{get_github_primary_email, get_password, random_string, RedisPool,
+                   sha3_256_encode};
 
 #[derive(Queryable, Debug, Clone, Deserialize, Serialize)]
 pub struct Users {
@@ -26,10 +28,17 @@ pub struct Users {
 }
 
 impl Users {
-    pub fn delete(conn: &PgConnection, id: Uuid) -> Result<usize, String> {
+    pub fn delete(
+        conn: &PgConnection,
+        redis_pool: &Arc<RedisPool>,
+        id: Uuid,
+    ) -> Result<usize, String> {
         let res = diesel::delete(all_users.find(id)).execute(conn);
         match res {
-            Ok(data) => Ok(data),
+            Ok(data) => {
+                UserNotify::remove_with_user(id, redis_pool);
+                Ok(data)
+            }
             Err(err) => Err(format!("{}", err)),
         }
     }
@@ -177,6 +186,7 @@ impl UserInfo {
             Err(err) => Err(format!("{}", err)),
         }
     }
+
     pub fn view_user_with_cookie(redis_pool: &Arc<RedisPool>, cookie: &str) -> String {
         redis_pool.hget::<String>(cookie, "info")
     }
@@ -204,6 +214,31 @@ impl UserInfo {
         match res {
             Ok(data) => Ok(data),
             Err(err) => Err(format!("{}", err)),
+        }
+    }
+
+    /// Get admin information, cache on redis
+    /// key is `admin_info`
+    pub fn view_admin(conn: &PgConnection, redis_pool: &Arc<RedisPool>) -> Self {
+        if redis_pool.exists("admin_info") {
+            serde_json::from_str::<UserInfo>(&redis_pool.get("admin_info")).unwrap()
+        } else {
+            let info = all_users
+                .select((
+                    users::id,
+                    users::account,
+                    users::nickname,
+                    users::groups,
+                    users::say,
+                    users::email,
+                    users::create_time,
+                    users::github,
+                ))
+                .filter(users::account.eq("admin"))
+                .get_result::<UserInfo>(conn)
+                .unwrap();
+            redis_pool.set("admin_info", &json!(&info).to_string());
+            info
         }
     }
 }
@@ -333,7 +368,7 @@ impl LoginUser {
     }
 
     pub fn sign_out(redis_pool: &Arc<RedisPool>, cookies: &str) -> bool {
-        redis_pool.del(&cookies)
+        redis_pool.del(cookies)
     }
 
     pub fn login_with_github(
@@ -349,53 +384,52 @@ impl LoginUser {
             .filter(users::disabled.eq(0))
             .filter(users::github.eq(&github))
             .get_result::<Users>(conn)
-            {
-                // github already exists
-                Ok(data) => {
-                    let cookie = sha3_256_encode(random_string(8));
-                    redis_pool.hset(&cookie, "login_time", Local::now().timestamp());
-                    redis_pool.hset(&cookie, "info", json!(data.into_user_info()).to_string());
-                    redis_pool.expire(&cookie, ttl);
-                    Ok(cookie)
-                }
-                Err(_) => {
-                    let email = match get_github_primary_email(token) {
-                        Ok(data) => data,
-                        Err(e) => return Err(e),
-                    };
+        {
+            // github already exists
+            Ok(data) => {
+                let cookie = sha3_256_encode(random_string(8));
+                redis_pool.hset(&cookie, "login_time", Local::now().timestamp());
+                redis_pool.hset(&cookie, "info", json!(data.into_user_info()).to_string());
+                redis_pool.expire(&cookie, ttl);
+                Ok(cookie)
+            }
+            Err(_) => {
+                let email = match get_github_primary_email(token) {
+                    Ok(data) => data,
+                    Err(e) => return Err(e),
+                };
 
-                    match all_users
-                        .filter(users::disabled.eq(0))
-                        .filter(users::email.eq(&email))
-                        .get_result::<Users>(conn)
-                        {
-                            // Account already exists but not linked
-                            Ok(data) => {
-                                let res = diesel::update(all_users.filter(users::id.eq(data.id)))
-                                    .set(users::github.eq(github))
-                                    .get_result::<Users>(conn);
-                                match res {
-                                    Ok(info) => {
-                                        let cookie = sha3_256_encode(random_string(8));
-                                        redis_pool.hset(&cookie, "login_time", Local::now().timestamp());
-                                        redis_pool.hset(
-                                            &cookie,
-                                            "info",
-                                            json!(info.into_user_info()).to_string(),
-                                        );
-                                        redis_pool.expire(&cookie, ttl);
-                                        Ok(cookie)
-                                    }
-                                    Err(err) => Err(format!("{}", err)),
-                                }
+                match all_users
+                    .filter(users::disabled.eq(0))
+                    .filter(users::email.eq(&email))
+                    .get_result::<Users>(conn)
+                {
+                    // Account already exists but not linked
+                    Ok(data) => {
+                        let res = diesel::update(all_users.filter(users::id.eq(data.id)))
+                            .set(users::github.eq(github))
+                            .get_result::<Users>(conn);
+                        match res {
+                            Ok(info) => {
+                                let cookie = sha3_256_encode(random_string(8));
+                                redis_pool.hset(&cookie, "login_time", Local::now().timestamp());
+                                redis_pool.hset(
+                                    &cookie,
+                                    "info",
+                                    json!(info.into_user_info()).to_string(),
+                                );
+                                redis_pool.expire(&cookie, ttl);
+                                Ok(cookie)
                             }
-                            // sign up
-                            Err(_) => {
-                                NewUser::new_with_github(email, github, account,nickname).insert(conn, redis_pool)
-                            }
+                            Err(err) => Err(format!("{}", err)),
                         }
+                    }
+                    // sign up
+                    Err(_) => NewUser::new_with_github(email, github, account, nickname)
+                        .insert(conn, redis_pool),
                 }
             }
+        }
     }
 }
 

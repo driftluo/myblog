@@ -43,6 +43,13 @@ impl RedisPool {
         }
     }
 
+    pub fn keys(&self, pattern: &str) -> Vec<String> {
+        redis::cmd("keys")
+            .arg(pattern)
+            .query(&*self.pool.get().unwrap())
+            .unwrap()
+    }
+
     pub fn exists(&self, redis_key: &str) -> bool {
         redis::cmd("exists")
             .arg(redis_key)
@@ -56,8 +63,24 @@ impl RedisPool {
         self.with_conn(a);
     }
 
-    pub fn del(&self, redis_key: &str) -> bool {
+    pub fn del<T>(&self, redis_keys: T) -> bool
+    where
+        T: redis::ToRedisArgs,
+    {
         redis::cmd("del")
+            .arg(redis_keys)
+            .query(&*self.pool.get().unwrap())
+            .unwrap()
+    }
+
+    pub fn set(&self, redis_key: &str, value: &str) {
+        let a =
+            |conn: &redis::Connection| redis::cmd("set").arg(redis_key).arg(value).execute(conn);
+        self.with_conn(a);
+    }
+
+    pub fn get(&self, redis_key: &str) -> String {
+        redis::cmd("get")
             .arg(redis_key)
             .query(&*self.pool.get().unwrap())
             .unwrap()
@@ -134,6 +157,20 @@ impl RedisPool {
                 .arg(redis_key)
                 .arg(start)
                 .arg(stop)
+                .execute(conn)
+        };
+        self.with_conn(a)
+    }
+
+    pub fn lrem<T>(&self, redis_key: &str, count: i64, value: T)
+    where
+        T: redis::ToRedisArgs,
+    {
+        let a = |conn: &redis::Connection| {
+            redis::cmd("lrem")
+                .arg(redis_key)
+                .arg(count)
+                .arg(value)
                 .execute(conn)
         };
         self.with_conn(a)

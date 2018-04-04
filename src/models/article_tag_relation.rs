@@ -64,7 +64,8 @@ impl RelationTag {
     }
 
     pub fn insert_all(&self, conn: &PgConnection) -> bool {
-        // If `tag` exist, insert all the new tags into the table all at once, and return the ID of the newly added tag
+        // If `tag` exist, insert all the new tags into the table all at once,
+        // and return the ID of the newly added tag
         let mut tags_id = if self.tag.is_some() {
             NewTag::insert_all(
                 self.tag

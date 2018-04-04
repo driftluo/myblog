@@ -4,7 +4,8 @@ pub mod github_information;
 
 pub use self::redis_pool::{create_redis_pool, Redis, RedisPool};
 pub use self::postgresql_pool::{create_pg_pool, Postgresql};
-pub use self::github_information::{get_github_primary_email, get_github_token, get_github_account_nickname_address};
+pub use self::github_information::{get_github_account_nickname_address, get_github_primary_email,
+                                   get_github_token};
 
 use rand::{thread_rng, Rng};
 use tiny_keccak::Keccak;
@@ -15,7 +16,7 @@ use sapper::{Key, Request};
 use chrono::Utc;
 use ammonia::clean;
 use sapper_std::{Context, SessionVal};
-use super::UserInfo;
+use super::{UserInfo, UserNotify};
 use serde_json;
 
 /// Get random value
@@ -68,10 +69,11 @@ pub fn get_identity_and_web_context(req: &Request) -> (Option<i16>, Context) {
     match cookie {
         Some(cookie) => {
             if redis_pool.exists(cookie) {
-                let info = serde_json::from_str::<UserInfo>(&redis_pool
-                    .hget::<String>(cookie, "info"))
+                let info = serde_json::from_str::<UserInfo>(&redis_pool.hget::<String>(cookie, "info"))
                     .unwrap();
+                let notifys = UserNotify::get_notifys(info.id, redis_pool);
                 web.add("user", &info);
+                web.add("notifys", &notifys);
                 (Some(info.groups), web)
             } else {
                 (None, web)

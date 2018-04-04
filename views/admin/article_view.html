@@ -37,7 +37,7 @@
         $.getJSON("/api/v1/article/admin/view?id=" + id, function (result) {
             $(".col-md-offset-1")
                 .append("<blockquote class='pull-right'><h5 class='post-meta'>Last Modified:</h5>" +
-                    "<p class='pull-right post-meta'>" + moment.utc(result.data.modify_time).local().format() +
+                    "<p class='pull-right post-meta'>" + moment.utc(result.data.modify_time).local().format("YYYY-MM-DD HH:mm:ss") +
                     "</p></blockquote>");
             var tags = {data: []};
 
