@@ -12,12 +12,14 @@ use tiny_keccak::Keccak;
 use std::fmt::Write;
 use comrak::{markdown_to_html, ComrakOptions};
 use std::sync::Arc;
-use sapper::{Key, Request};
+use sapper::{Client, Error as SapperError, Key, Request};
 use chrono::Utc;
 use ammonia::clean;
 use sapper_std::{Context, SessionVal};
 use super::{UserInfo, UserNotify};
 use serde_json;
+use std::thread;
+use std::io::Read;
 
 /// Get random value
 #[inline]
@@ -83,7 +85,7 @@ pub fn get_identity_and_web_context(req: &Request) -> (Option<i16>, Context) {
     }
 }
 
-/// Get visitors' ip and time, and then push it to redis key `visitor_log`
+/// Get visitor ip information and access time, and then push it to redis key `visitor_log`
 #[inline]
 pub fn visitor_log(req: &Request, redis_pool: &Arc<RedisPool>) {
     let ip = String::from_utf8(
@@ -92,10 +94,40 @@ pub fn visitor_log(req: &Request, redis_pool: &Arc<RedisPool>) {
             .to_vec(),
     ).unwrap();
     let timestamp = Utc::now();
-    redis_pool.lua_push(
-        "visitor_log",
-        &json!({"ip": &ip, "timestamp": &timestamp}).to_string(),
-    );
+    let redis_pool = redis_pool.clone();
+
+    // https://ipstack.com/documentation
+    thread::spawn(move || {
+        let url = format!("http://api.ipstack.com/{}?access_key=****", &ip);
+        let data = Client::new()
+            .get(&url)
+            .send()
+            .map_err(|e| SapperError::Custom(format!("hyper's io error: '{}'", e)))
+            .and_then(|mut response| {
+                let mut body = String::new();
+                response
+                    .read_to_string(&mut body)
+                    .map(|_| body)
+                    .map_err(|e| SapperError::Custom(format!("read body error: '{}'", e)))
+            })
+            .and_then(|ref body| {
+                #[derive(Deserialize)]
+                struct Inner {
+                    country_name: Option<String>,
+                    region_name: Option<String>,
+                    city: Option<String>,
+                }
+                serde_json::from_str::<Inner>(body)
+                    .map_err(|_| SapperError::Custom(String::from("serde error")))
+                    .map(|inner| inner)
+            })
+            .unwrap();
+        redis_pool.lua_push(
+            "visitor_log",
+            &json!({"ip": &ip, "timestamp": &timestamp, "country_name": data.country_name, "region_name": data.region_name, "city": data.city})
+                .to_string(),
+        );
+    });
 }
 
 pub struct Permissions;
