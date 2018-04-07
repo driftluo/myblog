@@ -54,9 +54,9 @@ Ip
     {% raw %}
     <tr>
         <td><p>{{ ip }}</p></td>
-        <td class="city" data-ip={{ ip }}></td>
-        <td class="region" data-ip={{ ip }}></td>
-        <td class="country" data-ip={{ ip }}></td>
+        <td class="city" data-ip={{ ip }}>{{ city }}</td>
+        <td class="region" data-ip={{ ip }}>{{ region_name }}</td>
+        <td class="country" data-ip={{ ip }}>{{ country_name }}</td>
         <td>{{ timestamp }}</td>
     </tr>
     {% endraw %}

@@ -16,18 +16,6 @@ function get_ip() {
             $("tbody").append(html);
             ip_list.push(data.ip)
         }
-
-        // Filter unique ip
-        ip_unique = ip_list.filter(function (element,index,self) { return self.indexOf(element) === index; });
-
-        // https://ipstack.com/documentation
-        for (var i = 0; i < ip_unique.length; i++) {
-            $.getJSON("//api.ipstack.com/" + ip_unique[i] + "?access_key=****", function (res) {
-                $(".city[data-ip='" + res.ip + "']").text(res.city);
-                $(".region[data-ip='" + res.ip+ "']").text(res.region_name);
-                $(".country[data-ip='" + res.ip+ "']").text(res.country_name);
-            })
-        }
     })
 }
 
