@@ -18,6 +18,7 @@ Ip
             <thead>
             <tr>
                 <th>IP</th>
+                <th>城市</th>
                 <th>地区</th>
                 <th>国家</th>
                 <th>时间</th>
@@ -53,6 +54,7 @@ Ip
     {% raw %}
     <tr>
         <td><p>{{ ip }}</p></td>
+        <td class="city" data-ip={{ ip }}></td>
         <td class="region" data-ip={{ ip }}></td>
         <td class="country" data-ip={{ ip }}></td>
         <td>{{ timestamp }}</td>
