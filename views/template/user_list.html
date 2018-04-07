@@ -3,8 +3,7 @@
     {{each data}}
     <tr>
         <td>{{ $index }}</td>
-        <td><a href='/user/{{ $value.id }}'><p>{{ $value.account }}</p></a></td>
-        <td>{{ $value.nickname }}</td>
+        <td><a href='/user/{{ $value.id }}'><p>{{ $value.nickname }}</p></a></td>
         <td><p data-id={{ $value.groups }} >{{ $value.group_name }}</p></td>
         <td><a href={{ $value.github }}>{{ $value.github }}</a></td>
         <td>{{ $value.email }}</td>
