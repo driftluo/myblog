@@ -70,7 +70,7 @@ impl ArticleWeb {
             Ok(ref data) => {
                 web.add("article", data);
 
-                // remove user's notify about this article
+                // Remove user's notify about this article
                 req.ext().get::<SessionVal>().and_then(|cookie| {
                     if redis_pool.exists(cookie) {
                         let info = serde_json::from_str::<UserInfo>(&redis_pool.hget::<String>(cookie, "info"))
@@ -80,6 +80,9 @@ impl ArticleWeb {
                             data.id,
                             &redis_pool,
                         );
+                        // Replace the original notification
+                        let notifys = UserNotify::get_notifys(info.id, redis_pool);
+                        web.add("notifys", &notifys);
                     };
                     Some(())
                 });

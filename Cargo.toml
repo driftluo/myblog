@@ -31,19 +31,19 @@ version = "^0.4.0"
 
 [dependencies.diesel_infer_schema]
 features = ["postgres"]
-version = "^1.1.0"
+version = "^1.2.0"
 
 [dependencies.uuid]
 features = ["serde", "v4"]
-version = "^0.5.0"
+version = "^0.6.0"
 
 [dependencies.clippy]
 optional = true
 version = "*"
 
-[patch.crates-io]
-sapper_std = { git = 'https://github.com/sappworks/sapper_std.git' }
-sapper_tmpl = { git = 'https://github.com/sappworks/sapper_tmpl.git' }
+# [patch.crates-io]
+# sapper_std = { git = 'https://github.com/sappworks/sapper_std.git' }
+# sapper_tmpl = { git = 'https://github.com/sappworks/sapper_tmpl.git' }
 
 [features]
 default = []
