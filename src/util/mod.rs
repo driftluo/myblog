@@ -49,6 +49,11 @@ pub fn markdown_render(md: &str) -> String {
         ext_table: true,
         ext_tasklist: true,
         ext_superscript: true,
+        safe: true,
+        ext_tagfilter: true,
+        hardbreaks: true,
+        smart: true,
+        github_pre_lang: true,
         ..ComrakOptions::default()
     };
     clean(&markdown_to_html(md, &option))

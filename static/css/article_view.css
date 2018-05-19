@@ -1,34 +1,41 @@
 pre {
     padding: 0px;
 }
+
 .comment li p a {
     color: #ff7519;
     margin-right: 10px;
     text-decoration: none;
 }
+
 .comment li p.head {
     line-height: 20px;
     font-size: 14px;
     color: #8c8c8c;
 }
+
 .comment li {
     margin-top: 30px;
     border-bottom: 1px solid #e6e6e6;
     overflow: hidden;
 }
+
 .comment_ground {
     background: floralwhite;
 }
+
 .float_alert {
-    position:fixed;
-    top:100px;
-    right:20px;
-    z-index:100;
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    z-index: 100;
     display: none;
 }
+
 div.reply {
     margin-left: 20px;
 }
+
 body blockquote {
     font-size: 14px;
 }
@@ -36,4 +43,17 @@ body blockquote {
 h1, h2, h3, h4, h5, h6 {
     font-weight: bold;
     margin: 1.2em 0 .6em 0;
+}
+
+table, table tr th, table tr td {
+    border: 1px solid #070606;
+}
+
+table {
+    padding: 10px;
+    min-height: 45px;
+    line-height: 35px;
+    text-align: center;
+    border-color: #070606;
+    border-collapse: collapse;
 }
