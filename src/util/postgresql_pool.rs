@@ -2,8 +2,8 @@ use std::env;
 use std::sync::Arc;
 
 use diesel::pg::PgConnection;
-use dotenv;
 use diesel::r2d2::{ConnectionManager, Pool};
+use dotenv;
 use sapper::Key;
 
 pub fn create_pg_pool() -> Arc<Pool<ConnectionManager<PgConnection>>> {

@@ -1,7 +1,7 @@
 use sapper::{Error as SapperError, Request, Response, Result as SapperResult, SapperModule,
              SapperRouter};
-use serde_json;
 use sapper_std::{JsonParams, PathParams, QueryParams};
+use serde_json;
 use uuid::Uuid;
 
 use super::super::{ChangePermission, DisabledUser, Permissions, Postgresql, Redis, UserInfo, Users};

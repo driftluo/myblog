@@ -1,12 +1,12 @@
 use sapper::{Request, Response, Result as SapperResult, SapperModule, SapperRouter};
 use sapper_std::{render, PathParams, SessionVal};
-use uuid::Uuid;
 use serde_json;
+use uuid::Uuid;
 
-use super::super::{ArticlesWithTag, Permissions, Postgresql, Redis, TagCount, UserInfo,
-                   UserNotify, WebContext};
 #[cfg(not(feature = "monitor"))]
 use super::super::visitor_log;
+use super::super::{ArticlesWithTag, Permissions, Postgresql, Redis, TagCount, UserInfo,
+                   UserNotify, WebContext};
 
 pub struct ArticleWeb;
 

@@ -1,13 +1,13 @@
 use super::super::users;
 use super::super::users::dsl::users as all_users;
 
+use super::UserNotify;
 use chrono::{Local, NaiveDateTime};
 use diesel;
 use diesel::prelude::*;
-use uuid::Uuid;
 use serde_json;
 use std::sync::Arc;
-use super::UserNotify;
+use uuid::Uuid;
 
 use super::super::{get_github_primary_email, get_password, random_string, RedisPool,
                    sha3_256_encode};
@@ -16,6 +16,7 @@ use super::super::{get_github_primary_email, get_password, random_string, RedisP
 pub struct Users {
     pub id: Uuid,
     pub account: String,
+    pub github: Option<String>,
     pub password: String,
     pub salt: String,
     pub groups: i16,
@@ -24,7 +25,6 @@ pub struct Users {
     pub email: String,
     pub disabled: i16,
     pub create_time: NaiveDateTime,
-    pub github: Option<String>,
 }
 
 impl Users {

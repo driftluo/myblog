@@ -1,30 +1,34 @@
-pub mod redis_pool;
-pub mod postgresql_pool;
 pub mod github_information;
+pub mod postgresql_pool;
+pub mod redis_pool;
 
-pub use self::redis_pool::{create_redis_pool, Redis, RedisPool};
-pub use self::postgresql_pool::{create_pg_pool, Postgresql};
 pub use self::github_information::{get_github_account_nickname_address, get_github_primary_email,
                                    get_github_token};
+pub use self::postgresql_pool::{create_pg_pool, Postgresql};
+pub use self::redis_pool::{create_redis_pool, Redis, RedisPool};
 
-use rand::{thread_rng, Rng};
-use tiny_keccak::Keccak;
-use std::fmt::Write;
-use comrak::{markdown_to_html, ComrakOptions};
-use std::sync::Arc;
-use sapper::{Client, Error as SapperError, Key, Request};
-use chrono::Utc;
-use ammonia::clean;
-use sapper_std::{Context, SessionVal};
 use super::{UserInfo, UserNotify};
+use ammonia::clean;
+use chrono::Utc;
+use comrak::{markdown_to_html, ComrakOptions};
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
+use sapper::{Client, Error as SapperError, Key, Request};
+use sapper_std::{Context, SessionVal};
 use serde_json;
-use std::thread;
+use std::fmt::Write;
 use std::io::Read;
+use std::sync::Arc;
+use std::thread;
+use tiny_keccak::Keccak;
 
 /// Get random value
 #[inline]
 pub fn random_string(limit: usize) -> String {
-    thread_rng().gen_ascii_chars().take(limit).collect()
+    thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(limit)
+        .collect()
 }
 
 /// Convert text to `sha3_256` hex

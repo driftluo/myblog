@@ -1,15 +1,15 @@
-use super::super::articles::dsl::articles as all_articles;
-use super::super::{article_with_tag, articles};
 use super::super::article_with_tag::dsl::article_with_tag as all_article_with_tag;
+use super::super::articles::dsl::articles as all_articles;
 use super::super::{markdown_render, RedisPool};
+use super::super::{article_with_tag, articles};
 use super::{RelationTag, Relations, UserNotify};
 
 use chrono::NaiveDateTime;
 use diesel;
 use diesel::prelude::*;
 use diesel::sql_types::{BigInt, Text};
-use uuid::Uuid;
 use std::sync::Arc;
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ArticlesWithTag {

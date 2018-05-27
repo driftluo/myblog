@@ -1,12 +1,12 @@
-use std::io::Read;
+use hyper::Client;
+use hyper::header::ContentType;
+use hyper::header::Headers;
+use hyper::net::HttpsConnector;
+use hyper_native_tls::NativeTlsClient;
 use sapper::Error as SapperError;
 use serde_json;
 use serde_urlencoded;
-use hyper_native_tls::NativeTlsClient;
-use hyper::net::HttpsConnector;
-use hyper::Client;
-use hyper::header::Headers;
-use hyper::header::ContentType;
+use std::io::Read;
 
 fn create_https_client() -> Client {
     let ssl = NativeTlsClient::new().unwrap();

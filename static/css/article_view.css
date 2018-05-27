@@ -45,15 +45,45 @@ h1, h2, h3, h4, h5, h6 {
     margin: 1.2em 0 .6em 0;
 }
 
-table, table tr th, table tr td {
-    border: 1px solid #070606;
+table, pre, dl, blockquote, q, ul, ol {
+    margin: 1.2em 0;
 }
 
 table {
-    padding: 10px;
-    min-height: 45px;
-    line-height: 35px;
-    text-align: center;
-    border-color: #070606;
+    padding: 0;
     border-collapse: collapse;
+    border-spacing: 0;
+    font-size: 1em;
+    font: inherit;
+    border: 0;
+}
+
+tbody {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+table tr {
+    border: 0;
+    border-top: 1px solid #CCC;
+    background-color: white;
+    margin: 0;
+    padding: 0;
+}
+
+table tr:nth-child(2n) {
+    background-color: #F8F8F8;
+}
+
+table tr th, table tr td {
+    font-size: 1em;
+    border: 1px solid #CCC;
+    margin: 0;
+    padding: 0.5em 1em;
+}
+
+table tr th {
+    font-weight: bold;
+    background-color: #F0F0F0;
 }

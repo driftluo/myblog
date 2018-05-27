@@ -2,9 +2,9 @@ extern crate blog;
 extern crate sapper;
 extern crate sapper_std;
 
-use sapper::{Request, Response, Result as SapperResult, SapperApp, SapperAppShell};
 use blog::{create_pg_pool, create_redis_pool, get_identity_and_web_context, Admin, ArticleWeb,
            Permissions, Postgresql, Redis, WebContext};
+use sapper::{Request, Response, Result as SapperResult, SapperApp, SapperAppShell};
 use std::sync::Arc;
 
 struct WebApp;

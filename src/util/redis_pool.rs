@@ -1,12 +1,12 @@
 use std::env;
 use std::sync::Arc;
 
-use redis;
-use r2d2;
 use dotenv;
+use r2d2;
 use r2d2::Pool;
-use sapper::Key;
 use r2d2_redis::RedisConnectionManager;
+use redis;
+use sapper::Key;
 use std::fs::File;
 use std::io::Read;
 

@@ -1,14 +1,14 @@
 use super::super::comments;
 use super::super::comments::dsl::comments as all_comments;
 
+use super::super::{RedisPool, UserInfo};
 use chrono::NaiveDateTime;
-use uuid::Uuid;
 use diesel;
 use diesel::prelude::*;
 use diesel::sql_types::Text;
-use std::sync::Arc;
 use serde_json;
-use super::super::{RedisPool, UserInfo};
+use std::sync::Arc;
+use uuid::Uuid;
 
 #[derive(Queryable, Debug, Clone, Deserialize, Serialize, QueryableByName)]
 #[table_name = "comments"]
