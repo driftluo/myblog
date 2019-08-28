@@ -1,7 +1,8 @@
-use sapper::{Error as SapperError, Request, Response, Result as SapperResult, SapperModule,
-             SapperRouter};
+use sapper::{
+    Error as SapperError, Request, Response, Result as SapperResult, SapperModule, SapperRouter,
+};
 use sapper_std::{JsonParams, PathParams, QueryParams};
-use serde_json;
+use serde_json::{self, json};
 use uuid::Uuid;
 
 use super::super::{NewTag, Permissions, Postgresql, TagCount, Tags};
@@ -22,17 +23,17 @@ impl Tag {
 
     fn delete_tag(req: &mut Request) -> SapperResult<Response> {
         let params = get_path_params!(req);
-        let id: Uuid = t_param!(params, "id").clone().parse().unwrap();
+        let id: Uuid = t_param!(params, "id").parse().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let res = match Tags::delete_tag(&pg_pool, id) {
             Ok(num_deleted) => json!({
-                    "status": true,
-                    "num_deleted": num_deleted
-                    }),
+            "status": true,
+            "num_deleted": num_deleted
+            }),
             Err(err) => json!({
-                    "status": false,
-                    "error": err
-                    }),
+            "status": false,
+            "error": err
+            }),
         };
         res_json!(res)
     }
@@ -44,13 +45,13 @@ impl Tag {
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let res = match TagCount::view_all_tag_count(&pg_pool, limit, offset) {
             Ok(data) => json!({
-                    "status": true,
-                    "data": data
-                }),
+                "status": true,
+                "data": data
+            }),
             Err(err) => json!({
-                    "status": false,
-                    "error": err
-                }),
+                "status": false,
+                "error": err
+            }),
         };
         res_json!(res)
     }
@@ -60,13 +61,13 @@ impl Tag {
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let res = match body.edit_tag(&pg_pool) {
             Ok(num_update) => json!({
-                    "status": true,
-                    "num_update": num_update
-                }),
+                "status": true,
+                "num_update": num_update
+            }),
             Err(err) => json!({
-                    "status": false,
-                    "error": format!("{}", err)
-                }),
+                "status": false,
+                "error": err.to_string()
+            }),
         };
         res_json!(res)
     }

@@ -1,4 +1,4 @@
-table!{
+table! {
     article_with_tag (id) {
         id -> Uuid,
         title -> Varchar,
@@ -12,7 +12,7 @@ table!{
     }
 }
 
-table!{
+table! {
     articles (id) {
         id -> Uuid,
         title -> Varchar,
@@ -40,14 +40,14 @@ table! {
     }
 }
 
-table!{
+table! {
     tags (id) {
         id -> Uuid,
         tag -> Varchar,
     }
 }
 
-table!{
+table! {
     comments (id) {
         id -> Uuid,
         comment -> Text,
@@ -57,7 +57,7 @@ table!{
     }
 }
 
-table!{
+table! {
     article_tag_relation (id) {
         id -> Uuid,
         tag_id -> Uuid,

@@ -2,20 +2,21 @@ pub mod github_information;
 pub mod postgresql_pool;
 pub mod redis_pool;
 
-pub use self::github_information::{get_github_account_nickname_address, get_github_primary_email,
-                                   get_github_token};
+pub use self::github_information::{
+    get_github_account_nickname_address, get_github_primary_email, get_github_token,
+};
 pub use self::postgresql_pool::{create_pg_pool, Postgresql};
 pub use self::redis_pool::{create_redis_pool, Redis, RedisPool};
 
 use super::{UserInfo, UserNotify};
 use ammonia::clean;
 use chrono::Utc;
-use comrak::{markdown_to_html, ComrakOptions};
+use pulldown_cmark::{html::push_html, Options, Parser};
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use sapper::{Client, Error as SapperError, Key, Request};
 use sapper_std::{Context, SessionVal};
-use serde_json;
+use serde_json::{self, json};
 use std::fmt::Write;
 use std::io::Read;
 use std::sync::Arc;
@@ -48,19 +49,10 @@ pub fn sha3_256_encode(s: String) -> String {
 /// Convert markdown to html
 #[inline]
 pub fn markdown_render(md: &str) -> String {
-    let option = ComrakOptions {
-        ext_strikethrough: true,
-        ext_table: true,
-        ext_tasklist: true,
-        ext_superscript: true,
-        safe: true,
-        ext_tagfilter: true,
-        hardbreaks: true,
-        smart: true,
-        github_pre_lang: true,
-        ..ComrakOptions::default()
-    };
-    clean(&markdown_to_html(md, &option))
+    let md_parse = Parser::new_ext(md, Options::all());
+    let mut unsafe_html = String::new();
+    push_html(&mut unsafe_html, md_parse);
+    clean(&*unsafe_html)
 }
 
 /// Get the real password, the first six is a random number
@@ -80,8 +72,9 @@ pub fn get_identity_and_web_context(req: &Request) -> (Option<i16>, Context) {
     match cookie {
         Some(cookie) => {
             if redis_pool.exists(cookie) {
-                let info = serde_json::from_str::<UserInfo>(&redis_pool.hget::<String>(cookie, "info"))
-                    .unwrap();
+                let info =
+                    serde_json::from_str::<UserInfo>(&redis_pool.hget::<String>(cookie, "info"))
+                        .unwrap();
                 let notifys = UserNotify::get_notifys(info.id, redis_pool);
                 web.add("user", &info);
                 web.add("notifys", &notifys);
@@ -101,7 +94,8 @@ pub fn visitor_log(req: &Request, redis_pool: &Arc<RedisPool>) {
         req.headers().get_raw("X-Real-IP").unwrap()[0]
             .as_slice()
             .to_vec(),
-    ).unwrap();
+    )
+    .unwrap();
     let timestamp = Utc::now();
     let redis_pool = redis_pool.clone();
 

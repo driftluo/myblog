@@ -1,29 +1,32 @@
-use sapper::{Error as SapperError, Request, Response, Result as SapperResult, SapperModule,
-             SapperRouter};
+use sapper::{
+    Error as SapperError, Request, Response, Result as SapperResult, SapperModule, SapperRouter,
+};
 use sapper_std::{JsonParams, PathParams, QueryParams};
-use serde_json;
+use serde_json::{self, json};
 use uuid::Uuid;
 
-use super::super::{ChangePermission, DisabledUser, Permissions, Postgresql, Redis, UserInfo, Users};
+use super::super::{
+    ChangePermission, DisabledUser, Permissions, Postgresql, Redis, UserInfo, Users,
+};
 
 pub struct AdminUser;
 
 impl AdminUser {
     fn delete_user(req: &mut Request) -> SapperResult<Response> {
         let params = get_path_params!(req);
-        let user_id: Uuid = t_param!(params, "id").clone().parse().unwrap();
+        let user_id: Uuid = t_param!(params, "id").parse().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let redis_pool = req.ext().get::<Redis>().unwrap();
 
         let res = match Users::delete(&pg_pool, redis_pool, user_id) {
             Ok(num_deleted) => json!({
-                    "status": true,
-                    "num_deleted": num_deleted
-                    }),
+            "status": true,
+            "num_deleted": num_deleted
+            }),
             Err(err) => json!({
-                    "status": false,
-                    "error": err
-                    }),
+            "status": false,
+            "error": err
+            }),
         };
         res_json!(res)
     }
@@ -35,13 +38,13 @@ impl AdminUser {
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let res = match UserInfo::view_user_list(&pg_pool, limit, offset) {
             Ok(data) => json!({
-                    "status": true,
-                    "data": data
-                }),
+                "status": true,
+                "data": data
+            }),
             Err(err) => json!({
-                    "status": false,
-                    "error": err
-                }),
+                "status": false,
+                "error": err
+            }),
         };
         res_json!(res)
     }
@@ -51,13 +54,13 @@ impl AdminUser {
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let res = match Users::change_permission(&pg_pool, body) {
             Ok(num_update) => json!({
-                    "status": true,
-                    "num_update": num_update
-                }),
+                "status": true,
+                "num_update": num_update
+            }),
             Err(err) => json!({
-                    "status": false,
-                    "error": format!("{}", err)
-                }),
+                "status": false,
+                "error": err.to_string()
+            }),
         };
         res_json!(res)
     }
@@ -67,13 +70,13 @@ impl AdminUser {
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let res = match Users::disabled_user(&pg_pool, body) {
             Ok(num_update) => json!({
-                    "status": true,
-                    "num_update": num_update
-                }),
+                "status": true,
+                "num_update": num_update
+            }),
             Err(err) => json!({
-                    "status": false,
-                    "error": format!("{}", err)
-                }),
+                "status": false,
+                "error": err.to_string()
+            }),
         };
         res_json!(res)
     }

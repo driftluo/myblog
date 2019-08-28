@@ -42,8 +42,9 @@ impl Relations {
             all_relation
                 .filter(relation::article_id.eq(self.article_id))
                 .filter(relation::tag_id.eq(self.tag_id)),
-        ).execute(conn)
-            .is_ok()
+        )
+        .execute(conn)
+        .is_ok()
     }
 }
 

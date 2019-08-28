@@ -2,11 +2,12 @@ use sapper::header::{ContentType, Location};
 use sapper::status;
 use sapper::{Request, Response, Result as SapperResult, SapperModule, SapperRouter};
 use sapper_std::{set_cookie, JsonParams, PathParams, QueryParams, SessionVal};
-use serde_json;
+use serde_json::{self, json};
 
-use super::super::{get_github_account_nickname_address, get_github_token, ArticleList,
-                   ArticlesWithTag, Comments, LoginUser, Permissions, Postgresql, Redis,
-                   RegisteredUser, UserInfo};
+use super::super::{
+    get_github_account_nickname_address, get_github_token, ArticleList, ArticlesWithTag, Comments,
+    LoginUser, Permissions, Postgresql, Redis, RegisteredUser, UserInfo,
+};
 use uuid::Uuid;
 
 pub struct Visitor;
@@ -19,37 +20,37 @@ impl Visitor {
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let res = match ArticleList::query_list_article(&pg_pool, limit, offset, false) {
             Ok(data) => json!({
-                    "status": true,
-                    "data": data
-                }),
+                "status": true,
+                "data": data
+            }),
             Err(err) => json!({
-                    "status": false,
-                    "error": err
-                }),
+                "status": false,
+                "error": err
+            }),
         };
         res_json!(res)
     }
 
     fn list_all_article_filter_by_tag(req: &mut Request) -> SapperResult<Response> {
         let params = get_path_params!(req);
-        let tag_id: Uuid = t_param!(params, "tag_id").clone().parse().unwrap();
+        let tag_id: Uuid = t_param!(params, "tag_id").parse().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let res = match ArticleList::query_with_tag(&pg_pool, tag_id) {
             Ok(data) => json!({
-                    "status": true,
-                    "data": data
-                }),
+                "status": true,
+                "data": data
+            }),
             Err(err) => json!({
-                    "status": false,
-                    "error": err
-                }),
+                "status": false,
+                "error": err
+            }),
         };
         res_json!(res)
     }
 
     fn list_comments(req: &mut Request) -> SapperResult<Response> {
         let path_params = get_path_params!(req);
-        let article_id: Uuid = t_param!(path_params, "id").clone().parse().unwrap();
+        let article_id: Uuid = t_param!(path_params, "id").parse().unwrap();
         let query_params = get_query_params!(req);
         let limit = t_param_parse!(query_params, "limit", i64);
         let offset = t_param_parse!(query_params, "offset", i64);
@@ -62,32 +63,32 @@ impl Visitor {
             Some(0) => {
                 let cookie = req.ext().get::<SessionVal>().unwrap();
                 let info = serde_json::from_str::<UserInfo>(&UserInfo::view_user_with_cookie(
-                    redis_pool,
-                    cookie,
-                )).unwrap();
+                    redis_pool, cookie,
+                ))
+                .unwrap();
                 (Some(info.id), true)
             }
             Some(_) => {
                 let cookie = req.ext().get::<SessionVal>().unwrap();
                 let info = serde_json::from_str::<UserInfo>(&UserInfo::view_user_with_cookie(
-                    redis_pool,
-                    cookie,
-                )).unwrap();
+                    redis_pool, cookie,
+                ))
+                .unwrap();
                 (Some(info.id), false)
             }
             _ => (None, false),
         };
         let res = match Comments::query(&pg_pool, limit, offset, article_id) {
             Ok(data) => json!({
-                    "status": true,
-                    "data": data,
-                    "admin": admin,
-                    "user": user_id
-                }),
+                "status": true,
+                "data": data,
+                "admin": admin,
+                "user": user_id
+            }),
             Err(err) => json!({
-                    "status": false,
-                    "error": err
-                }),
+                "status": false,
+                "error": err
+            }),
         };
         res_json!(res)
     }
@@ -99,13 +100,13 @@ impl Visitor {
 
         let res = match ArticlesWithTag::query_without_article(&pg_pool, article_id, false) {
             Ok(data) => json!({
-                    "status": true,
-                    "data": data
-                }),
+                "status": true,
+                "data": data
+            }),
             Err(err) => json!({
-                    "status": false,
-                    "error": err
-                }),
+                "status": false,
+                "error": err
+            }),
         };
         res_json!(res)
     }
@@ -145,7 +146,7 @@ impl Visitor {
             Err(err) => {
                 let res = json!({
                     "status": false,
-                    "error": format!("{}", err)
+                    "error": err.to_string()
                 });
 
                 response.write_body(serde_json::to_string(&res).unwrap());
@@ -199,7 +200,7 @@ impl Visitor {
             Err(err) => {
                 let res = json!({
                     "status": false,
-                    "error": format!("{}", err)
+                    "error": err.to_string()
                 });
 
                 response.write_body(serde_json::to_string(&res).unwrap());
@@ -239,7 +240,7 @@ impl Visitor {
             Err(err) => {
                 let res = json!({
                     "status": false,
-                    "error": format!("{}", err)
+                    "error": err.to_string()
                 });
 
                 response.write_body(serde_json::to_string(&res).unwrap());

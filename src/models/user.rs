@@ -5,12 +5,13 @@ use super::UserNotify;
 use chrono::{Local, NaiveDateTime};
 use diesel;
 use diesel::prelude::*;
-use serde_json;
+use serde_json::{self, json};
 use std::sync::Arc;
 use uuid::Uuid;
 
-use super::super::{get_github_primary_email, get_password, random_string, RedisPool,
-                   sha3_256_encode};
+use super::super::{
+    get_github_primary_email, get_password, random_string, sha3_256_encode, RedisPool,
+};
 
 #[derive(Queryable, Debug, Clone, Deserialize, Serialize)]
 pub struct Users {
@@ -106,12 +107,12 @@ impl NewUser {
 
     fn new_with_github(email: String, github: String, account: String, nickname: String) -> Self {
         NewUser {
-            account: account,
+            account,
             password: sha3_256_encode(random_string(8)),
             salt: random_string(6),
-            email: email,
+            email,
             say: None,
-            nickname: nickname,
+            nickname,
             github: Some(github),
         }
     }

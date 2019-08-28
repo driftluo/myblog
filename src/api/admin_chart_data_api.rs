@@ -1,6 +1,8 @@
-use sapper::{Error as SapperError, Request, Response, Result as SapperResult, SapperModule,
-             SapperRouter};
+use sapper::{
+    Error as SapperError, Request, Response, Result as SapperResult, SapperModule, SapperRouter,
+};
 use sapper_std::QueryParams;
+use serde_json::json;
 
 use super::super::{Permissions, Postgresql, PublishedStatistics, Redis};
 
@@ -11,13 +13,13 @@ impl ChartData {
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let res = match PublishedStatistics::statistics_published_frequency_by_month(&pg_pool) {
             Ok(data) => json!({
-                    "status": true,
-                    "data": data
-                }),
+                "status": true,
+                "data": data
+            }),
             Err(err) => json!({
-                    "status": false,
-                    "error": err
-                }),
+                "status": false,
+                "error": err
+            }),
         };
         res_json!(res)
     }
@@ -29,7 +31,7 @@ impl ChartData {
         let redis_pool = req.ext().get::<Redis>().unwrap();
         let res = json!({
                 "status": true,
-                "data": redis_pool.lrange::<Vec<String>>("visitor_log", 0 + offset, 0 + offset + limit - 1)
+                "data": redis_pool.lrange::<Vec<String>>("visitor_log", offset, offset + limit - 1)
         });
         res_json!(res)
     }

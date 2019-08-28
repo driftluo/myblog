@@ -1,11 +1,14 @@
-use sapper::{Error as SapperError, Request, Response, Result as SapperResult, SapperModule,
-             SapperRouter};
+use sapper::{
+    Error as SapperError, Request, Response, Result as SapperResult, SapperModule, SapperRouter,
+};
 use sapper_std::{JsonParams, PathParams, QueryParams};
-use serde_json;
+use serde_json::{self, json};
 use uuid::Uuid;
 
-use super::super::{ArticleList, ArticlesWithTag, EditArticle, ModifyPublish, NewArticle,
-                   Permissions, Postgresql, Redis};
+use super::super::{
+    ArticleList, ArticlesWithTag, EditArticle, ModifyPublish, NewArticle, Permissions, Postgresql,
+    Redis,
+};
 
 pub struct AdminArticle;
 
@@ -23,19 +26,19 @@ impl AdminArticle {
 
     fn delete_article(req: &mut Request) -> SapperResult<Response> {
         let params = get_path_params!(req);
-        let article_id: Uuid = t_param!(params, "id").clone().parse().unwrap();
+        let article_id: Uuid = t_param!(params, "id").parse().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let redis_pool = req.ext().get::<Redis>().unwrap();
 
         let res = match ArticlesWithTag::delete_with_id(&pg_pool, redis_pool, article_id) {
             Ok(num_deleted) => json!({
-                    "status": true,
-                    "num_deleted": num_deleted
-                    }),
+            "status": true,
+            "num_deleted": num_deleted
+            }),
             Err(err) => json!({
-                    "status": false,
-                    "error": err
-                    }),
+            "status": false,
+            "error": err
+            }),
         };
         res_json!(res)
     }
@@ -47,13 +50,13 @@ impl AdminArticle {
 
         let res = match ArticlesWithTag::query_without_article(&pg_pool, article_id, true) {
             Ok(data) => json!({
-                    "status": true,
-                    "data": data
-                }),
+                "status": true,
+                "data": data
+            }),
             Err(err) => json!({
-                    "status": false,
-                    "error": err
-                }),
+                "status": false,
+                "error": err
+            }),
         };
         res_json!(res)
     }
@@ -65,13 +68,13 @@ impl AdminArticle {
 
         let res = match ArticlesWithTag::query_raw_article(&pg_pool, article_id) {
             Ok(data) => json!({
-                    "status": true,
-                    "data": data
-                }),
+                "status": true,
+                "data": data
+            }),
             Err(err) => json!({
-                    "status": false,
-                    "error": err
-                }),
+                "status": false,
+                "error": err
+            }),
         };
         res_json!(res)
     }
@@ -83,13 +86,13 @@ impl AdminArticle {
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let res = match ArticleList::query_list_article(&pg_pool, limit, offset, true) {
             Ok(data) => json!({
-                    "status": true,
-                    "data": data
-                }),
+                "status": true,
+                "data": data
+            }),
             Err(err) => json!({
-                    "status": false,
-                    "error": err
-                }),
+                "status": false,
+                "error": err
+            }),
         };
         res_json!(res)
     }
@@ -101,13 +104,13 @@ impl AdminArticle {
 
         let res = match body.edit_article(&pg_pool) {
             Ok(num_update) => json!({
-                    "status": true,
-                    "num_update": num_update
-                }),
+                "status": true,
+                "num_update": num_update
+            }),
             Err(err) => json!({
-                    "status": false,
-                    "error": format!("{}", err)
-                }),
+                "status": false,
+                "error": err.to_string()
+            }),
         };
         res_json!(res)
     }
@@ -119,13 +122,13 @@ impl AdminArticle {
 
         let res = match ArticlesWithTag::publish_article(&pg_pool, body) {
             Ok(num_update) => json!({
-                    "status": true,
-                    "num_update": num_update
-                }),
+                "status": true,
+                "num_update": num_update
+            }),
             Err(err) => json!({
-                    "status": false,
-                    "error": format!("{}", err)
-                }),
+                "status": false,
+                "error": err.to_string()
+            }),
         };
         res_json!(res)
     }

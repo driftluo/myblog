@@ -5,8 +5,9 @@ use uuid::Uuid;
 
 #[cfg(not(feature = "monitor"))]
 use super::super::visitor_log;
-use super::super::{ArticlesWithTag, Permissions, Postgresql, Redis, TagCount, UserInfo,
-                   UserNotify, WebContext};
+use super::super::{
+    ArticlesWithTag, Permissions, Postgresql, Redis, TagCount, UserInfo, UserNotify, WebContext,
+};
 
 pub struct ArticleWeb;
 
@@ -48,7 +49,7 @@ impl ArticleWeb {
     /// Query other user information
     fn user(req: &mut Request) -> SapperResult<Response> {
         let params = get_path_params!(req);
-        let user_id: Uuid = t_param!(params, "id").clone().parse().unwrap();
+        let user_id: Uuid = t_param!(params, "id").parse().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let mut web = req.ext().get::<WebContext>().unwrap().clone();
 
@@ -61,7 +62,7 @@ impl ArticleWeb {
 
     fn article_view(req: &mut Request) -> SapperResult<Response> {
         let params = get_path_params!(req);
-        let article_id: Uuid = t_param!(params, "id").clone().parse().unwrap();
+        let article_id: Uuid = t_param!(params, "id").parse().unwrap();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let redis_pool = req.ext().get::<Redis>().unwrap();
         let mut web = req.ext().get::<WebContext>().unwrap().clone();
@@ -73,8 +74,10 @@ impl ArticleWeb {
                 // Remove user's notify about this article
                 req.ext().get::<SessionVal>().and_then(|cookie| {
                     if redis_pool.exists(cookie) {
-                        let info = serde_json::from_str::<UserInfo>(&redis_pool.hget::<String>(cookie, "info"))
-                            .unwrap();
+                        let info = serde_json::from_str::<UserInfo>(
+                            &redis_pool.hget::<String>(cookie, "info"),
+                        )
+                        .unwrap();
                         UserNotify::remove_notifys_with_article_and_user(
                             info.id,
                             data.id,

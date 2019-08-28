@@ -2,8 +2,10 @@ extern crate blog;
 extern crate sapper;
 extern crate sapper_std;
 
-use blog::{create_pg_pool, create_redis_pool, get_identity_and_web_context, Admin, ArticleWeb,
-           Permissions, Postgresql, Redis, WebContext};
+use blog::{
+    create_pg_pool, create_redis_pool, get_identity_and_web_context, Admin, ArticleWeb,
+    Permissions, Postgresql, Redis, WebContext,
+};
 use sapper::{Request, Response, Result as SapperResult, SapperApp, SapperAppShell};
 use std::sync::Arc;
 
@@ -40,6 +42,6 @@ fn main() {
         .add_module(Box::new(Admin))
         .static_service(true);
 
-    println!("Start listen on {}", "127.0.0.1:8080");
+    println!("Start listen on 127.0.0.1:8080");
     app.run_http();
 }

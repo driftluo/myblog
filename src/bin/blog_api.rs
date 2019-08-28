@@ -2,8 +2,10 @@ extern crate blog;
 extern crate sapper;
 extern crate sapper_std;
 
-use blog::{create_pg_pool, create_redis_pool, get_identity_and_web_context, AdminArticle,
-           AdminUser, ChartData, Permissions, Postgresql, Redis, Tag, User, Visitor};
+use blog::{
+    create_pg_pool, create_redis_pool, get_identity_and_web_context, AdminArticle, AdminUser,
+    ChartData, Permissions, Postgresql, Redis, Tag, User, Visitor,
+};
 use sapper::{Request, Response, Result as SapperResult, SapperApp, SapperAppShell};
 use std::sync::Arc;
 
@@ -43,6 +45,6 @@ fn main() {
         .add_module(Box::new(ChartData))
         .static_service(false);
 
-    println!("Start listen on {}", "127.0.0.1:8888");
+    println!("Start listen on 127.0.0.1:8888");
     app.run_http();
 }

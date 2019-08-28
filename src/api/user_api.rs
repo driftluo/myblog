@@ -1,10 +1,13 @@
-use sapper::{Error as SapperError, Request, Response, Result as SapperResult, SapperModule,
-             SapperRouter};
+use sapper::{
+    Error as SapperError, Request, Response, Result as SapperResult, SapperModule, SapperRouter,
+};
 use sapper_std::{JsonParams, SessionVal};
-use serde_json;
+use serde_json::{self, json};
 
-use super::super::{ArticlesWithTag, ChangePassword, DeleteComment, EditUser, LoginUser,
-                   NewComments, Permissions, Postgresql, Redis, UserInfo, UserNotify};
+use super::super::{
+    ArticlesWithTag, ChangePassword, DeleteComment, EditUser, LoginUser, NewComments, Permissions,
+    Postgresql, Redis, UserInfo, UserNotify,
+};
 
 pub struct User;
 
@@ -13,8 +16,8 @@ impl User {
         let cookie = req.ext().get::<SessionVal>().unwrap();
         let redis_pool = req.ext().get::<Redis>().unwrap();
         let mut res = json!({
-                    "status": true,
-                });
+            "status": true,
+        });
         res["data"] =
             serde_json::from_str(&UserInfo::view_user_with_cookie(redis_pool, cookie)).unwrap();
         res_json!(res)
@@ -27,13 +30,13 @@ impl User {
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let res = match body.change_password(&pg_pool, redis_pool, cookie) {
             Ok(data) => json!({
-                    "status": true,
-                    "data": data
-                }),
+                "status": true,
+                "data": data
+            }),
             Err(err) => json!({
-                    "status": false,
-                    "error": err
-                }),
+                "status": false,
+                "error": err
+            }),
         };
         res_json!(res)
     }
@@ -128,8 +131,8 @@ impl User {
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         let redis_pool = req.ext().get::<Redis>().unwrap();
         let res = json!({
-                "status": body.delete(&pg_pool, redis_pool, cookie, permission)
-            });
+            "status": body.delete(&pg_pool, redis_pool, cookie, *permission)
+        });
         res_json!(res)
     }
 }

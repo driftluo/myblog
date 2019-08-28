@@ -1,7 +1,7 @@
 use super::super::article_with_tag::dsl::article_with_tag as all_article_with_tag;
 use super::super::articles::dsl::articles as all_articles;
-use super::super::{markdown_render, RedisPool};
 use super::super::{article_with_tag, articles};
+use super::super::{markdown_render, RedisPool};
 use super::{RelationTag, Relations, UserNotify};
 
 use chrono::NaiveDateTime;

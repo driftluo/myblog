@@ -1,7 +1,7 @@
-use hyper::Client;
 use hyper::header::ContentType;
 use hyper::header::Headers;
 use hyper::net::HttpsConnector;
+use hyper::Client;
 use hyper_native_tls::NativeTlsClient;
 use sapper::Error as SapperError;
 use serde_json;
@@ -21,7 +21,8 @@ pub fn get_github_token(code: &str) -> Result<String, SapperError> {
         ("client_secret", "212d9729ead001da8844c1dcc79d45240166bd4f"),
         ("code", code),
         ("accept", "json"),
-    ]).unwrap();
+    ])
+    .unwrap();
 
     client
         .post("https://github.com/login/oauth/access_token")
@@ -77,18 +78,18 @@ pub fn get_github_account_nickname_address(
                     let nickname = match inner["name"].as_str() {
                         Some(data) => data.to_string(),
                         None => {
-                            return Err(SapperError::Custom(format!(
-                                "Your github account is missing a nickname setting"
-                            )))
+                            return Err(SapperError::Custom(
+                                "Your github account is missing a nickname setting".to_string(),
+                            ))
                         }
                     };
                     let github_address = match inner["html_url"].as_str() {
                         Some(data) => data.to_string(),
-                        None => return Err(SapperError::Custom(format!("read body error"))),
+                        None => return Err(SapperError::Custom("read body error".to_string())),
                     };
                     let account = match inner["login"].as_str() {
                         Some(data) => data.to_string(),
-                        None => return Err(SapperError::Custom(format!("read body error"))),
+                        None => return Err(SapperError::Custom("read body error".to_string())),
                     };
                     Ok((account, nickname, github_address))
                 })
@@ -121,7 +122,6 @@ pub fn get_github_primary_email(raw_token: &str) -> Result<String, String> {
                 .map(|raw_emails| {
                     let primary_email = raw_emails
                         .iter()
-                        .into_iter()
                         .filter(|x| x["primary"].as_bool().unwrap())
                         .map(|x| x["email"].as_str().unwrap())
                         .collect::<Vec<&str>>()[0];

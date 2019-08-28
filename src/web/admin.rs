@@ -1,5 +1,6 @@
-use sapper::{Error as SapperError, Request, Response, Result as SapperResult, SapperModule,
-             SapperRouter};
+use sapper::{
+    Error as SapperError, Request, Response, Result as SapperResult, SapperModule, SapperRouter,
+};
 use sapper_std::{render, QueryParams};
 use uuid::Uuid;
 
@@ -18,7 +19,7 @@ impl Admin {
         res_html!("admin/admin_list.html", web)
     }
 
-    fn new(req: &mut Request) -> SapperResult<Response> {
+    fn new_(req: &mut Request) -> SapperResult<Response> {
         let mut web = req.ext().get::<WebContext>().unwrap().clone();
         let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
         match Tags::view_list_tag(&pg_pool) {
@@ -90,7 +91,7 @@ impl SapperModule for Admin {
 
         router.get("/admin/list", Admin::admin_list);
 
-        router.get("/admin/new", Admin::new);
+        router.get("/admin/new", Admin::new_);
 
         router.get("/admin/article/view", Admin::admin_view_article);
 

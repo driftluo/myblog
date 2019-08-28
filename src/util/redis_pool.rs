@@ -22,10 +22,7 @@ impl RedisPool {
     {
         let manager = RedisConnectionManager::new(address).unwrap();
         let pool = r2d2::Pool::new(manager).unwrap();
-        RedisPool {
-            pool: pool,
-            script: None,
-        }
+        RedisPool { pool, script: None }
     }
 
     pub fn new_with_script<T>(address: T, path: &str) -> Self
@@ -38,7 +35,7 @@ impl RedisPool {
         let mut lua = String::new();
         file.read_to_string(&mut lua).unwrap();
         RedisPool {
-            pool: pool,
+            pool,
             script: Some(redis::Script::new(&lua)),
         }
     }
