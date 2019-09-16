@@ -81,7 +81,7 @@ impl SapperModule for Admin {
         let permission = req.ext().get::<Permissions>().unwrap();
         match *permission {
             Some(0) => Ok(()),
-            _ => Err(SapperError::TemporaryRedirect("/login".to_owned())),
+            _ => Err(SapperError::TemporaryRedirect("/home".to_owned())),
         }
     }
 

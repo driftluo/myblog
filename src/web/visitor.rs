@@ -1,4 +1,6 @@
-use sapper::{Request, Response, Result as SapperResult, SapperModule, SapperRouter};
+use sapper::{
+    Error as SapperError, Request, Response, Result as SapperResult, SapperModule, SapperRouter,
+};
 use sapper_std::{render, PathParams, SessionVal};
 use serde_json;
 use uuid::Uuid;
@@ -89,10 +91,13 @@ impl ArticleWeb {
                     };
                     Some(())
                 });
+                res_html!("visitor/article_view.html", web)
             }
-            Err(err) => println!("{}", err),
+            Err(err) => {
+                println!("{}", err);
+                Err(SapperError::NotFound)
+            }
         }
-        res_html!("visitor/article_view.html", web)
     }
 }
 
@@ -117,7 +122,7 @@ impl SapperModule for ArticleWeb {
         // http get /list
         router.get("/list", ArticleWeb::list);
 
-        // http get /login
+        // http get /home
         router.get("/home", ArticleWeb::home);
 
         router.get("/user/:id", ArticleWeb::user);

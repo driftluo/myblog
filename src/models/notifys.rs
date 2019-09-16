@@ -74,12 +74,18 @@ impl UserNotify {
     /// Remove the notification of the specified article, e.g use on remove the specified article
     pub fn remove_with_article(article_id: Uuid, redis_pool: &Arc<RedisPool>) {
         let pattern = format!("notify:{}*", article_id.hyphenated().to_string());
-        redis_pool.del(redis_pool.keys(&pattern));
+        let keys = redis_pool.keys(&pattern);
+        if !keys.is_empty() {
+            redis_pool.del(keys);
+        }
     }
 
     /// Remove the notification of the user, e.g use on remove the user
     pub fn remove_with_user(user_id: Uuid, redis_pool: &Arc<RedisPool>) {
         let pattern = format!("notify:*:{}", user_id.hyphenated().to_string());
-        redis_pool.del(redis_pool.keys(&pattern));
+        let keys = redis_pool.keys(&pattern);
+        if !keys.is_empty() {
+            redis_pool.del(keys);
+        }
     }
 }

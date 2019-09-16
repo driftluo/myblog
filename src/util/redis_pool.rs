@@ -1,4 +1,5 @@
 use std::env;
+use std::ops::DerefMut;
 use std::sync::Arc;
 
 use dotenv;
@@ -43,20 +44,21 @@ impl RedisPool {
     pub fn keys(&self, pattern: &str) -> Vec<String> {
         redis::cmd("keys")
             .arg(pattern)
-            .query(&*self.pool.get().unwrap())
+            .query(self.pool.get().unwrap().deref_mut())
             .unwrap()
     }
 
     pub fn exists(&self, redis_key: &str) -> bool {
         redis::cmd("exists")
             .arg(redis_key)
-            .query(&*self.pool.get().unwrap())
+            .query(self.pool.get().unwrap().deref_mut())
             .unwrap()
     }
 
     pub fn expire(&self, redis_key: &str, sec: i64) {
-        let a =
-            |conn: &redis::Connection| redis::cmd("expire").arg(redis_key).arg(sec).execute(conn);
+        let a = |conn: &mut dyn redis::ConnectionLike| {
+            redis::cmd("expire").arg(redis_key).arg(sec).execute(conn)
+        };
         self.with_conn(a);
     }
 
@@ -66,20 +68,21 @@ impl RedisPool {
     {
         redis::cmd("del")
             .arg(redis_keys)
-            .query(&*self.pool.get().unwrap())
+            .query(self.pool.get().unwrap().deref_mut())
             .unwrap()
     }
 
     pub fn set(&self, redis_key: &str, value: &str) {
-        let a =
-            |conn: &redis::Connection| redis::cmd("set").arg(redis_key).arg(value).execute(conn);
+        let a = |conn: &mut dyn redis::ConnectionLike| {
+            redis::cmd("set").arg(redis_key).arg(value).execute(conn)
+        };
         self.with_conn(a);
     }
 
     pub fn get(&self, redis_key: &str) -> String {
         redis::cmd("get")
             .arg(redis_key)
-            .query(&*self.pool.get().unwrap())
+            .query(self.pool.get().unwrap().deref_mut())
             .unwrap()
     }
 
@@ -87,7 +90,7 @@ impl RedisPool {
     where
         T: redis::ToRedisArgs,
     {
-        let a = |conn: &redis::Connection| {
+        let a = |conn: &mut dyn redis::ConnectionLike| {
             redis::cmd("hset")
                 .arg(redis_key)
                 .arg(hash_key)
@@ -101,7 +104,7 @@ impl RedisPool {
     where
         T: redis::ToRedisArgs,
     {
-        let a = |conn: &redis::Connection| {
+        let a = |conn: &mut dyn redis::ConnectionLike| {
             redis::cmd("hdel")
                 .arg(redis_key)
                 .arg(hash_key)
@@ -117,7 +120,7 @@ impl RedisPool {
         redis::cmd("hget")
             .arg(redis_key)
             .arg(hash_key)
-            .query(&*self.pool.get().unwrap())
+            .query(self.pool.get().unwrap().deref_mut())
             .unwrap()
     }
 
@@ -125,7 +128,7 @@ impl RedisPool {
         redis::cmd("hexists")
             .arg(redis_key)
             .arg(hash_key)
-            .query(&*self.pool.get().unwrap())
+            .query(self.pool.get().unwrap().deref_mut())
             .unwrap()
     }
 
@@ -133,8 +136,9 @@ impl RedisPool {
     where
         T: redis::ToRedisArgs,
     {
-        let a =
-            |conn: &redis::Connection| redis::cmd("lpush").arg(redis_key).arg(value).execute(conn);
+        let a = |conn: &mut dyn redis::ConnectionLike| {
+            redis::cmd("lpush").arg(redis_key).arg(value).execute(conn)
+        };
         self.with_conn(a)
     }
 
@@ -144,12 +148,12 @@ impl RedisPool {
     {
         redis::cmd("llen")
             .arg(redis_key)
-            .query(&*self.pool.get().unwrap())
+            .query(self.pool.get().unwrap().deref_mut())
             .unwrap()
     }
 
     pub fn ltrim(&self, redis_key: &str, start: i64, stop: i64) {
-        let a = |conn: &redis::Connection| {
+        let a = |conn: &mut dyn redis::ConnectionLike| {
             redis::cmd("ltrim")
                 .arg(redis_key)
                 .arg(start)
@@ -163,7 +167,7 @@ impl RedisPool {
     where
         T: redis::ToRedisArgs,
     {
-        let a = |conn: &redis::Connection| {
+        let a = |conn: &mut dyn redis::ConnectionLike| {
             redis::cmd("lrem")
                 .arg(redis_key)
                 .arg(count)
@@ -181,12 +185,12 @@ impl RedisPool {
             .arg(redis_key)
             .arg(start)
             .arg(stop)
-            .query(&*self.pool.get().unwrap())
+            .query(self.pool.get().unwrap().deref_mut())
             .unwrap()
     }
 
-    fn with_conn<F: FnOnce(&redis::Connection)>(&self, command: F) {
-        command(&*self.pool.get().unwrap());
+    fn with_conn<F: FnOnce(&mut dyn redis::ConnectionLike)>(&self, command: F) {
+        command(self.pool.get().unwrap().deref_mut());
     }
 
     pub fn lua_push(&self, redis_key: &str, ip: &str) -> bool {
@@ -195,7 +199,7 @@ impl RedisPool {
             .unwrap()
             .arg(redis_key)
             .arg(ip)
-            .invoke::<bool>(&*self.pool.get().unwrap())
+            .invoke::<bool>(self.pool.get().unwrap().deref_mut())
             .unwrap()
     }
 }
