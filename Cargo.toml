@@ -32,3 +32,8 @@ dotenv = "^0.15.0"
 uuid = { version = "0.8", features = ["serde", "v4"] }
 serde_json = { version = "1" }
 serde = { version = "1", features = ["rc"] }
+
+[profile.release]
+debug = false
+lto = true
+codegen-units = 1
