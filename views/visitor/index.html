@@ -11,7 +11,7 @@ driftluo's blog
 
 {% block header %}
 <div class="img">
-    <img src="/images/img_5.JPG" class="img-responsive img-rounded" alt="亚丁·牛奶海"/><br>
+    <img src="/images/img_5.webp" class="img-responsive img-rounded" alt="亚丁·牛奶海"/><br>
     <p class="text-right">--- 摄于 2017 年 9 月 亚丁·牛奶海</p>
 </div>
 {% endblock header %}
@@ -25,7 +25,7 @@ driftluo's blog
         {% if tags %}
         {% for tag in tags %}
         <li data-id={{ tag.id }} class="list-unstyled">
-            <button class="btn btn-primary" type="button">{{ tag.tag }}&nbsp;<span class="badge">{{ tag.count }}</span>
+            <button class="btn btn-primary tag" type="button">{{ tag.tag }}&nbsp;<span class="badge">{{ tag.count }}</span>
             </button>
         </li>
         {% endfor %}

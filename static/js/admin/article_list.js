@@ -14,6 +14,7 @@ function getArticleList() {
         }
         var html = template("tpl-article-list", result);
         $("tbody").append(html);
+        // register for click events
         publishButton();
         deleteButton();
         modifyButton();

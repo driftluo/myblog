@@ -1,13 +1,7 @@
-use super::super::article_tag_relation as relation;
-use super::super::article_tag_relation::dsl::article_tag_relation as all_relation;
-use super::NewTag;
-
-use diesel;
-use diesel::prelude::*;
+use crate::db_wrapper::get_postgres;
+use sqlx::Row;
 use uuid::Uuid;
 
-#[derive(Insertable, Debug, Clone, Deserialize, Serialize)]
-#[table_name = "relation"]
 pub struct Relations {
     tag_id: Uuid,
     article_id: Uuid,
@@ -18,37 +12,46 @@ impl Relations {
         Relations { tag_id, article_id }
     }
 
-    pub fn insert(&self, conn: &PgConnection) -> bool {
-        diesel::insert_into(relation::table)
-            .values(self)
-            .execute(conn)
-            .is_ok()
+    async fn insert(&self) -> bool {
+        sqlx::query!(
+            r#"Insert into article_tag_relation (tag_id, article_id) VALUES ($1, $2)"#,
+            self.tag_id,
+            self.article_id
+        )
+        .execute(get_postgres())
+        .await
+        .is_ok()
     }
 
-    pub fn delete_all(conn: &PgConnection, id: Uuid, method: &str) -> bool {
-        if method == "article" {
-            diesel::delete(all_relation.filter(relation::article_id.eq(id)))
-                .execute(conn)
-                .is_ok()
+    pub async fn delete_all(id: Uuid, filter_by_article: bool) {
+        if filter_by_article {
+            sqlx::query!(
+                r#"DELETE FROM article_tag_relation WHERE article_id = $1"#,
+                id
+            )
+            .execute(get_postgres())
+            .await
+            .unwrap();
         } else {
-            diesel::delete(all_relation.filter(relation::tag_id.eq(id)))
-                .execute(conn)
-                .is_ok()
+            sqlx::query!(r#"DELETE FROM article_tag_relation WHERE tag_id = $1"#, id)
+                .execute(get_postgres())
+                .await
+                .unwrap();
         }
     }
 
-    pub fn delete_relation(&self, conn: &PgConnection) -> bool {
-        diesel::delete(
-            all_relation
-                .filter(relation::article_id.eq(self.article_id))
-                .filter(relation::tag_id.eq(self.tag_id)),
+    pub async fn delete_relation(&self) {
+        sqlx::query!(
+            r#"DELETE FROM article_tag_relation WHERE article_id = $1 AND tag_id = $2"#,
+            self.article_id,
+            self.tag_id
         )
-        .execute(conn)
-        .is_ok()
+        .execute(get_postgres())
+        .await
+        .unwrap();
     }
 }
 
-#[derive(Deserialize, Serialize)]
 pub struct RelationTag {
     article_id: Uuid,
     tag_id: Option<Vec<Uuid>>,
@@ -64,37 +67,44 @@ impl RelationTag {
         }
     }
 
-    pub fn insert_all(&self, conn: &PgConnection) -> bool {
+    pub async fn insert_all(self) -> bool {
         // If `tag` exist, insert all the new tags into the table all at once,
         // and return the ID of the newly added tag
         let mut tags_id = if self.tag.is_some() {
-            NewTag::insert_all(
-                self.tag
-                    .clone()
-                    .unwrap()
-                    .iter()
-                    .map(|tag| NewTag::new(tag))
-                    .collect::<Vec<NewTag>>(),
-                conn,
+            let tags = self.tag.unwrap();
+            // https://github.com/launchbadge/sqlx/issues/294
+            sqlx::query(
+                r#"INSERT INTO tags (tag)
+                SELECT * FROM UNNEST($1)
+                RETURNING id"#,
             )
+            .bind(&tags)
+            .map(|row| row.get::<Uuid, _>(0))
+            .fetch_all(get_postgres())
+            .await
+            .unwrap()
         } else {
             Vec::new()
         };
 
         // Combine all tag id
         if self.tag_id.is_some() {
-            tags_id.append(&mut self.tag_id.clone().unwrap())
+            tags_id.append(&mut self.tag_id.unwrap())
         }
 
-        let new_relations: Vec<Relations> = tags_id
-            .iter()
-            .map(|id| Relations::new(self.article_id, *id))
+        let article_ids: Vec<Uuid> = ::std::iter::repeat(self.article_id)
+            .take(tags_id.len())
             .collect();
 
         // Insert the relationships into the table
-        diesel::insert_into(relation::table)
-            .values(&new_relations)
-            .execute(conn)
-            .is_ok()
+        sqlx::query(
+            r#"INSERT INTO article_tag_relation (article_id, tag_id)
+                SELECT * FROM UNNEST($1, $2)"#,
+        )
+        .bind(&article_ids)
+        .bind(&tags_id)
+        .execute(get_postgres())
+        .await
+        .is_ok()
     }
 }

@@ -81,3 +81,25 @@ $("#add_tag").click(function () {
     }
 
 });
+
+$("button.pull-left").click(function (event) {
+    event.preventDefault();
+    $("#upload_modal").modal("show");
+    $(".modal-upload").click(function () {
+        var files = document.getElementById("file").files;
+        var form = new FormData();
+        for (var i = 0; i < files.length; i++) {
+            form.append("files", files[i], files[i].name);
+        }
+
+        var request = new XMLHttpRequest();
+        request.open("POST", "/api/v1/upload", true);
+        request.onload = function(evt) {
+            var res = JSON.parse(evt.target.responseText);
+            if(res.status) {
+                alert(res.data)
+            }
+        }
+        request.send(form);
+    });
+});

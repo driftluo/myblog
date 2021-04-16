@@ -1,110 +1,141 @@
-use sapper::{
-    Error as SapperError, Request, Response, Result as SapperResult, SapperModule, SapperRouter,
+use salvo::{
+    http::{HttpError, StatusCode},
+    prelude::{async_trait, fn_handler},
+    Depot, Request, Response, Router, Writer,
 };
-use sapper_std::{render, QueryParams};
-use uuid::Uuid;
+use tera::Context;
 
-use super::super::{ArticlesWithTag, Permissions, Postgresql, Tags, WebContext};
+use crate::{
+    models::{articles::ArticlesWithTag, tag::Tags},
+    utils::{from_code, parse_query},
+    web::render,
+    Routers, PERMISSION, WEB,
+};
 
-pub struct Admin;
-
-impl Admin {
-    fn admin(req: &mut Request) -> SapperResult<Response> {
-        let web = req.ext().get::<WebContext>().unwrap().clone();
-        res_html!("admin/admin.html", web)
-    }
-
-    fn admin_list(req: &mut Request) -> SapperResult<Response> {
-        let web = req.ext().get::<WebContext>().unwrap().clone();
-        res_html!("admin/admin_list.html", web)
-    }
-
-    fn new_(req: &mut Request) -> SapperResult<Response> {
-        let mut web = req.ext().get::<WebContext>().unwrap().clone();
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-        match Tags::view_list_tag(&pg_pool) {
-            Ok(ref data) => web.add("tags", data),
-            Err(err) => println!("No tags, {}", err),
-        }
-        res_html!("admin/article_new.html", web)
-    }
-
-    fn admin_view_article(req: &mut Request) -> SapperResult<Response> {
-        let params = get_query_params!(req);
-        let article_id = t_param_parse!(params, "id", Uuid);
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-        let mut web = req.ext().get::<WebContext>().unwrap().clone();
-
-        match ArticlesWithTag::query_article(&pg_pool, article_id, true) {
-            Ok(ref data) => web.add("article", data),
-            Err(err) => println!("{}", err),
-        }
-        res_html!("admin/article_view.html", web)
-    }
-
-    fn article_edit(req: &mut Request) -> SapperResult<Response> {
-        let params = get_query_params!(req);
-        let article_id = t_param_parse!(params, "id", String);
-        let mut web = req.ext().get::<WebContext>().unwrap().clone();
-        web.add("id", &article_id);
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-        match Tags::view_list_tag(&pg_pool) {
-            Ok(ref data) => web.add("tags", data),
-            Err(err) => println!("No tags, {}", err),
-        }
-        res_html!("admin/article_edit.html", web)
-    }
-
-    fn tags(req: &mut Request) -> SapperResult<Response> {
-        let web = req.ext().get::<WebContext>().unwrap().clone();
-        res_html!("admin/tags.html", web)
-    }
-
-    fn users(req: &mut Request) -> SapperResult<Response> {
-        let web = req.ext().get::<WebContext>().unwrap().clone();
-        res_html!("admin/users.html", web)
-    }
-
-    fn visitor_ip_log(req: &mut Request) -> SapperResult<Response> {
-        let web = req.ext().get::<WebContext>().unwrap().clone();
-        res_html!("admin/ip.html", web)
-    }
-
-    fn notify(req: &mut Request) -> SapperResult<Response> {
-        let web = req.ext().get::<WebContext>().unwrap().clone();
-        res_html!("admin/notify.html", web)
+#[fn_handler]
+async fn block_no_admin(depot: &mut Depot) -> Result<(), HttpError> {
+    match depot.try_borrow::<_, Option<i16>>(PERMISSION) {
+        Some(Some(0)) => Ok(()),
+        _ => Err(from_code(StatusCode::FORBIDDEN, "No permission")),
     }
 }
 
-impl SapperModule for Admin {
-    fn before(&self, req: &mut Request) -> SapperResult<()> {
-        let permission = req.ext().get::<Permissions>().unwrap();
-        match *permission {
-            Some(0) => Ok(()),
-            _ => Err(SapperError::TemporaryRedirect("/home".to_owned())),
-        }
+#[fn_handler]
+async fn admin(depot: &mut Depot, res: &mut Response) {
+    let web = depot.take::<_, Context>(WEB);
+
+    render(res, "admin/admin.html", &web)
+}
+
+#[fn_handler]
+async fn admin_list(depot: &mut Depot, res: &mut Response) {
+    let web = depot.take::<_, Context>(WEB);
+
+    render(res, "admin/admin_list.html", &web)
+}
+
+#[fn_handler]
+async fn new_(depot: &mut Depot, res: &mut Response) {
+    let mut web = depot.take::<_, Context>(WEB);
+
+    match Tags::view_list_tag().await {
+        Ok(tags_) => web.insert("tags", &tags_),
+        Err(_) => (),
     }
 
-    fn router(&self, router: &mut SapperRouter) -> SapperResult<()> {
-        // http get /admin
-        router.get("/admin", Admin::admin);
+    render(res, "admin/article_new.html", &web);
+}
 
-        router.get("/admin/list", Admin::admin_list);
+#[fn_handler]
+async fn admin_view_article(
+    req: &mut Request,
+    depot: &mut Depot,
+    res: &mut Response,
+) -> Result<(), HttpError> {
+    let id = parse_query::<uuid::Uuid>(&req, "id")?;
+    let mut web = depot.take::<_, Context>(WEB);
 
-        router.get("/admin/new", Admin::new_);
+    match ArticlesWithTag::query_article(id, true).await {
+        Ok(data) => web.insert("article", &data),
+        // no possible, unless the admin does something strange
+        Err(e) => println!("{}", e),
+    }
 
-        router.get("/admin/article/view", Admin::admin_view_article);
+    render(res, "admin/article_view.html", &web);
+    Ok(())
+}
 
-        router.get("/admin/article/edit", Admin::article_edit);
+#[fn_handler]
+async fn article_edit(
+    req: &mut Request,
+    depot: &mut Depot,
+    res: &mut Response,
+) -> Result<(), HttpError> {
+    let id = parse_query::<String>(&req, "id")?;
+    let mut web = depot.take::<_, Context>(WEB);
+    web.insert("id", &id);
 
-        router.get("/admin/tags", Admin::tags);
+    match Tags::view_list_tag().await {
+        Ok(tags_) => web.insert("tags", &tags_),
+        Err(_) => (),
+    }
 
-        router.get("/admin/users", Admin::users);
+    render(res, "admin/article_edit.html", &web);
+    Ok(())
+}
 
-        router.get("/admin/ip", Admin::visitor_ip_log);
+#[fn_handler]
+async fn tags(depot: &mut Depot, res: &mut Response) {
+    let web = depot.take::<_, Context>(WEB);
 
-        router.get("/admin/notify", Admin::notify);
+    render(res, "admin/tags.html", &web)
+}
 
-        Ok(())
+#[fn_handler]
+async fn users(depot: &mut Depot, res: &mut Response) {
+    let web = depot.take::<_, Context>(WEB);
+
+    render(res, "admin/users.html", &web)
+}
+
+#[fn_handler]
+async fn visitor_ip_log(depot: &mut Depot, res: &mut Response) {
+    let web = depot.take::<_, Context>(WEB);
+
+    render(res, "admin/ip.html", &web)
+}
+
+#[fn_handler]
+async fn notify(depot: &mut Depot, res: &mut Response) {
+    let web = depot.take::<_, Context>(WEB);
+
+    render(res, "admin/notify.html", &web)
+}
+
+pub struct Admin;
+
+impl Routers for Admin {
+    fn build(self) -> Vec<Router> {
+        vec![Router::new()
+            .path("admin")
+            .before(block_no_admin)
+            // http {ip}/admin
+            .get(admin)
+            // http {ip}/admin/new
+            .push(Router::new().path("new").get(new_))
+            // http {ip}/admin/list
+            .push(Router::new().path("list").get(admin_list))
+            // http {ip}/admin/article/view?id=xxx
+            .push(Router::new().path("article/view").get(admin_view_article))
+            // http {ip}/admin/article/edit?id=xxx
+            .push(Router::new().path("article/edit").get(article_edit))
+            // http {ip}/admin/tags
+            .push(Router::new().path("tags").get(tags))
+            // http {ip}/admin/users
+            .push(Router::new().path("users").get(users))
+            // http {ip}/admin/ip
+            .push(Router::new().path("ip").get(visitor_ip_log))
+            // http {ip}/admin/notify
+            .push(Router::new().path("notify").get(notify))]
     }
 }

@@ -4,7 +4,13 @@ This is my personal blog.
 
 ## Architecture
 
-![img](imges/architecture.png)
+![img](imges/architecture.webp)
+
+## Status
+
+- [ ] The third-party login function of Github is in disrepair for a long time, and the api seems 
+  to be deprecated, and there is no time to rewrite it for the time being
+- [ ] js uses a very old technology (I'm not familiar with the front-end technology)
 
 ## Dependences
 - Redis
@@ -18,32 +24,46 @@ This is my personal blog.
 $ curl https://sh.rustup.rs -sSf | sh
 ```
 
-### [Diesel Cli](https://github.com/diesel-rs/diesel)
-This project use Diesel as Orm framework, so you need to install its command line tool via Rust package manager(eg, Cargo)
-```
-$ cargo install diesel_cli --no-default-features --features postgres
+### [Sqlx Cli](https://github.com/launchbadge/sqlx)
+This project use sqlx as Orm framework, so you need to install its command line tool via Rust package manager(eg, Cargo)
+```bash
+$ cargo install sqlx-cli
 ```
 
 ### [Postgresql](https://www.postgresql.org/)
-you need to install Postgresql database, and then configure postgresql by following document’s guide
+Use docker images
 
-#### Install the corresponding version of contrib
+#### Install from docker-hub
+```bash
+$ docker pull postgres
+$ docker run --name your_container_name -e POSTGRES_PASSWORD=system -d -p 5432:5432 postgres
 ```
-$ yum install postgresql96-contrib
+
+#### If you want to enter psql interactive command line
+```bash
+$ docker run -it --rm --link your_container_name:postgres postgres psql -h postgres -U postgres
 ```
 
 #### init database
+```bash
+$ sqlx migrate run
 ```
-$ diesel migration run
+
+### [Redis](https://github.com/redis/redis)
+Use docker images
+
+```bash
+$ docker pull redis
+$ docker run --name redis -p 6379:6379 -d redis
 ```
 
 ### [Nginx](http://nginx.org/en/download.html)
-nginx has been used in the development of the time
+nginx is only used when deploying production
 
 ##### config:
 ```
 server {
-        listen       8880;
+        listen       80;
         server_name  127.0.0.1;
 
         location / {
@@ -54,8 +74,8 @@ server {
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         }
 
-        location /api/v1/ {
-            proxy_pass http://127.0.0.1:8888/;
+        location /api/v1 {
+            proxy_pass http://127.0.0.1:8080;
             proxy_redirect off;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
@@ -65,9 +85,7 @@ server {
 
 ### blog
 ```
-$ cargo run --bin blog_web // listen on 127.0.0.1:8080
-
-$ cargo run --bin blog_api // listen on 127.0.0.1:8888
+$ cargo run --release // listen on 127.0.0.1:8080
 ```
 
 if you want to login admin, the account is `admin`, password is `admin`

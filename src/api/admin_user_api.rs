@@ -1,115 +1,85 @@
-use sapper::{
-    Error as SapperError, Request, Response, Result as SapperResult, SapperModule, SapperRouter,
-};
-use sapper_std::{JsonParams, PathParams, QueryParams};
-use serde_json::{self, json};
-use uuid::Uuid;
-
-use super::super::{
-    ChangePermission, DisabledUser, Permissions, Postgresql, Redis, UserInfo, Users,
+use salvo::{
+    http::{HttpError, StatusCode},
+    prelude::{async_trait, fn_handler},
+    Request, Response, Router, Writer,
 };
 
-pub struct AdminUser;
+use crate::{
+    api::{block_no_admin, JsonErrResponse, JsonOkResponse},
+    models::user::{ChangePermission, DisabledUser, UserInfo},
+    utils::{from_code, parse_json_body, parse_last_path, parse_query, set_json_response},
+    Routers,
+};
 
-impl AdminUser {
-    fn delete_user(req: &mut Request) -> SapperResult<Response> {
-        let params = get_path_params!(req);
-        let user_id: Uuid = t_param!(params, "id").parse().unwrap();
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-        let redis_pool = req.ext().get::<Redis>().unwrap();
+#[fn_handler]
+async fn delete_user(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+    let id = parse_last_path::<uuid::Uuid>(req)?;
 
-        let res = match Users::delete(&pg_pool, redis_pool, user_id) {
-            Ok(num_deleted) => json!({
-            "status": true,
-            "num_deleted": num_deleted
-            }),
-            Err(err) => json!({
-            "status": false,
-            "error": err
-            }),
-        };
-        res_json!(res)
+    match UserInfo::delete(id).await {
+        Ok(num) => set_json_response(res, 32, &JsonOkResponse::ok(num)),
+        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
     }
 
-    fn view_user_list(req: &mut Request) -> SapperResult<Response> {
-        let params = get_query_params!(req);
-        let limit = t_param_parse!(params, "limit", i64);
-        let offset = t_param_parse!(params, "offset", i64);
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-        let res = match UserInfo::view_user_list(&pg_pool, limit, offset) {
-            Ok(data) => json!({
-                "status": true,
-                "data": data
-            }),
-            Err(err) => json!({
-                "status": false,
-                "error": err
-            }),
-        };
-        res_json!(res)
-    }
-
-    fn change_permission(req: &mut Request) -> SapperResult<Response> {
-        let body: ChangePermission = get_json_params!(req);
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-        let res = match Users::change_permission(&pg_pool, body) {
-            Ok(num_update) => json!({
-                "status": true,
-                "num_update": num_update
-            }),
-            Err(err) => json!({
-                "status": false,
-                "error": err.to_string()
-            }),
-        };
-        res_json!(res)
-    }
-
-    fn change_disabled(req: &mut Request) -> SapperResult<Response> {
-        let body: DisabledUser = get_json_params!(req);
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-        let res = match Users::disabled_user(&pg_pool, body) {
-            Ok(num_update) => json!({
-                "status": true,
-                "num_update": num_update
-            }),
-            Err(err) => json!({
-                "status": false,
-                "error": err.to_string()
-            }),
-        };
-        res_json!(res)
-    }
+    Ok(())
 }
 
-impl SapperModule for AdminUser {
-    fn before(&self, req: &mut Request) -> SapperResult<()> {
-        let permission = req.ext().get::<Permissions>().unwrap();
-        match *permission {
-            Some(0) => Ok(()),
-            _ => {
-                let res = json!({
-                    "status": false,
-                    "error": String::from("Verification error")
-                });
-                Err(SapperError::CustomJson(res.to_string()))
-            }
-        }
+#[fn_handler]
+async fn view_user_list(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+    let limit = parse_query::<i64>(req, "limit")?;
+    let offset = parse_query::<i64>(req, "offset")?;
+
+    match UserInfo::view_user_list(limit, offset).await {
+        Ok(data) => set_json_response(res, 128, &JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
     }
 
-    fn router(&self, router: &mut SapperRouter) -> SapperResult<()> {
-        // http get /user/view_all limit==5 offset==0
-        router.get("/user/view_all", AdminUser::view_user_list);
+    Ok(())
+}
 
-        // http post :8888/user/delete/uuid
-        router.post("/user/delete/:id", AdminUser::delete_user);
+#[fn_handler]
+async fn change_permission(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+    let body = parse_json_body::<ChangePermission>(req)
+        .await
+        .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
 
-        // http post :8888/user/permission id:=uuid permission:=0
-        router.post("/user/permission", AdminUser::change_permission);
+    match UserInfo::change_permission(body).await {
+        Ok(data) => set_json_response(res, 32, &JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+    }
+    Ok(())
+}
 
-        // http post :8888/user/permission id:=uuid disabled:=1
-        router.post("/user/disable", AdminUser::change_disabled);
+#[fn_handler]
+async fn change_disabled(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+    let body = parse_json_body::<DisabledUser>(req)
+        .await
+        .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
 
-        Ok(())
+    match UserInfo::disabled_user(body).await {
+        Ok(data) => set_json_response(res, 32, &JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+    }
+    Ok(())
+}
+
+pub struct AdminUser;
+impl Routers for AdminUser {
+    fn build(self) -> Vec<Router> {
+        use crate::api::PREFIX;
+        vec![Router::new()
+            .path(PREFIX.to_owned() + "user")
+            .before(block_no_admin)
+            // http get {ip}/user/view_all limit==5 offset==0
+            .push(Router::new().path("view_all").get(view_user_list))
+            // http post {ip}/user/delete/uuid
+            .push(Router::new().path("delete/<id>").post(delete_user))
+            // http post {ip}/user/permission id:=uuid permission:=0
+            .push(
+                Router::new()
+                    .path("delete/permission")
+                    .post(change_permission),
+            )
+            // http post {ip}/user/permission id:=uuid disabled:=1
+            .push(Router::new().path("delete/disable").post(change_disabled))]
     }
 }

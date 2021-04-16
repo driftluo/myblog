@@ -1,134 +1,123 @@
-use sapper::{
-    Error as SapperError, Request, Response, Result as SapperResult, SapperModule, SapperRouter,
+use salvo::{
+    http::{HttpError, StatusCode},
+    prelude::{async_trait, fn_handler},
+    Depot, Request, Response, Router, Writer,
 };
-use sapper_std::{render, PathParams, SessionVal};
-use serde_json;
+use tera::Context;
 use uuid::Uuid;
 
-#[cfg(not(feature = "monitor"))]
-use super::super::visitor_log;
-use super::super::{
-    ArticlesWithTag, Permissions, Postgresql, Redis, TagCount, UserInfo, UserNotify, WebContext,
+use crate::{
+    db_wrapper::get_redis,
+    models::{articles::ArticlesWithTag, notify::UserNotify, tag::TagCount, user::UserInfo},
+    utils::{from_code, parse_last_path, visitor_log},
+    web::render,
+    Routers, COOKIE, PERMISSION, WEB,
 };
 
-pub struct ArticleWeb;
+#[fn_handler]
+pub async fn index(depot: &mut Depot, res: &mut Response) {
+    let mut web = depot.take::<_, Context>(WEB);
 
-impl ArticleWeb {
-    fn index(req: &mut Request) -> SapperResult<Response> {
-        let mut web = req.ext().get::<WebContext>().unwrap().clone();
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-
-        match TagCount::view_tag_count(&pg_pool) {
-            Ok(data) => web.add("tags", &data),
-            Err(err) => println!("No tags, {}", err),
-        }
-
-        res_html!("visitor/index.html", web)
+    match TagCount::view_tag_count().await {
+        Ok(data) => web.insert("tags", &data),
+        Err(_) => (),
     }
 
-    fn about(req: &mut Request) -> SapperResult<Response> {
-        let web = req.ext().get::<WebContext>().unwrap().clone();
+    render(res, "visitor/index.html", &web)
+}
 
-        res_html!("visitor/about.html", web)
-    }
+#[fn_handler]
+async fn about(depot: &mut Depot, res: &mut Response) {
+    let web = depot.take::<_, Context>(WEB);
 
-    fn list(req: &mut Request) -> SapperResult<Response> {
-        let web = req.ext().get::<WebContext>().unwrap().clone();
+    render(res, "visitor/about.html", &web)
+}
 
-        res_html!("visitor/list.html", web)
-    }
+#[fn_handler]
+async fn list(depot: &mut Depot, res: &mut Response) {
+    let web = depot.take::<_, Context>(WEB);
 
-    fn home(req: &mut Request) -> SapperResult<Response> {
-        let web = req.ext().get::<WebContext>().unwrap().clone();
-        let permission = req.ext().get::<Permissions>().unwrap();
+    render(res, "visitor/list.html", &web)
+}
 
-        match *permission {
-            Some(_) => res_html!("visitor/user.html", web),
-            None => res_html!("visitor/login.html", web),
-        }
-    }
+#[fn_handler]
+async fn home(depot: &mut Depot, res: &mut Response) {
+    let web = depot.take::<_, Context>(WEB);
 
-    /// Query other user information
-    fn user(req: &mut Request) -> SapperResult<Response> {
-        let params = get_path_params!(req);
-        let user_id: Uuid = t_param!(params, "id").parse().unwrap();
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-        let mut web = req.ext().get::<WebContext>().unwrap().clone();
+    let permission = depot.take::<_, Option<i16>>(PERMISSION);
 
-        match UserInfo::view_user(&pg_pool, user_id) {
-            Ok(ref data) => web.add("user_info", data),
-            Err(err) => println!("{}", err),
-        };
-        res_html!("visitor/user_info.html", web)
-    }
-
-    fn article_view(req: &mut Request) -> SapperResult<Response> {
-        let params = get_path_params!(req);
-        let article_id: Uuid = t_param!(params, "id").parse().unwrap();
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-        let redis_pool = req.ext().get::<Redis>().unwrap();
-        let mut web = req.ext().get::<WebContext>().unwrap().clone();
-
-        match ArticlesWithTag::query_article(&pg_pool, article_id, false) {
-            Ok(ref data) => {
-                web.add("article", data);
-
-                // Remove user's notify about this article
-                req.ext().get::<SessionVal>().and_then(|cookie| {
-                    if redis_pool.exists(cookie) {
-                        let info = serde_json::from_str::<UserInfo>(
-                            &redis_pool.hget::<String>(cookie, "info"),
-                        )
-                        .unwrap();
-                        UserNotify::remove_notifys_with_article_and_user(
-                            info.id,
-                            data.id,
-                            &redis_pool,
-                        );
-                        // Replace the original notification
-                        let notifys = UserNotify::get_notifys(info.id, redis_pool);
-                        web.add("notifys", &notifys);
-                    };
-                    Some(())
-                });
-                res_html!("visitor/article_view.html", web)
-            }
-            Err(err) => {
-                println!("{}", err);
-                Err(SapperError::NotFound)
-            }
-        }
+    match permission {
+        Some(_) => render(res, "visitor/user.html", &web),
+        None => render(res, "visitor/login.html", &web),
     }
 }
 
-impl SapperModule for ArticleWeb {
-    #[cfg(not(feature = "monitor"))]
-    fn after(&self, req: &Request, _res: &mut Response) -> SapperResult<()> {
-        let redis_pool = req.ext().get::<Redis>().unwrap();
-        visitor_log(req, redis_pool);
-        Ok(())
+#[fn_handler]
+async fn user(req: &mut Request, depot: &mut Depot, res: &mut Response) -> Result<(), HttpError> {
+    let id = parse_last_path::<Uuid>(req)?;
+    let mut web = depot.take::<_, Context>(WEB);
+
+    match UserInfo::view_user(id).await {
+        Ok(ref data) => {
+            web.insert("user_info", data);
+            render(res, "visitor/user_info.html", &web)
+        }
+        Err(_) => return Err(from_code(StatusCode::NOT_FOUND, "Query Param is Incorrect")),
+    }
+    Ok(())
+}
+
+#[fn_handler]
+async fn article_view(
+    req: &mut Request,
+    depot: &mut Depot,
+    res: &mut Response,
+) -> Result<(), HttpError> {
+    let id = parse_last_path::<Uuid>(req)?;
+    let mut web = depot.take::<_, Context>(WEB);
+
+    match ArticlesWithTag::query_article(id, false).await {
+        Ok(data) => {
+            web.insert("article", &data);
+            if let Some(cookie) = depot.try_take::<_, String>(COOKIE) {
+                if let Ok(info) = get_redis().hget::<String>(&cookie, "info").await {
+                    let info = serde_json::from_str::<UserInfo>(&info).unwrap();
+
+                    UserNotify::remove_notifys_with_article_and_user(info.id, data.id).await;
+                    let notify = UserNotify::get_notifys(info.id).await;
+                    web.insert("notify", &notify);
+                }
+            }
+            render(res, "visitor/article_view.html", &web)
+        }
+        Err(err) => return Err(from_code(StatusCode::NOT_FOUND, err)),
     }
 
-    fn router(&self, router: &mut SapperRouter) -> SapperResult<()> {
-        // http get /
-        router.get("/", ArticleWeb::index);
+    Ok(())
+}
 
-        // http get /index
-        router.get("/index", ArticleWeb::index);
+pub struct ArticleWeb;
 
-        // http get /about
-        router.get("/about", ArticleWeb::about);
-
-        // http get /list
-        router.get("/list", ArticleWeb::list);
-
-        // http get /home
-        router.get("/home", ArticleWeb::home);
-
-        router.get("/user/:id", ArticleWeb::user);
-
-        router.get("/article/:id", ArticleWeb::article_view);
-
-        Ok(())
+impl Routers for ArticleWeb {
+    fn build(self) -> Vec<Router> {
+        vec![
+            // http {ip}/index
+            Router::new().path("index").get(index),
+            // http {ip}/about
+            Router::new().path("about").get(about),
+            // http {ip}/list
+            Router::new().path("list").get(list),
+            // http {ip}/home
+            Router::new().path("home").get(home),
+            // http {ip}/<id>
+            Router::new()
+                .path("user/<id:/[0-9a-z]{8}(-[0-9a-z]{4}){3}-[0-9a-z]{8}/>")
+                .get(user),
+            // http {ip}/article/<id>
+            Router::new()
+                .path("article/<id:/[0-9a-z]{8}(-[0-9a-z]{4}){3}-[0-9a-z]{8}/>")
+                .before(visitor_log)
+                .get(article_view),
+        ]
     }
 }

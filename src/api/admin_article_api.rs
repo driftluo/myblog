@@ -1,181 +1,163 @@
-use sapper::{
-    Error as SapperError, Request, Response, Result as SapperResult, SapperModule, SapperRouter,
-};
-use sapper_std::{JsonParams, PathParams, QueryParams};
-use serde_json::{self, json};
-use uuid::Uuid;
-
-use super::super::{
-    ArticleList, ArticlesWithTag, EditArticle, ModifyPublish, NewArticle, Permissions, Postgresql,
-    Redis,
+use salvo::{
+    http::{HttpError, StatusCode},
+    prelude::{async_trait, fn_handler},
+    Request, Response, Router, Writer,
 };
 
-pub struct AdminArticle;
+use crate::{
+    api::{block_no_admin, JsonErrResponse, JsonOkResponse},
+    models::articles::{ArticleList, ArticlesWithTag, EditArticle, ModifyPublish, NewArticle},
+    utils::{from_code, parse_json_body, parse_last_path, parse_query, set_json_response},
+    Routers,
+};
 
-impl AdminArticle {
-    fn create_article(req: &mut Request) -> SapperResult<Response> {
-        let body: NewArticle = get_json_params!(req);
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
+#[fn_handler]
+async fn create_article(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+    let body = parse_json_body::<NewArticle>(req)
+        .await
+        .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
 
-        if body.insert(&pg_pool) {
-            res_json!(json!({"status": true}))
-        } else {
-            res_json!(json!({"status": false}))
+    set_json_response(res, 32, &JsonOkResponse::status(body.insert().await));
+    Ok(())
+}
+
+#[fn_handler]
+async fn delete_article(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+    let id = parse_last_path::<uuid::Uuid>(req)?;
+
+    match ArticlesWithTag::delete_with_id(id).await {
+        Ok(data) => set_json_response(res, 32, &JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+    }
+
+    Ok(())
+}
+
+#[fn_handler]
+async fn admin_view_article(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+    let id = parse_query::<uuid::Uuid>(req, "id")?;
+
+    match ArticlesWithTag::query_without_article(id, true).await {
+        Ok(data) => set_json_response(res, 128, &JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+    }
+    Ok(())
+}
+
+#[fn_handler]
+async fn admin_view_raw_article(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+    let id = parse_query::<uuid::Uuid>(req, "id")?;
+
+    match ArticlesWithTag::query_raw_article(id).await {
+        Ok(data) => set_json_response(res, 128, &JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+    }
+    Ok(())
+}
+
+#[fn_handler]
+async fn admin_list_all_article(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+    let limit = parse_query::<i64>(req, "limit")?;
+    let offset = parse_query::<i64>(req, "offset")?;
+
+    match ArticleList::query_article(limit, offset, true).await {
+        Ok(data) => set_json_response(res, 128, &JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+    }
+    Ok(())
+}
+
+#[fn_handler]
+async fn edit_article(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+    let body = parse_json_body::<EditArticle>(req)
+        .await
+        .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
+
+    match body.edit_article().await {
+        Ok(data) => set_json_response(res, 32, &JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+    }
+    Ok(())
+}
+
+#[fn_handler]
+async fn update_publish(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+    let body = parse_json_body::<ModifyPublish>(req)
+        .await
+        .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
+
+    match ArticlesWithTag::publish_article(body).await {
+        Ok(data) => set_json_response(res, 32, &JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+    }
+    Ok(())
+}
+
+#[fn_handler]
+async fn upload(req: &mut Request, res: &mut Response) {
+    match req.get_files("files").await {
+        Some(files) => {
+            let mut msgs = Vec::with_capacity(files.len());
+            for file in files {
+                let dest = match file.headers.filename {
+                    Some(ref name) => format!("static/images/{}", name),
+                    None => format!("static/images/{}", uuid::Uuid::new_v4().to_hyphenated()),
+                };
+                match tokio::fs::copy(&file.path, ::std::path::Path::new(&dest)).await {
+                    Ok(_) => {
+                        msgs.push(dest);
+                    }
+                    Err(e) => {
+                        set_json_response(res, 32, &JsonErrResponse::err(e.to_string()));
+                        return;
+                    }
+                }
+            }
+            set_json_response(res, 32, &JsonOkResponse::ok(msgs))
         }
-    }
-
-    fn delete_article(req: &mut Request) -> SapperResult<Response> {
-        let params = get_path_params!(req);
-        let article_id: Uuid = t_param!(params, "id").parse().unwrap();
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-        let redis_pool = req.ext().get::<Redis>().unwrap();
-
-        let res = match ArticlesWithTag::delete_with_id(&pg_pool, redis_pool, article_id) {
-            Ok(num_deleted) => json!({
-            "status": true,
-            "num_deleted": num_deleted
-            }),
-            Err(err) => json!({
-            "status": false,
-            "error": err
-            }),
-        };
-        res_json!(res)
-    }
-
-    fn admin_view_article(req: &mut Request) -> SapperResult<Response> {
-        let params = get_query_params!(req);
-        let article_id = t_param_parse!(params, "id", Uuid);
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-
-        let res = match ArticlesWithTag::query_without_article(&pg_pool, article_id, true) {
-            Ok(data) => json!({
-                "status": true,
-                "data": data
-            }),
-            Err(err) => json!({
-                "status": false,
-                "error": err
-            }),
-        };
-        res_json!(res)
-    }
-
-    fn admin_view_raw_article(req: &mut Request) -> SapperResult<Response> {
-        let params = get_query_params!(req);
-        let article_id = t_param_parse!(params, "id", Uuid);
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-
-        let res = match ArticlesWithTag::query_raw_article(&pg_pool, article_id) {
-            Ok(data) => json!({
-                "status": true,
-                "data": data
-            }),
-            Err(err) => json!({
-                "status": false,
-                "error": err
-            }),
-        };
-        res_json!(res)
-    }
-
-    fn admin_list_all_article(req: &mut Request) -> SapperResult<Response> {
-        let params = get_query_params!(req);
-        let limit = t_param_parse!(params, "limit", i64);
-        let offset = t_param_parse!(params, "offset", i64);
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-        let res = match ArticleList::query_list_article(&pg_pool, limit, offset, true) {
-            Ok(data) => json!({
-                "status": true,
-                "data": data
-            }),
-            Err(err) => json!({
-                "status": false,
-                "error": err
-            }),
-        };
-        res_json!(res)
-    }
-
-    fn edit_article(req: &mut Request) -> SapperResult<Response> {
-        let body: EditArticle = get_json_params!(req);
-
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-
-        let res = match body.edit_article(&pg_pool) {
-            Ok(num_update) => json!({
-                "status": true,
-                "num_update": num_update
-            }),
-            Err(err) => json!({
-                "status": false,
-                "error": err.to_string()
-            }),
-        };
-        res_json!(res)
-    }
-
-    fn update_publish(req: &mut Request) -> SapperResult<Response> {
-        let body: ModifyPublish = get_json_params!(req);
-
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-
-        let res = match ArticlesWithTag::publish_article(&pg_pool, body) {
-            Ok(num_update) => json!({
-                "status": true,
-                "num_update": num_update
-            }),
-            Err(err) => json!({
-                "status": false,
-                "error": err.to_string()
-            }),
-        };
-        res_json!(res)
+        None => {
+            set_json_response(res, 32, &JsonErrResponse::err("file not found in request"));
+            res.set_status_code(StatusCode::BAD_REQUEST);
+        }
     }
 }
 
-impl SapperModule for AdminArticle {
-    fn before(&self, req: &mut Request) -> SapperResult<()> {
-        let permission = req.ext().get::<Permissions>().unwrap();
-        match *permission {
-            Some(0) => Ok(()),
-            _ => {
-                let res = json!({
-                    "status": false,
-                    "error": String::from("Verification error")
-                });
-                Err(SapperError::CustomJson(res.to_string()))
-            }
-        }
-    }
+pub struct AdminArticle;
 
-    fn router(&self, router: &mut SapperRouter) -> SapperResult<()> {
-        // http get /article/admin/view id==4
-        router.get("/article/admin/view", AdminArticle::admin_view_article);
-
-        router.get(
-            "/article/admin/view_raw",
-            AdminArticle::admin_view_raw_article,
-        );
-
-        // http get /article/admin/view_all limit==5 offset==0
-        router.get(
-            "/article/admin/view_all",
-            AdminArticle::admin_list_all_article,
-        );
-
-        // http post /article/new title=something raw_content=something
-        router.post("/article/new", AdminArticle::create_article);
-
-        // http post /article/delete/3
-        router.post("/article/delete/:id", AdminArticle::delete_article);
-
-        // http post /article/edit id:=1 title=something raw_content=something
-        router.post("/article/edit", AdminArticle::edit_article);
-
-        // http post /article/publish id:=5 published:=true
-        router.post("/article/publish", AdminArticle::update_publish);
-
-        Ok(())
+impl Routers for AdminArticle {
+    fn build(self) -> Vec<Router> {
+        use crate::api::PREFIX;
+        vec![
+            Router::new()
+                .path(PREFIX.to_owned() + "article")
+                .before(block_no_admin)
+                // http get /article/admin/view?id==4
+                .push(Router::new().path("admin/view").get(admin_view_article))
+                // http get /article/admin/view_raw?id==4
+                .push(
+                    Router::new()
+                        .path("admin/view_raw")
+                        .get(admin_view_raw_article),
+                )
+                // http get /article/admin/view_all limit==5 offset==0
+                .push(
+                    Router::new()
+                        .path("admin/view_all")
+                        .get(admin_list_all_article),
+                )
+                // http post /article/new title=something raw_content=something
+                .push(Router::new().path("new").post(create_article))
+                // http post /article/delete/3
+                .push(Router::new().path("delete/<id>").post(delete_article))
+                // http post /article/edit id:=1 title=something raw_content=something
+                .push(Router::new().path("edit").post(edit_article))
+                // http post /article/publish id:=5 published:=true
+                .push(Router::new().path("publish").post(update_publish)),
+            // http post /upload
+            Router::new()
+                .path(PREFIX.to_owned() + "upload")
+                .before(block_no_admin)
+                .post(upload),
+        ]
     }
 }

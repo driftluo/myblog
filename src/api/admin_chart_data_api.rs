@@ -1,62 +1,54 @@
-use sapper::{
-    Error as SapperError, Request, Response, Result as SapperResult, SapperModule, SapperRouter,
+use salvo::{
+    http::HttpError,
+    prelude::{async_trait, fn_handler},
+    Request, Response, Router, Writer,
 };
-use sapper_std::QueryParams;
-use serde_json::json;
 
-use super::super::{Permissions, Postgresql, PublishedStatistics, Redis};
+use crate::{
+    api::{block_no_admin, JsonErrResponse, JsonOkResponse},
+    db_wrapper::get_redis,
+    models::articles::PublishedStatistics,
+    utils::{parse_query, set_json_response},
+    Routers,
+};
 
-pub struct ChartData;
-
-impl ChartData {
-    fn publish_by_month(req: &mut Request) -> SapperResult<Response> {
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-        let res = match PublishedStatistics::statistics_published_frequency_by_month(&pg_pool) {
-            Ok(data) => json!({
-                "status": true,
-                "data": data
-            }),
-            Err(err) => json!({
-                "status": false,
-                "error": err
-            }),
-        };
-        res_json!(res)
-    }
-
-    fn get_ip_chart(req: &mut Request) -> SapperResult<Response> {
-        let params = get_query_params!(req);
-        let limit = t_param_parse!(params, "limit", i64);
-        let offset = t_param_parse!(params, "offset", i64);
-        let redis_pool = req.ext().get::<Redis>().unwrap();
-        let res = json!({
-                "status": true,
-                "data": redis_pool.lrange::<Vec<String>>("visitor_log", offset, offset + limit - 1)
-        });
-        res_json!(res)
+#[fn_handler]
+async fn publish_by_month(res: &mut Response) {
+    match PublishedStatistics::statistics_published_frequency_by_month().await {
+        Ok(data) => set_json_response(res, 128, &JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
     }
 }
 
-impl SapperModule for ChartData {
-    fn before(&self, req: &mut Request) -> SapperResult<()> {
-        let permission = req.ext().get::<Permissions>().unwrap();
-        match *permission {
-            Some(0) => Ok(()),
-            _ => {
-                let res = json!({
-                    "status": false,
-                    "error": String::from("Verification error")
-                });
-                Err(SapperError::CustomJson(res.to_string()))
-            }
-        }
-    }
+#[fn_handler]
+async fn get_ip_chart(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+    let limit = parse_query::<i64>(req, "limit")?;
+    let offset = parse_query::<i64>(req, "offset")?;
 
-    fn router(&self, router: &mut SapperRouter) -> SapperResult<()> {
-        router.get("/article/month", ChartData::publish_by_month);
+    let data = get_redis()
+        .lrange::<Vec<String>>("visitor_log", offset, offset + limit - 1)
+        .await;
 
-        router.get("/ip/view", ChartData::get_ip_chart);
+    set_json_response(res, 128, &JsonOkResponse::ok(data));
+    Ok(())
+}
 
-        Ok(())
+pub struct ChartData;
+
+impl Routers for ChartData {
+    fn build(self) -> Vec<Router> {
+        use crate::api::PREFIX;
+        vec![
+            // http {ip}/article/month
+            Router::new()
+                .path(PREFIX.to_owned() + "article/month")
+                .before(block_no_admin)
+                .get(publish_by_month),
+            // http {ip}/ip/view limit==5 offset==0
+            Router::new()
+                .path(PREFIX.to_owned() + "ip/view")
+                .before(block_no_admin)
+                .get(get_ip_chart),
+        ]
     }
 }

@@ -1,278 +1,263 @@
-use sapper::header::{ContentType, Location};
-use sapper::status;
-use sapper::{Request, Response, Result as SapperResult, SapperModule, SapperRouter};
-use sapper_std::{set_cookie, JsonParams, PathParams, QueryParams, SessionVal};
-use serde_json::{self, json};
-
-use super::super::{
-    get_github_account_nickname_address, get_github_token, ArticleList, ArticlesWithTag, Comments,
-    LoginUser, Permissions, Postgresql, Redis, RegisteredUser, UserInfo,
+use chrono::offset::TimeZone;
+use rss::{ChannelBuilder, Item, ItemBuilder};
+use salvo::{
+    http::{response::Body, HttpError, StatusCode},
+    hyper::header::{self, HeaderValue},
+    prelude::{async_trait, fn_handler},
+    Depot, Request, Response, Router, Writer,
 };
 use uuid::Uuid;
 
-pub struct Visitor;
+use crate::{
+    api::{JsonErrResponse, JsonOkResponse},
+    models::{
+        articles::{ArticleList, ArticlesWithTag},
+        comment::Comments,
+        user::{LoginUser, RegisteredUser, UserInfo},
+    },
+    utils::{
+        from_code,
+        github_information::{get_github_account_nickname_address, get_github_token},
+        parse_json_body, parse_last_path, parse_query, set_cookie, set_json_response,
+        set_plain_text_response,
+    },
+    web::Cache,
+    Routers, PERMISSION, USER_INFO,
+};
+use bytes::BytesMut;
 
-impl Visitor {
-    fn list_all_article(req: &mut Request) -> SapperResult<Response> {
-        let params = get_query_params!(req);
-        let limit = t_param_parse!(params, "limit", i64);
-        let offset = t_param_parse!(params, "offset", i64);
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-        let res = match ArticleList::query_list_article(&pg_pool, limit, offset, false) {
-            Ok(data) => json!({
-                "status": true,
-                "data": data
-            }),
-            Err(err) => json!({
-                "status": false,
-                "error": err
-            }),
-        };
-        res_json!(res)
+#[fn_handler]
+async fn list_all_article(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+    let limit = parse_query::<i64>(req, "limit")?;
+    let offset = parse_query::<i64>(req, "offset")?;
+
+    match ArticleList::query_article(limit, offset, false).await {
+        Ok(data) => set_json_response(res, 128, &JsonOkResponse::ok(data)),
+        Err(err) => set_json_response(res, 32, &JsonErrResponse::err(err)),
     }
+    Ok(())
+}
 
-    fn list_all_article_filter_by_tag(req: &mut Request) -> SapperResult<Response> {
-        let params = get_path_params!(req);
-        let tag_id: Uuid = t_param!(params, "tag_id").parse().unwrap();
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-        let res = match ArticleList::query_with_tag(&pg_pool, tag_id) {
-            Ok(data) => json!({
-                "status": true,
-                "data": data
-            }),
-            Err(err) => json!({
-                "status": false,
-                "error": err
-            }),
-        };
-        res_json!(res)
+#[fn_handler]
+async fn list_all_article_filter_by_tag(
+    req: &mut Request,
+    res: &mut Response,
+) -> Result<(), HttpError> {
+    let tag_id = parse_last_path::<Uuid>(req)?;
+
+    match ArticleList::query_with_tag(tag_id).await {
+        Ok(data) => set_json_response(res, 128, &JsonOkResponse::ok(data)),
+        Err(err) => set_json_response(res, 32, &JsonErrResponse::err(err)),
     }
+    Ok(())
+}
 
-    fn list_comments(req: &mut Request) -> SapperResult<Response> {
-        let path_params = get_path_params!(req);
-        let article_id: Uuid = t_param!(path_params, "id").parse().unwrap();
-        let query_params = get_query_params!(req);
-        let limit = t_param_parse!(query_params, "limit", i64);
-        let offset = t_param_parse!(query_params, "offset", i64);
+#[fn_handler]
+async fn list_comments(
+    req: &mut Request,
+    depot: &mut Depot,
+    res: &mut Response,
+) -> Result<(), HttpError> {
+    let article_id = parse_last_path::<Uuid>(req)?;
+    let limit = parse_query::<i64>(req, "limit")?;
+    let offset = parse_query::<i64>(req, "offset")?;
 
-        let permission = req.ext().get::<Permissions>().unwrap();
-        let redis_pool = req.ext().get::<Redis>().unwrap();
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-
-        let (user_id, admin) = match *permission {
-            Some(0) => {
-                let cookie = req.ext().get::<SessionVal>().unwrap();
-                let info = serde_json::from_str::<UserInfo>(&UserInfo::view_user_with_cookie(
-                    redis_pool, cookie,
-                ))
-                .unwrap();
-                (Some(info.id), true)
-            }
-            Some(_) => {
-                let cookie = req.ext().get::<SessionVal>().unwrap();
-                let info = serde_json::from_str::<UserInfo>(&UserInfo::view_user_with_cookie(
-                    redis_pool, cookie,
-                ))
-                .unwrap();
-                (Some(info.id), false)
-            }
-            _ => (None, false),
-        };
-        let res = match Comments::query(&pg_pool, limit, offset, article_id) {
-            Ok(data) => json!({
-                "status": true,
-                "data": data,
-                "admin": admin,
-                "user": user_id
-            }),
-            Err(err) => json!({
-                "status": false,
-                "error": err
-            }),
-        };
-        res_json!(res)
-    }
-
-    fn view_article(req: &mut Request) -> SapperResult<Response> {
-        let params = get_query_params!(req);
-        let article_id = t_param_parse!(params, "id", Uuid);
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-
-        let res = match ArticlesWithTag::query_without_article(&pg_pool, article_id, false) {
-            Ok(data) => json!({
-                "status": true,
-                "data": data
-            }),
-            Err(err) => json!({
-                "status": false,
-                "error": err
-            }),
-        };
-        res_json!(res)
-    }
-
-    fn login(req: &mut Request) -> SapperResult<Response> {
-        let body: LoginUser = get_json_params!(req);
-        let redis_pool = req.ext().get::<Redis>().unwrap();
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-
-        let mut response = Response::new();
-        response.headers_mut().set(ContentType::json());
-
-        let max_age: Option<i64> = if body.get_remember() {
-            Some(24 * 90)
-        } else {
-            None
-        };
-
-        match body.verification(&pg_pool, redis_pool, &max_age) {
-            Ok(cookies) => {
-                let res = json!({
-                    "status": true,
-                });
-
-                response.write_body(serde_json::to_string(&res).unwrap());
-
-                let _ = set_cookie(
-                    &mut response,
-                    "blog_session".to_string(),
-                    cookies,
-                    None,
-                    Some("/".to_string()),
-                    None,
-                    max_age,
-                );
-            }
-            Err(err) => {
-                let res = json!({
-                    "status": false,
-                    "error": err.to_string()
-                });
-
-                response.write_body(serde_json::to_string(&res).unwrap());
-            }
-        };
-
-        Ok(response)
-    }
-
-    fn login_with_github(req: &mut Request) -> SapperResult<Response> {
-        let params = get_query_params!(req);
-        let code = t_param_parse!(params, "code", String);
-
-        let redis_pool = req.ext().get::<Redis>().unwrap();
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-
-        let token = get_github_token(&code)?;
-
-        let mut response = Response::new();
-        response.headers_mut().set(ContentType::json());
-
-        let (account, nickname, github_address) = get_github_account_nickname_address(&token)?;
-        match LoginUser::login_with_github(
-            &pg_pool,
-            redis_pool,
-            github_address,
-            nickname,
-            account,
-            &token,
-        ) {
-            Ok(cookie) => {
-                let res = json!({
-                    "status": true,
-                });
-
-                response.set_status(status::Found);
-                response.write_body(serde_json::to_string(&res).unwrap());
-                response.headers_mut().set(Location("/home".to_owned()));
-
-                let _ = set_cookie(
-                    &mut response,
-                    "blog_session".to_string(),
-                    cookie,
-                    None,
-                    Some("/".to_string()),
-                    None,
-                    Some(24),
-                );
-            }
-
-            Err(err) => {
-                let res = json!({
-                    "status": false,
-                    "error": err.to_string()
-                });
-
-                response.write_body(serde_json::to_string(&res).unwrap());
-            }
+    let (user_id, admin) = match depot.take::<_, Option<i16>>(PERMISSION) {
+        Some(0) => {
+            let info = depot.take::<_, UserInfo>(USER_INFO);
+            (Some(info.id), true)
         }
+        Some(_) => {
+            let info = depot.take::<_, UserInfo>(USER_INFO);
+            (Some(info.id), false)
+        }
+        None => (None, false),
+    };
 
-        Ok(response)
+    match Comments::query(limit, offset, article_id).await {
+        Ok(data) => {
+            #[derive(serde::Deserialize, serde::Serialize)]
+            struct Tmp<T> {
+                status: bool,
+                data: T,
+                admin: bool,
+                user_id: Option<Uuid>,
+            }
+            set_json_response(
+                res,
+                data.len() + 32,
+                &Tmp {
+                    status: true,
+                    data,
+                    admin,
+                    user_id,
+                },
+            )
+        }
+        Err(err) => set_json_response(res, 32, &JsonErrResponse::err(err)),
     }
 
-    fn create_user(req: &mut Request) -> SapperResult<Response> {
-        let body: RegisteredUser = get_json_params!(req);
+    Ok(())
+}
 
-        let pg_pool = req.ext().get::<Postgresql>().unwrap().get().unwrap();
-        let redis_pool = req.ext().get::<Redis>().unwrap();
+#[fn_handler]
+async fn view_article(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+    let id = parse_query::<Uuid>(req, "id")?;
 
-        let mut response = Response::new();
-        response.headers_mut().set(ContentType::json());
+    match ArticlesWithTag::query_without_article(id, false).await {
+        Ok(data) => set_json_response(res, 128, &JsonOkResponse::ok(data)),
+        Err(err) => set_json_response(res, 32, &JsonErrResponse::err(err)),
+    }
 
-        match body.insert(&pg_pool, redis_pool) {
-            Ok(cookies) => {
-                let res = json!({
-                    "status": true,
-                });
+    Ok(())
+}
 
-                response.write_body(serde_json::to_string(&res).unwrap());
+#[fn_handler]
+async fn login(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+    let body = parse_json_body::<LoginUser>(req)
+        .await
+        .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
 
-                let _ = set_cookie(
-                    &mut response,
-                    "blog_session".to_string(),
-                    cookies,
-                    None,
-                    Some("/".to_string()),
-                    None,
-                    Some(24),
-                );
-            }
-            Err(err) => {
-                let res = json!({
-                    "status": false,
-                    "error": err.to_string()
-                });
+    let max_age: Option<i64> = if body.get_remember() {
+        Some(24 * 90)
+    } else {
+        None
+    };
 
-                response.write_body(serde_json::to_string(&res).unwrap());
-            }
+    match body.verification(&max_age).await {
+        Ok(cookie) => {
+            set_cookie(res, cookie, None, Some("/"), None, max_age);
+            set_plain_text_response(res, BytesMut::from(r#"{"status": true}"#));
         }
-        Ok(response)
+        Err(err) => set_json_response(res, 32, &JsonErrResponse::err(err)),
+    }
+
+    Ok(())
+}
+
+#[fn_handler]
+async fn login_with_github(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+    let code = parse_query::<String>(req, "code")?;
+
+    let token = get_github_token(&code)
+        .await
+        .map_err(|e| from_code(StatusCode::NOT_ACCEPTABLE, e))?;
+    let (account, nickname, github_address) = get_github_account_nickname_address(&token)
+        .await
+        .map_err(|e| from_code(StatusCode::NOT_ACCEPTABLE, e))?;
+
+    match LoginUser::login_with_github(github_address, nickname, account, &token).await {
+        Ok(cookie) => {
+            set_cookie(res, cookie, None, Some("/"), None, Some(24));
+            res.set_status_code(StatusCode::FOUND);
+            res.headers_mut()
+                .insert(header::LOCATION, "/home".parse().unwrap());
+            set_plain_text_response(res, BytesMut::from(r#"{"status": true}"#));
+        }
+        Err(err) => set_json_response(res, 32, &JsonErrResponse::err(err)),
+    }
+
+    Ok(())
+}
+
+#[fn_handler]
+async fn create_user(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+    let body = parse_json_body::<RegisteredUser>(req)
+        .await
+        .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
+
+    match body.insert().await {
+        Ok(cookie) => {
+            set_cookie(res, cookie, None, Some("/"), None, Some(24));
+            set_plain_text_response(res, BytesMut::from(r#"{"status": true}"#));
+        }
+        Err(err) => set_json_response(res, 32, &JsonErrResponse::err(err)),
+    }
+    Ok(())
+}
+
+#[fn_handler]
+async fn rss_path(res: &mut Response) {
+    let mut channel = ChannelBuilder::default()
+        .title("driftluo's blog")
+        .link("https://driftluo.com")
+        .description("This is driftluo's Personal Blog's RSS feed.")
+        .build()
+        .unwrap();
+
+    let hour = 3600;
+    let fix_offset = chrono::FixedOffset::east(8 * hour);
+
+    match ArticleList::query_article(10, 0, false).await {
+        Ok(articles) => {
+            let mut items: Vec<Item> = Vec::with_capacity(10);
+            for article in articles {
+                let item = ItemBuilder::default()
+                    .title(article.title.clone())
+                    .link("driftluo.com".to_owned() + "/article/" + &article.id.to_string())
+                    .description(article.title)
+                    .pub_date(
+                        fix_offset
+                            .from_local_datetime(&article.create_time)
+                            .unwrap()
+                            .format("%Y-%m-%d %H:%M:%S")
+                            .to_string(),
+                    )
+                    .build()
+                    .unwrap();
+
+                items.push(item);
+            }
+            channel.set_items(items);
+            let mut bytes = Cache::new();
+            channel.write_to(&mut bytes).unwrap();
+            res.headers_mut().insert(
+                header::CONTENT_TYPE,
+                HeaderValue::from_static("text/xml; charset=utf-8"),
+            );
+            res.set_body(Some(Body::Bytes(bytes.into_inner())));
+            res.set_status_code(StatusCode::OK)
+        }
+        Err(err) => set_json_response(res, 32, &JsonErrResponse::err(err)),
     }
 }
 
-impl SapperModule for Visitor {
-    fn router(&self, router: &mut SapperRouter) -> SapperResult<()> {
-        // http get /article/view_all limit==5 offset==0
-        router.get("/article/view_all", Visitor::list_all_article);
+pub struct Visitor;
 
-        router.get(
-            "/article/view_all/:tag_id",
-            Visitor::list_all_article_filter_by_tag,
-        );
-
-        router.get("/article/view_comment/:id", Visitor::list_comments);
-
-        // http get /article/view id==4
-        router.get("/article/view", Visitor::view_article);
-
-        router.get("/login_with_github", Visitor::login_with_github);
-
-        // http post :8888/user/login account=admin password=admin
-        router.post("/user/login", Visitor::login);
-
-        // http post :8888/user/new account="k1234" password="1234" nickname="漂流" email="441594700@qq.com" say=""
-        router.post("/user/new", Visitor::create_user);
-
-        Ok(())
+impl Routers for Visitor {
+    fn build(self) -> Vec<Router> {
+        use crate::api::PREFIX;
+        vec![
+            // http {ip}/PREFIX/article/view_all?limit={number}&&offset={number}
+            Router::new()
+                .path(PREFIX.to_owned() + "article/view_all")
+                .get(list_all_article),
+            // http {ip}/PREFIX/article/view_all/<tag_id>
+            Router::new()
+                .path(PREFIX.to_owned() + "article/view_all/<tag_id>")
+                .get(list_all_article_filter_by_tag),
+            // http {ip}/PREFIX/article/view_all/<tag_id>
+            Router::new()
+                .path(PREFIX.to_owned() + "article/view_comment/<id>")
+                .get(list_comments),
+            // http {ip}/PREFIX/article/view?limit={number}&&offset={number}
+            Router::new()
+                .path(PREFIX.to_owned() + "article/view")
+                .get(view_article),
+            // http {ip}/PREFIX/login_with_github
+            Router::new()
+                .path(PREFIX.to_owned() + "login_with_github")
+                .get(login_with_github),
+            // http POST {ip}/PREFIX/user/login?code={code}
+            Router::new()
+                .path(PREFIX.to_owned() + "user/login")
+                .post(login),
+            // http POST {ip}/PREFIX/user/new account={} password={} remember:={bool}
+            Router::new()
+                .path(PREFIX.to_owned() + "user/new")
+                .post(create_user),
+            // http {ip}/rss
+            Router::new().path("rss").get(rss_path),
+        ]
     }
 }

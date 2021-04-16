@@ -31,8 +31,16 @@
             {% endfor %}
             {% endif %}
         </ul>
-        <button id="tag_btn" class="btn btn-sm btn-info pull-right">添加标签</button>
+        <button type="button" class="btn btn-sm btn-success pull-left">
+            <span class="glyphicon glyphicon-upload"></span>
+            Upload
+        </button>
+        <button id="tag_btn" class="btn btn-sm btn-info pull-right">
+            <span class="glyphicon glyphicon-plus"></span>
+            添加标签
+        </button>
     </div>
+    <br/>
     <div style="margin-top: 20px;">
         <ul class="nav nav-tabs">
             <li role="presentation" class="active" id="editor_note"><a onclick="editorPage()">Editor</a></li>
@@ -92,6 +100,46 @@
         </div>
     </div>
 </div>
+
+<div id="upload-success" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title">提示</h4>
+            </div>
+            <div class="modal-body">
+                <p>提交成功</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger modal-upload" data-dismiss="modal">Upload</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="upload_modal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title">提示</h4>
+            </div>
+            <div class="modal-body">
+                <br /><br />
+                <input type="file" id="file" multiple class="btn btn-default"/>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger modal-upload" data-dismiss="modal">Upload</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="tag" class="modal fade" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
         <div class="modal-content">

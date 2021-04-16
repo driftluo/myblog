@@ -29,7 +29,7 @@ $("#submit").click(function (event) {
 });
 $(function () {
     var id = $("#title").attr("article-id");
-    $.getJSON("/api/v1//article/admin/view_raw?id=" + id, function (result) {
+    $.getJSON("/api/v1/article/admin/view_raw?id=" + id, function (result) {
         $("#title").val(result.data.title);
         $("#editor").val(result.data.content);
         $("ul.tag li a").map(function () {

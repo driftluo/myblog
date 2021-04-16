@@ -4,7 +4,6 @@
 function getList() {
     if (command.command) {
         $.getJSON("/api/v1/article/view_all?limit=5&&offset=" + command.order * 5, function (result) {
-            // console.log(result.status);
             command.add();
             if (result.data.length === 0) {
                 command.change();
@@ -35,7 +34,7 @@ $(window).scroll(function () {
 });
 
 // According to the tag to get the corresponding article list
-$("button").click(function () {
+$(".tag").click(function () {
     command.setFalse();
     $.getJSON("/api/v1/article/view_all/" + $(this).parent().attr("data-id"), function (result) {
         for (var index in result.data) {
