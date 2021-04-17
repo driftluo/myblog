@@ -1,0 +1,27 @@
+<script id="tpl-article-list" type="text/html">
+    {% raw %}
+    {{each data}}
+    <tr>
+        <td>{{ $index }}</td>
+        <td><a href='/admin/article/view?id={{ $value.id }}'><p>{{ $value.title }}</p></a></td>
+        <td><span class="label label-success">{{ $value.published }}</span></td>
+        <td>{{ $value.create_time }}</td>
+        <td>{{ $value.modify_time }}</td>
+        <td>
+            <button type="button" class="btn btn-primary btn-sm publish" data-id='{{ $value.id }}'>
+                <span class="glyphicon glyphicon-open"></span>
+                Publish
+            </button>
+            <button type="button" class="btn btn-info btn-sm modify" data-id='{{ $value.id }}'>
+                <span class="glyphicon glyphicon-info-sign"></span>
+                Modify
+            </button>
+            <button type="button" class="btn btn-danger btn-sm delete" data-id='{{ $value.id }}'>
+                <span class="glyphicon glyphicon-trash"></span>
+                Delete
+            </button>
+        </td>
+    </tr>
+    {{/each}}
+    {% endraw %}
+</script>

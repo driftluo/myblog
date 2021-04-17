@@ -5,7 +5,7 @@ use salvo::{
 };
 
 use crate::{
-    api::{block_no_admin, JsonErrResponse, JsonOkResponse},
+    api::{block_no_admin, size_add, size_reduce, JsonErrResponse, JsonOkResponse},
     models::articles::{ArticleList, ArticlesWithTag, EditArticle, ModifyPublish, NewArticle},
     utils::{from_code, parse_json_body, parse_last_path, parse_query, set_json_response},
     Routers,
@@ -17,6 +17,7 @@ async fn create_article(req: &mut Request, res: &mut Response) -> Result<(), Htt
         .await
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
 
+    tokio::spawn(async { size_add().await });
     set_json_response(res, 32, &JsonOkResponse::status(body.insert().await));
     Ok(())
 }
@@ -26,7 +27,10 @@ async fn delete_article(req: &mut Request, res: &mut Response) -> Result<(), Htt
     let id = parse_last_path::<uuid::Uuid>(req)?;
 
     match ArticlesWithTag::delete_with_id(id).await {
-        Ok(data) => set_json_response(res, 32, &JsonOkResponse::ok(data)),
+        Ok(data) => {
+            tokio::spawn(async { size_reduce().await });
+            set_json_response(res, 32, &JsonOkResponse::ok(data))
+        }
         Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
     }
 

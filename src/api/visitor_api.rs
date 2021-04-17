@@ -9,7 +9,7 @@ use salvo::{
 use uuid::Uuid;
 
 use crate::{
-    api::{JsonErrResponse, JsonOkResponse},
+    api::{current_size, JsonErrResponse, JsonOkResponse},
     models::{
         articles::{ArticleList, ArticlesWithTag},
         comment::Comments,
@@ -30,6 +30,10 @@ use bytes::BytesMut;
 async fn list_all_article(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
     let limit = parse_query::<i64>(req, "limit")?;
     let offset = parse_query::<i64>(req, "offset")?;
+
+    if offset > current_size().await as i64 {
+        return Err(from_code(StatusCode::BAD_REQUEST, "Query param invalid"));
+    }
 
     match ArticleList::query_article(limit, offset, false).await {
         Ok(data) => set_json_response(res, 128, &JsonOkResponse::ok(data)),
@@ -240,7 +244,7 @@ impl Routers for Visitor {
             Router::new()
                 .path(PREFIX.to_owned() + "article/view_comment/<id>")
                 .get(list_comments),
-            // http {ip}/PREFIX/article/view?limit={number}&&offset={number}
+            // http {ip}/PREFIX/article/view/<id>
             Router::new()
                 .path(PREFIX.to_owned() + "article/view")
                 .get(view_article),

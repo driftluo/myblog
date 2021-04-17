@@ -13,9 +13,12 @@ pub use user_api::User;
 pub use visitor_api::Visitor;
 
 use salvo::prelude::{async_trait, fn_handler, Writer};
+use tokio::sync::RwLock;
 
 // todo: remove on delete all template
 const PREFIX: &str = "api/v1/";
+
+static PAGE_MAX: RwLock<PageMeta> = RwLock::const_new(PageMeta::new());
 
 #[fn_handler]
 async fn block_unlogin(depot: &mut salvo::Depot) -> Result<(), salvo::http::HttpError> {
@@ -70,4 +73,61 @@ impl<T> JsonErrResponse<T> {
             error,
         }
     }
+}
+
+#[derive(Default, Copy, Clone)]
+struct PageMeta {
+    max_size: usize,
+    // Base ten
+    max_page: usize,
+}
+
+impl PageMeta {
+    pub const fn new() -> Self {
+        PageMeta {
+            max_page: 0,
+            max_size: 0,
+        }
+    }
+
+    fn add(&mut self) {
+        self.max_size += 1;
+        self.max_page = self.max_size % 10;
+    }
+
+    fn reduce(&mut self) {
+        self.max_size -= 1;
+        self.max_page = self.max_size % 10;
+    }
+}
+
+pub async fn init_page_size() {
+    use crate::models::articles::ArticleList;
+
+    let count = ArticleList::size_count().await;
+
+    let mut page = PAGE_MAX.write().await;
+
+    *page = PageMeta {
+        max_size: count,
+        max_page: count % 10,
+    }
+}
+
+pub(crate) async fn size_add() {
+    let mut page = PAGE_MAX.write().await;
+    page.add()
+}
+
+pub(crate) async fn size_reduce() {
+    let mut page = PAGE_MAX.write().await;
+    page.reduce()
+}
+
+pub(crate) async fn current_size() -> usize {
+    PAGE_MAX.read().await.max_size
+}
+
+pub(crate) async fn current_page() -> usize {
+    PAGE_MAX.read().await.max_page
 }

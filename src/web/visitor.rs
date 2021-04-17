@@ -16,7 +16,7 @@ use crate::{
 
 #[tracing::instrument]
 #[fn_handler]
-pub async fn index(depot: &mut Depot, res: &mut Response) {
+async fn index(depot: &mut Depot, res: &mut Response) {
     let mut web = depot.take::<_, Context>(WEB);
 
     match TagCount::view_tag_count().await {
@@ -103,7 +103,8 @@ impl Routers for ArticleWeb {
     fn build(self) -> Vec<Router> {
         vec![
             // http {ip}/index
-            Router::new().path("index").get(index),
+            Router::new().before(visitor_log).get(index),
+            Router::new().path("index").before(visitor_log).get(index),
             // http {ip}/about
             Router::new().path("about").get(about),
             // http {ip}/list
@@ -117,7 +118,6 @@ impl Routers for ArticleWeb {
             // http {ip}/article/<id>
             Router::new()
                 .path("article/<id:/[0-9a-z]{8}(-[0-9a-z]{4}){3}-[0-9a-z]{8}/>")
-                .before(visitor_log)
                 .get(article_view),
         ]
     }

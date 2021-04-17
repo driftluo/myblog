@@ -10,7 +10,7 @@ mod admin;
 mod visitor;
 
 pub use admin::Admin;
-pub use visitor::{index, ArticleWeb};
+pub use visitor::ArticleWeb;
 
 static TERA: Lazy<tera::Tera> = Lazy::new(|| tera::Tera::new("views/**/*").unwrap());
 

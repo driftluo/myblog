@@ -1,8 +1,8 @@
 use new_blog::{
-    api::{AdminArticle, AdminUser, ChartData, Tag, User, Visitor},
+    api::{init_page_size, AdminArticle, AdminUser, ChartData, Tag, User, Visitor},
     db_wrapper::{create_pg_pool, create_redis_pool},
     utils::get_identity_and_web_context,
-    web::{index, Admin, ArticleWeb},
+    web::{Admin, ArticleWeb},
     Routers, PERMISSION, WEB,
 };
 use salvo::{
@@ -24,10 +24,10 @@ fn main() {
         // load lua to redis
         create_redis_pool(Some("lua/visitor_log.lua")).await;
         create_pg_pool().await;
+        init_page_size().await;
 
         let root = Router::new()
             .before(global)
-            .get(index)
             .append(ArticleWeb.build())
             .append(Admin.build())
             .append(AdminUser.build())

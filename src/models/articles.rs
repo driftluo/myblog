@@ -169,6 +169,19 @@ impl ArticleList {
             Err(err) => Err(format!("{}", err)),
         }
     }
+
+    pub async fn size_count() -> usize {
+        #[derive(sqlx::FromRow, Default)]
+        struct TP {
+            count: Option<i64>,
+        }
+        sqlx::query_as!(TP, r#"select count(*) from articles"#)
+            .fetch_one(get_postgres())
+            .await
+            .unwrap_or_default()
+            .count
+            .unwrap_or(0) as usize
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
