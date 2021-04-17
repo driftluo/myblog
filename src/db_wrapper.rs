@@ -39,146 +39,330 @@ impl RedisManager {
     }
 
     pub async fn keys(&self, pattern: &str) -> Vec<String> {
-        redis::cmd("keys")
-            .arg(pattern)
-            .query_async(&mut self.pool.clone())
-            .await
-            .unwrap()
+        loop {
+            match redis::cmd("keys")
+                .arg(pattern)
+                .query_async(&mut self.pool.clone())
+                .await
+            {
+                Ok(res) => return res,
+                Err(e) => {
+                    // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
+                    // Connection drop is an expected error, just need to be executed again
+                    if e.is_connection_dropped() {
+                        continue;
+                    } else {
+                        std::panic::panic_any(e)
+                    }
+                }
+            }
+        }
     }
 
     pub async fn exists(&self, redis_key: &str) -> bool {
-        redis::cmd("exists")
-            .arg(redis_key)
-            .query_async(&mut self.pool.clone())
-            .await
-            .unwrap()
+        loop {
+            match redis::cmd("exists")
+                .arg(redis_key)
+                .query_async(&mut self.pool.clone())
+                .await
+            {
+                Ok(res) => return res,
+                Err(e) => {
+                    // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
+                    // Connection drop is an expected error, just need to be executed again
+                    if e.is_connection_dropped() {
+                        continue;
+                    } else {
+                        std::panic::panic_any(e)
+                    }
+                }
+            }
+        }
     }
 
     pub async fn expire(&self, redis_key: &str, sec: i64) {
-        redis::cmd("expire")
-            .arg(redis_key)
-            .arg(sec)
-            .query_async(&mut self.pool.clone())
-            .await
-            .unwrap()
+        loop {
+            match redis::cmd("expire")
+                .arg(redis_key)
+                .arg(sec)
+                .query_async(&mut self.pool.clone())
+                .await
+            {
+                Ok(res) => return res,
+                Err(e) => {
+                    // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
+                    // Connection drop is an expected error, just need to be executed again
+                    if e.is_connection_dropped() {
+                        continue;
+                    } else {
+                        std::panic::panic_any(e)
+                    }
+                }
+            }
+        }
     }
 
     pub async fn del<T>(&self, redis_keys: T) -> bool
     where
         T: redis::ToRedisArgs,
     {
-        redis::cmd("del")
-            .arg(redis_keys)
-            .query_async(&mut self.pool.clone())
-            .await
-            .unwrap()
+        loop {
+            match redis::cmd("del")
+                .arg(redis_keys.to_redis_args())
+                .query_async(&mut self.pool.clone())
+                .await
+            {
+                Ok(res) => return res,
+                Err(e) => {
+                    // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
+                    // Connection drop is an expected error, just need to be executed again
+                    if e.is_connection_dropped() {
+                        continue;
+                    } else {
+                        std::panic::panic_any(e)
+                    }
+                }
+            }
+        }
     }
 
     pub async fn set(&self, redis_key: &str, value: &str) {
-        redis::cmd("set")
-            .arg(redis_key)
-            .arg(value)
-            .query_async(&mut self.pool.clone())
-            .await
-            .unwrap()
+        loop {
+            match redis::cmd("set")
+                .arg(redis_key)
+                .arg(value)
+                .query_async(&mut self.pool.clone())
+                .await
+            {
+                Ok(res) => return res,
+                Err(e) => {
+                    // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
+                    // Connection drop is an expected error, just need to be executed again
+                    if e.is_connection_dropped() {
+                        continue;
+                    } else {
+                        std::panic::panic_any(e)
+                    }
+                }
+            }
+        }
     }
 
     pub async fn get(&self, redis_key: &str) -> Result<String, redis::RedisError> {
-        redis::cmd("get")
-            .arg(redis_key)
-            .query_async(&mut self.pool.clone())
-            .await
+        loop {
+            match redis::cmd("get")
+                .arg(redis_key)
+                .query_async(&mut self.pool.clone())
+                .await
+            {
+                Ok(res) => return Ok(res),
+                Err(e) => {
+                    // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
+                    // Connection drop is an expected error, just need to be executed again
+                    if e.is_connection_dropped() {
+                        continue;
+                    } else {
+                        return Err(e);
+                    }
+                }
+            }
+        }
     }
 
     pub async fn hset<T>(&self, redis_key: &str, hash_key: &str, value: T)
     where
         T: redis::ToRedisArgs,
     {
-        redis::cmd("hset")
-            .arg(redis_key)
-            .arg(hash_key)
-            .arg(value)
-            .query_async(&mut self.pool.clone())
-            .await
-            .unwrap()
+        loop {
+            match redis::cmd("hset")
+                .arg(redis_key)
+                .arg(hash_key)
+                .arg(value.to_redis_args())
+                .query_async(&mut self.pool.clone())
+                .await
+            {
+                Ok(res) => return res,
+                Err(e) => {
+                    // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
+                    // Connection drop is an expected error, just need to be executed again
+                    if e.is_connection_dropped() {
+                        continue;
+                    } else {
+                        std::panic::panic_any(e)
+                    }
+                }
+            }
+        }
     }
 
     pub async fn hdel<T>(&self, redis_key: &str, hash_key: T)
     where
         T: redis::ToRedisArgs,
     {
-        redis::cmd("hdel")
-            .arg(redis_key)
-            .arg(hash_key)
-            .query_async(&mut self.pool.clone())
-            .await
-            .unwrap()
+        loop {
+            match redis::cmd("hdel")
+                .arg(redis_key)
+                .arg(hash_key.to_redis_args())
+                .query_async(&mut self.pool.clone())
+                .await
+            {
+                Ok(res) => return res,
+                Err(e) => {
+                    // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
+                    // Connection drop is an expected error, just need to be executed again
+                    if e.is_connection_dropped() {
+                        continue;
+                    } else {
+                        std::panic::panic_any(e)
+                    }
+                }
+            }
+        }
     }
 
     pub async fn hget<T>(&self, redis_key: &str, hash_key: &str) -> Result<T, redis::RedisError>
     where
         T: redis::FromRedisValue,
     {
-        redis::cmd("hget")
-            .arg(redis_key)
-            .arg(hash_key)
-            .query_async(&mut self.pool.clone())
-            .await
+        loop {
+            match redis::cmd("hget")
+                .arg(redis_key)
+                .arg(hash_key)
+                .query_async(&mut self.pool.clone())
+                .await
+            {
+                Ok(res) => return Ok(res),
+                Err(e) => {
+                    // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
+                    // Connection drop is an expected error, just need to be executed again
+                    if e.is_connection_dropped() {
+                        continue;
+                    } else {
+                        return Err(e);
+                    }
+                }
+            }
+        }
     }
 
     pub async fn hexists(&self, redis_key: &str, hash_key: &str) -> bool {
-        redis::cmd("hexists")
-            .arg(redis_key)
-            .arg(hash_key)
-            .query_async(&mut self.pool.clone())
-            .await
-            .unwrap()
+        loop {
+            match redis::cmd("hexists")
+                .arg(redis_key)
+                .arg(hash_key)
+                .query_async(&mut self.pool.clone())
+                .await
+            {
+                Ok(res) => return res,
+                Err(e) => {
+                    // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
+                    // Connection drop is an expected error, just need to be executed again
+                    if e.is_connection_dropped() {
+                        continue;
+                    } else {
+                        std::panic::panic_any(e)
+                    }
+                }
+            }
+        }
     }
 
     pub async fn lpush<T>(&self, redis_key: &str, value: T)
     where
         T: redis::ToRedisArgs,
     {
-        redis::cmd("lpush")
-            .arg(redis_key)
-            .arg(value)
-            .query_async(&mut self.pool.clone())
-            .await
-            .unwrap()
+        loop {
+            match redis::cmd("lpush")
+                .arg(redis_key)
+                .arg(value.to_redis_args())
+                .query_async(&mut self.pool.clone())
+                .await
+            {
+                Ok(res) => return res,
+                Err(e) => {
+                    // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
+                    // Connection drop is an expected error, just need to be executed again
+                    if e.is_connection_dropped() {
+                        continue;
+                    } else {
+                        std::panic::panic_any(e)
+                    }
+                }
+            }
+        }
     }
 
     pub async fn llen<T>(&self, redis_key: &str) -> T
     where
         T: redis::FromRedisValue,
     {
-        redis::cmd("llen")
-            .arg(redis_key)
-            .query_async(&mut self.pool.clone())
-            .await
-            .unwrap()
+        loop {
+            match redis::cmd("llen")
+                .arg(redis_key)
+                .query_async(&mut self.pool.clone())
+                .await
+            {
+                Ok(res) => return res,
+                Err(e) => {
+                    // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
+                    // Connection drop is an expected error, just need to be executed again
+                    if e.is_connection_dropped() {
+                        continue;
+                    } else {
+                        std::panic::panic_any(e)
+                    }
+                }
+            }
+        }
     }
 
     pub async fn ltrim(&self, redis_key: &str, start: i64, stop: i64) {
-        redis::cmd("ltrim")
-            .arg(redis_key)
-            .arg(start)
-            .arg(stop)
-            .query_async(&mut self.pool.clone())
-            .await
-            .unwrap()
+        loop {
+            match redis::cmd("ltrim")
+                .arg(redis_key)
+                .arg(start)
+                .arg(stop)
+                .query_async(&mut self.pool.clone())
+                .await
+            {
+                Ok(res) => return res,
+                Err(e) => {
+                    // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
+                    // Connection drop is an expected error, just need to be executed again
+                    if e.is_connection_dropped() {
+                        continue;
+                    } else {
+                        std::panic::panic_any(e)
+                    }
+                }
+            }
+        }
     }
 
     pub async fn lrem<T>(&self, redis_key: &str, count: i64, value: T)
     where
         T: redis::ToRedisArgs,
     {
-        redis::cmd("lrem")
-            .arg(redis_key)
-            .arg(count)
-            .arg(value)
-            .query_async(&mut self.pool.clone())
-            .await
-            .unwrap()
+        loop {
+            match redis::cmd("lrem")
+                .arg(redis_key)
+                .arg(count)
+                .arg(value.to_redis_args())
+                .query_async(&mut self.pool.clone())
+                .await
+            {
+                Ok(res) => return res,
+                Err(e) => {
+                    // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
+                    // Connection drop is an expected error, just need to be executed again
+                    if e.is_connection_dropped() {
+                        continue;
+                    } else {
+                        std::panic::panic_any(e)
+                    }
+                }
+            }
+        }
     }
 
     pub async fn lrange<T>(&self, redis_key: &str, start: i64, stop: i64) -> T
@@ -196,11 +380,25 @@ impl RedisManager {
 
     pub async fn lua_push(&self, redis_key: &str, ip: &str) {
         if let Some(lua) = self.script.as_ref() {
-            lua.arg(redis_key)
-                .arg(ip)
-                .invoke_async(&mut self.pool.clone())
-                .await
-                .unwrap()
+            loop {
+                match lua
+                    .arg(redis_key)
+                    .arg(ip)
+                    .invoke_async(&mut self.pool.clone())
+                    .await
+                {
+                    Ok(res) => return res,
+                    Err(e) => {
+                        // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
+                        // Connection drop is an expected error, just need to be executed again
+                        if e.is_connection_dropped() {
+                            continue;
+                        } else {
+                            std::panic::panic_any(e)
+                        }
+                    }
+                }
+            }
         }
     }
 }

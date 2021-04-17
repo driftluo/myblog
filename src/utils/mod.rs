@@ -18,7 +18,7 @@ use tiny_keccak::Hasher;
 
 pub mod github_information;
 
-const COOKIE_NAME: &'static str = "blog_session";
+const COOKIE_NAME: &str = "blog_session";
 
 #[inline]
 pub fn markdown_render(src: &str) -> String {
@@ -69,22 +69,21 @@ pub async fn get_identity_and_web_context(
     let redis_pool = get_redis();
 
     match req.cookies().get(COOKIE_NAME) {
-        Some(v) => {
-            if let Ok(info) = redis_pool.hget::<String>(v.value(), "info").await {
+        Some(v) => match redis_pool.hget::<String>(v.value(), "info").await {
+            Ok(info) => {
                 let info = serde_json::from_str::<UserInfo>(&info).unwrap();
                 let notifys = UserNotify::get_notifys(info.id).await;
                 web.insert("user", &info);
-                web.insert("notifys", &notifys.unwrap_or(Vec::new()));
+                web.insert("notifys", &notifys.unwrap_or_default());
                 let groups = info.groups;
 
                 depot.insert(USER_INFO, info);
                 depot.insert(COOKIE, v.value().to_owned());
 
                 (Some(groups), web)
-            } else {
-                (None, web)
             }
-        }
+            Err(_) => (None, web),
+        },
         None => (None, web),
     }
 }
@@ -99,17 +98,17 @@ pub fn set_cookie(
 ) {
     let mut cookie = Cookie::new(COOKIE_NAME, value);
 
-    if domain.is_some() {
-        cookie.set_domain(domain.unwrap().to_string());
+    if let Some(i) = domain {
+        cookie.set_domain(i.to_string());
     }
-    if path.is_some() {
-        cookie.set_path(path.unwrap().to_string());
+    if let Some(i) = path {
+        cookie.set_path(i.to_string());
     }
-    if secure.is_some() {
-        cookie.set_secure(secure.unwrap());
+    if let Some(i) = secure {
+        cookie.set_secure(i);
     }
-    if max_age.is_some() {
-        cookie.set_max_age(time::Duration::hours(max_age.unwrap()))
+    if let Some(i) = max_age {
+        cookie.set_max_age(time::Duration::hours(i))
     }
 
     res.add_cookie(cookie);
@@ -133,7 +132,7 @@ pub fn parse_query<T: FromStr>(req: &Request, name: &str) -> Result<T, HttpError
 pub fn parse_last_path<T: FromStr>(req: &Request) -> Result<T, HttpError> {
     let path = req.uri().path();
 
-    if let Some(k) = path.rsplitn(2, "/").next() {
+    if let Some(k) = path.rsplitn(2, '/').next() {
         k.parse()
             .map_err(|_| from_code(StatusCode::BAD_REQUEST, "Path Param is Incorrect"))
     } else {
@@ -224,12 +223,12 @@ where
 
 #[fn_handler]
 pub async fn visitor_log(req: &Request) {
-    match req.get_header::<String>("X-Real-IP") {
-        Some(ip) => {
-            tokio::spawn(async {
+    if let Some(ip) = req.get_header::<String>("X-Real-IP") {
+        if let Ok(key) = ::std::env::var("IPSTACK_KEY") {
+            tokio::spawn(async move {
                 let timestamp = chrono::Utc::now();
 
-                let url = format!("http://api.ipstack.com/{}?access_key=****", &ip);
+                let url = format!("http://api.ipstack.com/{}?access_key={}", &ip, key,);
                 if let Ok(res) = reqwest::Client::new().get(&url).send().await {
                     #[derive(serde::Deserialize, serde::Serialize)]
                     struct Inner {
@@ -262,7 +261,6 @@ pub async fn visitor_log(req: &Request) {
                 }
             });
         }
-        None => (),
     }
 }
 

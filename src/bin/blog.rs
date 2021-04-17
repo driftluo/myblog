@@ -10,6 +10,7 @@ use salvo::{
     prelude::{async_trait, fn_handler},
     Depot, Request, Router, Server,
 };
+use tracing::Instrument;
 
 fn main() {
     dotenv::dotenv().ok();
@@ -41,7 +42,10 @@ fn main() {
                     .get(StaticDir::new("static/")),
             );
 
-        Server::new(root).bind(([0, 0, 0, 0], listen_port)).await
+        Server::new(root)
+            .bind(([127, 0, 0, 1], listen_port))
+            .instrument(tracing::info_span!("listen on 127.0.0.1:{}", listen_port))
+            .await
     });
 }
 

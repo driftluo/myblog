@@ -46,6 +46,7 @@ $ docker run -it --rm --link your_container_name:postgres postgres psql -h postg
 
 #### init database
 ```bash
+$ sqlx database create
 $ sqlx migrate run
 ```
 

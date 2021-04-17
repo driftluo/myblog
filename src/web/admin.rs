@@ -34,13 +34,14 @@ async fn admin_list(depot: &mut Depot, res: &mut Response) {
     render(res, "admin/admin_list.html", &web)
 }
 
+#[tracing::instrument]
 #[fn_handler]
 async fn new_(depot: &mut Depot, res: &mut Response) {
     let mut web = depot.take::<_, Context>(WEB);
 
     match Tags::view_list_tag().await {
         Ok(tags_) => web.insert("tags", &tags_),
-        Err(_) => (),
+        Err(e) => tracing::info!("can't find tags with: {:?}", e),
     }
 
     render(res, "admin/article_new.html", &web);
@@ -65,6 +66,7 @@ async fn admin_view_article(
     Ok(())
 }
 
+#[tracing::instrument]
 #[fn_handler]
 async fn article_edit(
     req: &mut Request,
@@ -77,7 +79,7 @@ async fn article_edit(
 
     match Tags::view_list_tag().await {
         Ok(tags_) => web.insert("tags", &tags_),
-        Err(_) => (),
+        Err(e) => tracing::info!("can't find tags with: {:?}", e),
     }
 
     render(res, "admin/article_edit.html", &web);

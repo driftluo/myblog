@@ -14,13 +14,14 @@ use crate::{
     Routers, COOKIE, PERMISSION, WEB,
 };
 
+#[tracing::instrument]
 #[fn_handler]
 pub async fn index(depot: &mut Depot, res: &mut Response) {
     let mut web = depot.take::<_, Context>(WEB);
 
     match TagCount::view_tag_count().await {
         Ok(data) => web.insert("tags", &data),
-        Err(_) => (),
+        Err(e) => tracing::info!("can't get tags with {}", e),
     }
 
     render(res, "visitor/index.html", &web)
