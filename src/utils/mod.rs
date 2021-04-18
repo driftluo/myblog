@@ -225,9 +225,8 @@ where
 pub async fn visitor_log(req: &Request) {
     if let Some(ip) = req.get_header::<String>("X-Real-IP") {
         if let Ok(key) = ::std::env::var("IPSTACK_KEY") {
+            let timestamp = chrono::Utc::now();
             tokio::spawn(async move {
-                let timestamp = chrono::Utc::now();
-
                 let url = format!("http://api.ipstack.com/{}?access_key={}", &ip, key,);
                 if let Ok(res) = reqwest::Client::new().get(&url).send().await {
                     #[derive(serde::Deserialize, serde::Serialize)]
@@ -240,7 +239,7 @@ pub async fn visitor_log(req: &Request) {
                     #[derive(serde::Deserialize, serde::Serialize)]
                     struct Dump {
                         ip: String,
-                        time: chrono::DateTime<chrono::Utc>,
+                        timestamp: chrono::DateTime<chrono::Utc>,
                         #[serde(flatten)]
                         inner: Inner,
                     }
@@ -251,7 +250,7 @@ pub async fn visitor_log(req: &Request) {
                                 "visitor_log",
                                 &serde_json::to_string(&Dump {
                                     ip,
-                                    time: timestamp,
+                                    timestamp,
                                     inner: data,
                                 })
                                 .unwrap(),
