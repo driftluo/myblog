@@ -16,8 +16,8 @@ $(function () {
 });
 
 function getArticleList() {
-    $.getJSON("/api/v1/article/admin/view_all?limit=10&&offset=" + page.page * 10, function (result) {
-        if (result.data.length < 10) {
+    $.getJSON("/api/v1/article/admin/view_all?limit=20&&offset=" + page.page * 20, function (result) {
+        if (result.data.length < 20) {
             $("#next").attr({ "disabled": "disabled" });
         }
         for (var index in result.data) {
@@ -26,10 +26,6 @@ function getArticleList() {
         }
         var html = template("tpl-article-list", result);
         $("tbody").append(html);
-        // register for click events
-        publishButton();
-        deleteButton();
-        modifyButton();
     });
 
 }
