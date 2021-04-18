@@ -1,14 +1,16 @@
 "use strict";
+var page = new Page("ip");
+
 $(function () {
     get_ip()
 });
 
 function get_ip() {
     $.getJSON("/api/v1/ip/view?limit=25&offset=" + page.page * 25, function (result) {
-        if (result.data.length < 10) {
+        if (result.data.length < 25) {
             $("#next").attr({ "disabled": "disabled" });
         }
-        var ip_unique, ip_list = [];
+        var ip_list = [];
         for(var i = 0; i < result.data.length; i++){
             var data = JSON.parse(result.data[i]);
             data.timestamp = moment.utc(data.timestamp).local().format("YYYY-MM-DD HH:mm:ss");

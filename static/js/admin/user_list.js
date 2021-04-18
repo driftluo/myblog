@@ -1,4 +1,6 @@
 "use strict";
+var page = new Page("user");
+
 $(function () {
     getUserList();
 });

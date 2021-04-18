@@ -1,4 +1,6 @@
 "use strict";
+var page = new Page("article");
+
 $(function () {
     getArticleList();
 });

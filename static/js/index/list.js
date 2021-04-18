@@ -1,11 +1,18 @@
 "use strict";
 function Page() {
-    this.page = 0;
+    var page = sessionStorage.getItem("page");
+    if (!page && typeof(page)!="undefined") {
+        this.page = 0;
+    } else {
+        this.page = Number(page);
+    }
     this.add = function () {
         this.page += 1;
+        sessionStorage.setItem("page", this.page);
     };
     this.sub = function () {
         this.page -= 1;
+        sessionStorage.setItem("page", this.page);
     }
 }
 
@@ -16,7 +23,7 @@ $(function () {
 });
 
 function getArticleList() {
-    $.getJSON("/api/v1/article/admin/view_all?limit=20&&offset=" + page.page * 20, function (result) {
+    $.getJSON("/api/v1/article/view_all?limit=20&&offset=" + page.page * 20, function (result) {
         if (result.data.length < 20) {
             $("#next").attr({ "disabled": "disabled" });
         }
