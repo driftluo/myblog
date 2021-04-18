@@ -4,6 +4,9 @@ function Page(name) {
     if (!page && typeof(page)!="undefined") {
         this.page = 0;
     } else {
+        if (page > 0) {
+            $("#previous").removeAttr("disabled");
+        }
         this.page = Number(page);
     }
     this.add = function () {
