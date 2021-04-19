@@ -1,0 +1,913 @@
+{
+  "db": "PostgreSQL",
+  "06990a72e79398100f73913dcdfcfbb69e79e5279b1cebd8bac3ba3d7dfcee27": {
+    "query": "select count(*) from articles",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "count",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        null
+      ]
+    }
+  },
+  "081537aa5d301529d7c0e46db076c0e294e53f95ad867c921f2466961fd5bad5": {
+    "query": "UPDATE users SET nickname = $1, say = $2, email = $3 WHERE id = $4\n            RETURNING id, account, nickname, groups, say, email, create_time, github",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "account",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 2,
+          "name": "nickname",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 3,
+          "name": "groups",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 4,
+          "name": "say",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 5,
+          "name": "email",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 6,
+          "name": "create_time",
+          "type_info": "Timestamp"
+        },
+        {
+          "ordinal": 7,
+          "name": "github",
+          "type_info": "Varchar"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Varchar",
+          "Varchar",
+          "Varchar",
+          "Uuid"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true
+      ]
+    }
+  },
+  "12b731229fc4b8afeba2ff08182ed87740d27815ee9f51075fce331e9d1121c3": {
+    "query": "SELECT id, account, nickname, groups, say, email, create_time, github FROM users\n            WHERE email = $1 AND disabled = 0",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "account",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 2,
+          "name": "nickname",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 3,
+          "name": "groups",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 4,
+          "name": "say",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 5,
+          "name": "email",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 6,
+          "name": "create_time",
+          "type_info": "Timestamp"
+        },
+        {
+          "ordinal": 7,
+          "name": "github",
+          "type_info": "Varchar"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true
+      ]
+    }
+  },
+  "1f1efdacea3b27043f92ed04038c4e1ae190820a698f66baf53a2d1399f12abc": {
+    "query": "UPDATE tags SET tag = $1 WHERE id = $2",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Varchar",
+          "Uuid"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "21edee54ad88c69097d1fdfc0f4f4dcedc60a1f16d25565c223e89d8acc67b72": {
+    "query": "UPDATE articles SET published = $1 WHERE id = $2",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Bool",
+          "Uuid"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "26b87e8b39ed55be52be54b7068df34be31f54cb6d9bd9ef0622f19cbc249501": {
+    "query": "SELECT id, account, nickname, groups, say, email, create_time, github FROM users\n            ORDER BY create_time\n            LIMIT $1 OFFSET $2",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "account",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 2,
+          "name": "nickname",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 3,
+          "name": "groups",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 4,
+          "name": "say",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 5,
+          "name": "email",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 6,
+          "name": "create_time",
+          "type_info": "Timestamp"
+        },
+        {
+          "ordinal": 7,
+          "name": "github",
+          "type_info": "Varchar"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true
+      ]
+    }
+  },
+  "4dc026636f4e2af46718f32a7a5b945c52ff116c128b81031a97fbd614eee757": {
+    "query": "UPDATE users SET password = $1, salt = $2 WHERE id = $3",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Varchar",
+          "Varchar",
+          "Uuid"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "50293c2e54af11d4c2a553e29b671cef087a159c6ee7182d8ca929ecb748f3b7": {
+    "query": "DELETE FROM users WHERE id = $1",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "52220a25475fc786807df8201cd45206e5fd41cf3d091f4cb07c6092b196c399": {
+    "query": "DELETE FROM article_tag_relation WHERE tag_id = $1",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "522f998ac41d40caf597458b5bda62e9731ddf3ebd0ad3f9445849b6d37e3ed7": {
+    "query": "SELECT password, salt FROM users\n            WHERE id = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "password",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 1,
+          "name": "salt",
+          "type_info": "Varchar"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "52958684fa52b7a4753cd4356482dc6c655102a501d8aa48e03b1fb3dbbad02d": {
+    "query": "SELECT * FROM tags",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "tag",
+          "type_info": "Varchar"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "5ce34eea3f4a9749913e1240811e308e9b50f567a9f3e604af333da68f8c8dea": {
+    "query": "SELECT id, account, nickname, groups, say, email, create_time, github FROM users\n            WHERE id = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "account",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 2,
+          "name": "nickname",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 3,
+          "name": "groups",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 4,
+          "name": "say",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 5,
+          "name": "email",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 6,
+          "name": "create_time",
+          "type_info": "Timestamp"
+        },
+        {
+          "ordinal": 7,
+          "name": "github",
+          "type_info": "Varchar"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true
+      ]
+    }
+  },
+  "617ec53e5cbdc8cd2eff4bf7189dc04a6e71d16e35cf0d5e0089308f13669b38": {
+    "query": "DELETE FROM article_tag_relation WHERE article_id = $1 AND tag_id = $2",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "67ddef4b59bf7969ba631f53232515c4fffddf400813589593792313e45ec0f6": {
+    "query": "SELECT id, title, published, create_time, modify_time\n                    FROM articles\n                    ORDER BY create_time DESC\n                    LIMIT $1 OFFSET $2 ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "title",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 2,
+          "name": "published",
+          "type_info": "Bool"
+        },
+        {
+          "ordinal": 3,
+          "name": "create_time",
+          "type_info": "Timestamp"
+        },
+        {
+          "ordinal": 4,
+          "name": "modify_time",
+          "type_info": "Timestamp"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "6fc5d77171bacf3c87352619e53de83fc3500fac976cfb5033d5d08baab2eff0": {
+    "query": "DELETE FROM article_tag_relation WHERE article_id = $1",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "7d9a4576433c0bbe1dfe42f0a461ea97cbc0a20d4186ccc11f10f3b30c159275": {
+    "query": "SELECT * FROM users WHERE disabled = 0 AND account = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "account",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 2,
+          "name": "password",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 3,
+          "name": "salt",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 4,
+          "name": "groups",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 5,
+          "name": "nickname",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 6,
+          "name": "say",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 7,
+          "name": "email",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 8,
+          "name": "disabled",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 9,
+          "name": "create_time",
+          "type_info": "Timestamp"
+        },
+        {
+          "ordinal": 10,
+          "name": "github",
+          "type_info": "Varchar"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true
+      ]
+    }
+  },
+  "aa708b80a08f4ef62e619dd6320f8b1849da4bb27a2a1c36576e2eb2efbbb0e0": {
+    "query": "DELETE FROM comments where user_id = $1",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "b5974e6481d488e526c11f80faeeffdde16889f292e14ebb995cd3ccef2f6e18": {
+    "query": "UPDATE users SET groups = $1 WHERE id = $2",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int2",
+          "Uuid"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "bd6b02b04b14cc4044e4e197de67ac587d51e4cdd3bd19e4e81014fc87089bb5": {
+    "query": "INSERT INTO tags (tag) VALUES ($1)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Varchar"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "d3e90c2dc4872bd8c2ae1695359f558d740210d92d62fd17a86fcb6b0a8a516c": {
+    "query": "Insert into article_tag_relation (tag_id, article_id) VALUES ($1, $2)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "d495bf8ab15ea0347fc60bd244528a82b6c861b08116bf97a8ccb23df4ad979e": {
+    "query": "INSERT INTO comments (comment, article_id, user_id) VALUES ($1, $2, $3)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Uuid",
+          "Uuid"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "d7450bfb27ad63550dda1fdc8b6e28b115d1eccd0d4d692d0e104e6626b06c81": {
+    "query": "DELETE FROM comments where id = $1",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "d89fbe77aa4a362bb2673e03fdfcbd3f25c26069d6913765d12f9d536aa3f56b": {
+    "query": "SELECT id, title, published, create_time, modify_time\n                    FROM articles\n                    WHERE published = true\n                    ORDER BY create_time DESC\n                    LIMIT $1 OFFSET $2 ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "title",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 2,
+          "name": "published",
+          "type_info": "Bool"
+        },
+        {
+          "ordinal": 3,
+          "name": "create_time",
+          "type_info": "Timestamp"
+        },
+        {
+          "ordinal": 4,
+          "name": "modify_time",
+          "type_info": "Timestamp"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "daf49864161fb81a7ca138baeb4c145fc49ad5fa56e32a09d4fef5492ee665cc": {
+    "query": "UPDATE users SET disabled = $1 WHERE id = $2",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int2",
+          "Uuid"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "dbe1014861661350c67d9642aa56ec007f6ced50065149dad44ebb4417d1547e": {
+    "query": "DELETE FROM articles WHERE id = $1",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "dd0d0e3fd03f130aab947d13580796eee9a786e2ca01d339fd0e8356f8ad3824": {
+    "query": "DELETE FROM tags WHERE id = $1",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "df06583a1d0a7aad82f55bfe9d338e511bfcb9601b2c66e26bc7aa35fa43466d": {
+    "query": "UPDATE articles SET title = $1, content = $2, raw_content = $3 WHERE id = $4",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Varchar",
+          "Text",
+          "Text",
+          "Uuid"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "e200d28b925edd6ece20cfed23ca00b8d5775baff1d3640918d8f51e338d522a": {
+    "query": "SELECT id, account, nickname, groups, say, email, create_time, github FROM users\n            WHERE github = $1 AND disabled = 0",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "account",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 2,
+          "name": "nickname",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 3,
+          "name": "groups",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 4,
+          "name": "say",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 5,
+          "name": "email",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 6,
+          "name": "create_time",
+          "type_info": "Timestamp"
+        },
+        {
+          "ordinal": 7,
+          "name": "github",
+          "type_info": "Varchar"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true
+      ]
+    }
+  },
+  "e22282b15ac635986fcd32a5d7e3489ee0bff204a6ebe23970da58eb2b915a13": {
+    "query": "UPDATe users SET github = $1 WHERE id = $2",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Varchar",
+          "Uuid"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "e2eefa13d4894b1dfc08e62fa989a09812bcedd0597b90e70d57ebcf89f4a9e2": {
+    "query": "INSERT INTO users (account, password, salt, nickname, say, email, github)\n            VALUES ($1, $2, $3, $4, $5, $6, $7)\n            RETURNING id, account, nickname, groups, say, email, create_time, github",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "account",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 2,
+          "name": "nickname",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 3,
+          "name": "groups",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 4,
+          "name": "say",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 5,
+          "name": "email",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 6,
+          "name": "create_time",
+          "type_info": "Timestamp"
+        },
+        {
+          "ordinal": 7,
+          "name": "github",
+          "type_info": "Varchar"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Varchar",
+          "Varchar",
+          "Varchar",
+          "Varchar",
+          "Varchar",
+          "Varchar",
+          "Varchar"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true
+      ]
+    }
+  },
+  "e6cb849ec68a1c8932419d24a5a2ce126acc4bc7b5b4131d1d36751be4ff5c76": {
+    "query": "SELECT id, account, nickname, groups, say, email, create_time, github FROM users WHERE account = 'admin'",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "account",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 2,
+          "name": "nickname",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 3,
+          "name": "groups",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 4,
+          "name": "say",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 5,
+          "name": "email",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 6,
+          "name": "create_time",
+          "type_info": "Timestamp"
+        },
+        {
+          "ordinal": 7,
+          "name": "github",
+          "type_info": "Varchar"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true
+      ]
+    }
+  }
+}
