@@ -1,7 +1,7 @@
 {% extends "visitor/base.html" %}
 
 {% block title %}
-{{ user.nickname }}
+{{ user_info.nickname }}
 {% endblock title %}
 {% block css %}
 <style>
@@ -62,7 +62,7 @@
     });
 
     function utc_to_local() {
-        var create_time = moment.utc("{{ user.create_time }}").local().format();
+        var create_time = moment.utc("{{ user_info.create_time }}").local().format();
         $("#information").children().last().append(create_time);
     }
 </script>
