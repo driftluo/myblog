@@ -115,23 +115,22 @@ impl UserInfo {
     /// Get admin information, cache on redis
     /// key is `admin_info`
     pub async fn view_admin() -> Self {
-        let redis_pool = get_redis();
-        if let Ok(info) = redis_pool.get("admin_info").await {
-            serde_json::from_str::<UserInfo>(&info).unwrap()
-        } else {
-            let info = sqlx::query_as!(
+        let info = get_redis().get("admin_info").await.unwrap();
+        serde_json::from_str::<UserInfo>(&info).unwrap()
+    }
+}
+
+pub async fn init_redis_admin() {
+    let info = sqlx::query_as!(
                 UserInfo,
                 r#"SELECT id, account, nickname, groups, say, email, create_time, github FROM users WHERE account = 'admin'"#,
             )
-            .fetch_one(get_postgres())
-            .await
-            .unwrap();
-            redis_pool
-                .set("admin_info", &serde_json::json!(&info).to_string())
-                .await;
-            info
-        }
-    }
+        .fetch_one(get_postgres())
+        .await
+        .unwrap();
+    get_redis()
+        .set("admin_info", &serde_json::json!(&info).to_string())
+        .await;
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
