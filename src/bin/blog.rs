@@ -10,9 +10,15 @@ use salvo::{
     prelude::{async_trait, fn_handler},
     Depot, Request, Router, Server,
 };
-use tracing::Instrument;
+use tracing::{Instrument, Level};
+use tracing_subscriber::FmtSubscriber;
 
 fn main() {
+    let subscriber = FmtSubscriber::builder()
+        .with_max_level(Level::INFO)
+        .finish();
+    tracing::subscriber::set_global_default(subscriber).unwrap();
+
     dotenv::dotenv().ok();
     let listen_port = ::std::env::var("LISTEN_PORT")
         .expect("LISTEN_PORT must be set")
@@ -44,7 +50,7 @@ fn main() {
 
         Server::new(root)
             .bind(([127, 0, 0, 1], listen_port))
-            .instrument(tracing::info_span!("listen on 127.0.0.1:{}", listen_port))
+            .instrument(tracing::info_span!("listen start"))
             .await
     });
 }

@@ -17,7 +17,11 @@ impl RedisManager {
         T: redis::IntoConnectionInfo,
     {
         let re = redis::Client::open(address).unwrap();
-        let manager = re.get_tokio_connection_manager().await.unwrap();
+        let manager = loop {
+            if let Ok(m) = re.get_tokio_connection_manager().await {
+                break m;
+            };
+        };
         Self {
             pool: manager,
             script: None,
@@ -29,7 +33,11 @@ impl RedisManager {
         T: redis::IntoConnectionInfo,
     {
         let re = redis::Client::open(address).unwrap();
-        let manager = re.get_tokio_connection_manager().await.unwrap();
+        let manager = loop {
+            if let Ok(m) = re.get_tokio_connection_manager().await {
+                break m;
+            };
+        };
         let lua = tokio::fs::read_to_string(path).await.unwrap();
 
         Self {
@@ -38,6 +46,7 @@ impl RedisManager {
         }
     }
 
+    #[tracing::instrument]
     pub async fn keys(&self, pattern: &str) -> Vec<String> {
         loop {
             match redis::cmd("keys")
@@ -49,16 +58,14 @@ impl RedisManager {
                 Err(e) => {
                     // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
                     // Connection drop is an expected error, just need to be executed again
-                    if e.is_connection_dropped() {
-                        continue;
-                    } else {
-                        std::panic::panic_any(e)
-                    }
+                    tracing::info!("{}", e);
+                    continue;
                 }
             }
         }
     }
 
+    #[tracing::instrument]
     pub async fn exists(&self, redis_key: &str) -> bool {
         loop {
             match redis::cmd("exists")
@@ -70,16 +77,14 @@ impl RedisManager {
                 Err(e) => {
                     // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
                     // Connection drop is an expected error, just need to be executed again
-                    if e.is_connection_dropped() {
-                        continue;
-                    } else {
-                        std::panic::panic_any(e)
-                    }
+                    tracing::info!("{}", e);
+                    continue;
                 }
             }
         }
     }
 
+    #[tracing::instrument]
     pub async fn expire(&self, redis_key: &str, sec: i64) {
         loop {
             match redis::cmd("expire")
@@ -92,19 +97,17 @@ impl RedisManager {
                 Err(e) => {
                     // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
                     // Connection drop is an expected error, just need to be executed again
-                    if e.is_connection_dropped() {
-                        continue;
-                    } else {
-                        std::panic::panic_any(e)
-                    }
+                    tracing::info!("{}", e);
+                    continue;
                 }
             }
         }
     }
 
+    #[tracing::instrument]
     pub async fn del<T>(&self, redis_keys: T) -> bool
     where
-        T: redis::ToRedisArgs,
+        T: redis::ToRedisArgs + fmt::Debug,
     {
         loop {
             match redis::cmd("del")
@@ -116,16 +119,14 @@ impl RedisManager {
                 Err(e) => {
                     // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
                     // Connection drop is an expected error, just need to be executed again
-                    if e.is_connection_dropped() {
-                        continue;
-                    } else {
-                        std::panic::panic_any(e)
-                    }
+                    tracing::info!("{}", e);
+                    continue;
                 }
             }
         }
     }
 
+    #[tracing::instrument]
     pub async fn set(&self, redis_key: &str, value: &str) {
         loop {
             match redis::cmd("set")
@@ -138,16 +139,14 @@ impl RedisManager {
                 Err(e) => {
                     // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
                     // Connection drop is an expected error, just need to be executed again
-                    if e.is_connection_dropped() {
-                        continue;
-                    } else {
-                        std::panic::panic_any(e)
-                    }
+                    tracing::info!("{}", e);
+                    continue;
                 }
             }
         }
     }
 
+    #[tracing::instrument]
     pub async fn get(&self, redis_key: &str) -> Result<String, redis::RedisError> {
         loop {
             match redis::cmd("get")
@@ -159,19 +158,17 @@ impl RedisManager {
                 Err(e) => {
                     // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
                     // Connection drop is an expected error, just need to be executed again
-                    if e.is_connection_dropped() {
-                        continue;
-                    } else {
-                        return Err(e);
-                    }
+                    tracing::info!("{}", e);
+                    continue;
                 }
             }
         }
     }
 
+    #[tracing::instrument]
     pub async fn hset<T>(&self, redis_key: &str, hash_key: &str, value: T)
     where
-        T: redis::ToRedisArgs,
+        T: redis::ToRedisArgs + fmt::Debug,
     {
         loop {
             match redis::cmd("hset")
@@ -185,19 +182,17 @@ impl RedisManager {
                 Err(e) => {
                     // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
                     // Connection drop is an expected error, just need to be executed again
-                    if e.is_connection_dropped() {
-                        continue;
-                    } else {
-                        std::panic::panic_any(e)
-                    }
+                    tracing::info!("{}", e);
+                    continue;
                 }
             }
         }
     }
 
+    #[tracing::instrument]
     pub async fn hdel<T>(&self, redis_key: &str, hash_key: T)
     where
-        T: redis::ToRedisArgs,
+        T: redis::ToRedisArgs + fmt::Debug,
     {
         loop {
             match redis::cmd("hdel")
@@ -210,19 +205,17 @@ impl RedisManager {
                 Err(e) => {
                     // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
                     // Connection drop is an expected error, just need to be executed again
-                    if e.is_connection_dropped() {
-                        continue;
-                    } else {
-                        std::panic::panic_any(e)
-                    }
+                    tracing::info!("{}", e);
+                    continue;
                 }
             }
         }
     }
 
+    #[tracing::instrument]
     pub async fn hget<T>(&self, redis_key: &str, hash_key: &str) -> Result<T, redis::RedisError>
     where
-        T: redis::FromRedisValue,
+        T: redis::FromRedisValue + fmt::Debug,
     {
         loop {
             match redis::cmd("hget")
@@ -235,16 +228,14 @@ impl RedisManager {
                 Err(e) => {
                     // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
                     // Connection drop is an expected error, just need to be executed again
-                    if e.is_connection_dropped() {
-                        continue;
-                    } else {
-                        return Err(e);
-                    }
+                    tracing::info!("{}", e);
+                    continue;
                 }
             }
         }
     }
 
+    #[tracing::instrument]
     pub async fn hexists(&self, redis_key: &str, hash_key: &str) -> bool {
         loop {
             match redis::cmd("hexists")
@@ -257,19 +248,17 @@ impl RedisManager {
                 Err(e) => {
                     // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
                     // Connection drop is an expected error, just need to be executed again
-                    if e.is_connection_dropped() {
-                        continue;
-                    } else {
-                        std::panic::panic_any(e)
-                    }
+                    tracing::info!("{}", e);
+                    continue;
                 }
             }
         }
     }
 
+    #[tracing::instrument]
     pub async fn lpush<T>(&self, redis_key: &str, value: T)
     where
-        T: redis::ToRedisArgs,
+        T: redis::ToRedisArgs + fmt::Debug,
     {
         loop {
             match redis::cmd("lpush")
@@ -282,19 +271,17 @@ impl RedisManager {
                 Err(e) => {
                     // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
                     // Connection drop is an expected error, just need to be executed again
-                    if e.is_connection_dropped() {
-                        continue;
-                    } else {
-                        std::panic::panic_any(e)
-                    }
+                    tracing::info!("{}", e);
+                    continue;
                 }
             }
         }
     }
 
+    #[tracing::instrument]
     pub async fn llen<T>(&self, redis_key: &str) -> T
     where
-        T: redis::FromRedisValue,
+        T: redis::FromRedisValue + fmt::Debug,
     {
         loop {
             match redis::cmd("llen")
@@ -306,16 +293,14 @@ impl RedisManager {
                 Err(e) => {
                     // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
                     // Connection drop is an expected error, just need to be executed again
-                    if e.is_connection_dropped() {
-                        continue;
-                    } else {
-                        std::panic::panic_any(e)
-                    }
+                    tracing::info!("{}", e);
+                    continue;
                 }
             }
         }
     }
 
+    #[tracing::instrument]
     pub async fn ltrim(&self, redis_key: &str, start: i64, stop: i64) {
         loop {
             match redis::cmd("ltrim")
@@ -329,19 +314,17 @@ impl RedisManager {
                 Err(e) => {
                     // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
                     // Connection drop is an expected error, just need to be executed again
-                    if e.is_connection_dropped() {
-                        continue;
-                    } else {
-                        std::panic::panic_any(e)
-                    }
+                    tracing::info!("{}", e);
+                    continue;
                 }
             }
         }
     }
 
+    #[tracing::instrument]
     pub async fn lrem<T>(&self, redis_key: &str, count: i64, value: T)
     where
-        T: redis::ToRedisArgs,
+        T: redis::ToRedisArgs + fmt::Debug,
     {
         loop {
             match redis::cmd("lrem")
@@ -355,19 +338,17 @@ impl RedisManager {
                 Err(e) => {
                     // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
                     // Connection drop is an expected error, just need to be executed again
-                    if e.is_connection_dropped() {
-                        continue;
-                    } else {
-                        std::panic::panic_any(e)
-                    }
+                    tracing::info!("{}", e);
+                    continue;
                 }
             }
         }
     }
 
+    #[tracing::instrument]
     pub async fn lrange<T>(&self, redis_key: &str, start: i64, stop: i64) -> T
     where
-        T: redis::FromRedisValue,
+        T: redis::FromRedisValue + fmt::Debug,
     {
         redis::cmd("lrange")
             .arg(redis_key)
@@ -378,6 +359,7 @@ impl RedisManager {
             .unwrap()
     }
 
+    #[tracing::instrument]
     pub async fn lua_push(&self, redis_key: &str, ip: &str) {
         if let Some(lua) = self.script.as_ref() {
             loop {
@@ -391,11 +373,8 @@ impl RedisManager {
                     Err(e) => {
                         // https://docs.rs/redis/0.20.0/redis/aio/struct.ConnectionManager.html
                         // Connection drop is an expected error, just need to be executed again
-                        if e.is_connection_dropped() {
-                            continue;
-                        } else {
-                            std::panic::panic_any(e)
-                        }
+                        tracing::info!("{}", e);
+                        continue;
                     }
                 }
             }
