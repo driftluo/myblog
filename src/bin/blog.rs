@@ -1,3 +1,4 @@
+use bytes::BytesMut;
 use new_blog::{
     api::{init_page_size, AdminArticle, AdminUser, ChartData, Tag, User, Visitor},
     db_wrapper::{create_pg_pool, create_redis_pool},
@@ -7,8 +8,9 @@ use new_blog::{
 };
 use salvo::{
     extra::serve::StaticDir,
+    http::{header, response::Body, StatusCode},
     prelude::{async_trait, fn_handler},
-    Depot, Request, Router, Server,
+    Depot, Request, Response, Router, Server,
 };
 use tracing::{Instrument, Level};
 use tracing_subscriber::FmtSubscriber;
@@ -42,6 +44,7 @@ fn main() {
             .append(AdminArticle.build())
             .append(User.build())
             .append(Visitor.build())
+            .push(Router::new().path("robots.txt").get(robot))
             .push(
                 Router::new()
                     .path("<**path>")
@@ -61,4 +64,21 @@ async fn global(req: &mut Request, depot: &mut Depot) {
 
     depot.insert(PERMISSION, identity);
     depot.insert(WEB, web);
+}
+
+#[fn_handler]
+async fn robot(res: &mut Response) {
+    const ROBOT: &str = r#"User-Agent: *
+Allow: /
+Allow: /*.css
+Allow: /*.js
+
+Sitemap:https://www.driftluo.com/rss
+"#;
+    res.headers_mut().insert(
+        header::CONTENT_TYPE,
+        header::HeaderValue::from_static("text/plain; charset=utf-8"),
+    );
+    res.set_body(Some(Body::Bytes(BytesMut::from(ROBOT))));
+    res.set_status_code(StatusCode::OK)
 }
