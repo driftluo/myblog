@@ -46,7 +46,7 @@ impl RedisManager {
         }
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub async fn keys(&self, pattern: &str) -> Vec<String> {
         loop {
             match redis::cmd("keys")
@@ -65,7 +65,7 @@ impl RedisManager {
         }
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub async fn exists(&self, redis_key: &str) -> bool {
         loop {
             match redis::cmd("exists")
@@ -84,7 +84,7 @@ impl RedisManager {
         }
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub async fn expire(&self, redis_key: &str, sec: i64) {
         loop {
             match redis::cmd("expire")
@@ -104,7 +104,7 @@ impl RedisManager {
         }
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub async fn del<T>(&self, redis_keys: T) -> bool
     where
         T: redis::ToRedisArgs + fmt::Debug,
@@ -126,7 +126,7 @@ impl RedisManager {
         }
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub async fn set(&self, redis_key: &str, value: &str) {
         loop {
             match redis::cmd("set")
@@ -146,7 +146,7 @@ impl RedisManager {
         }
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub async fn get(&self, redis_key: &str) -> Result<String, redis::RedisError> {
         loop {
             match redis::cmd("get")
@@ -165,7 +165,7 @@ impl RedisManager {
         }
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub async fn hset<T>(&self, redis_key: &str, hash_key: &str, value: T)
     where
         T: redis::ToRedisArgs + fmt::Debug,
@@ -189,7 +189,7 @@ impl RedisManager {
         }
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub async fn hdel<T>(&self, redis_key: &str, hash_key: T)
     where
         T: redis::ToRedisArgs + fmt::Debug,
@@ -212,7 +212,7 @@ impl RedisManager {
         }
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub async fn hget<T>(&self, redis_key: &str, hash_key: &str) -> Result<T, redis::RedisError>
     where
         T: redis::FromRedisValue + fmt::Debug,
@@ -235,7 +235,7 @@ impl RedisManager {
         }
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub async fn hexists(&self, redis_key: &str, hash_key: &str) -> bool {
         loop {
             match redis::cmd("hexists")
@@ -255,7 +255,7 @@ impl RedisManager {
         }
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub async fn lpush<T>(&self, redis_key: &str, value: T)
     where
         T: redis::ToRedisArgs + fmt::Debug,
@@ -278,7 +278,7 @@ impl RedisManager {
         }
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub async fn llen<T>(&self, redis_key: &str) -> T
     where
         T: redis::FromRedisValue + fmt::Debug,
@@ -300,7 +300,7 @@ impl RedisManager {
         }
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub async fn ltrim(&self, redis_key: &str, start: i64, stop: i64) {
         loop {
             match redis::cmd("ltrim")
@@ -321,7 +321,7 @@ impl RedisManager {
         }
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub async fn lrem<T>(&self, redis_key: &str, count: i64, value: T)
     where
         T: redis::ToRedisArgs + fmt::Debug,
@@ -345,7 +345,7 @@ impl RedisManager {
         }
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub async fn lrange<T>(&self, redis_key: &str, start: i64, stop: i64) -> T
     where
         T: redis::FromRedisValue + fmt::Debug,
@@ -359,7 +359,7 @@ impl RedisManager {
             .unwrap()
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub async fn lua_push(&self, redis_key: &str, ip: &str) {
         if let Some(lua) = self.script.as_ref() {
             loop {
