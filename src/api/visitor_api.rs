@@ -198,7 +198,11 @@ async fn rss_path(res: &mut Response) {
             for article in articles {
                 let item = ItemBuilder::default()
                     .title(article.title.clone())
-                    .link("driftluo.com".to_owned() + "/article/" + &article.id.to_string())
+                    .link(
+                        "https://www.driftluo.com".to_owned()
+                            + "/article/"
+                            + &article.id.to_string(),
+                    )
                     .description(article.title)
                     .pub_date(
                         fix_offset
