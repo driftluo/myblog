@@ -69,8 +69,8 @@ pub async fn get_identity_and_web_context(
     let redis_pool = get_redis();
 
     match req.cookies().get(COOKIE_NAME) {
-        Some(v) => match redis_pool.hget::<String>(v.value(), "info").await {
-            Ok(info) => {
+        Some(v) => match redis_pool.hget::<Option<String>>(v.value(), "info").await {
+            Ok(Some(info)) => {
                 let info = serde_json::from_str::<UserInfo>(&info).unwrap();
                 let notifys = UserNotify::get_notifys(info.id).await;
                 web.insert("user", &info);
@@ -82,7 +82,7 @@ pub async fn get_identity_and_web_context(
 
                 (Some(groups), web)
             }
-            Err(_) => (None, web),
+            _ => (None, web),
         },
         None => (None, web),
     }

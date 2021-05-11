@@ -147,7 +147,7 @@ impl RedisManager {
     }
 
     #[tracing::instrument(skip(self))]
-    pub async fn get(&self, redis_key: &str) -> Result<String, redis::RedisError> {
+    pub async fn get(&self, redis_key: &str) -> Result<Option<String>, redis::RedisError> {
         loop {
             match redis::cmd("get")
                 .arg(redis_key)

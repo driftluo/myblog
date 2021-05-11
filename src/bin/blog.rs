@@ -2,7 +2,6 @@ use bytes::BytesMut;
 use new_blog::{
     api::{init_page_size, AdminArticle, AdminUser, ChartData, Tag, User, Visitor},
     db_wrapper::{create_pg_pool, create_redis_pool},
-    models::user::init_redis_admin,
     utils::get_identity_and_web_context,
     web::{Admin, ArticleWeb},
     Routers, PERMISSION, WEB,
@@ -34,7 +33,6 @@ fn main() {
         create_redis_pool(Some("lua/visitor_log.lua")).await;
         create_pg_pool().await;
         init_page_size().await;
-        init_redis_admin().await;
 
         let root = Router::new()
             .before(global)
@@ -49,18 +47,8 @@ fn main() {
             .push(Router::new().path("robots.txt").get(robot))
             .push(
                 Router::new()
-                    .path("js/<**path>")
-                    .get(StaticDir::new("static/js")),
-            )
-            .push(
-                Router::new()
-                    .path("css/<**path>")
-                    .get(StaticDir::new("static/css")),
-            )
-            .push(
-                Router::new()
-                    .path("images/<**path>")
-                    .get(StaticDir::new("static/images")),
+                    .path(r#"<*path:/(js|css|images)/.+\.(js|css|webp)/>"#)
+                    .get(StaticDir::new("static")),
             );
 
         Server::new(root)
