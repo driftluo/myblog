@@ -76,7 +76,7 @@ impl Routers for AdminUser {
             // http post {ip}/user/permission id:=uuid permission:=0
             .push(
                 Router::new()
-                    .path("delete/permission")
+                    .path("permission")
                     .post(change_permission),
             )
             // http post {ip}/user/permission id:=uuid disabled:=1
