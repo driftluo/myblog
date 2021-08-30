@@ -72,6 +72,18 @@ async fn admin_list_all_article(req: &mut Request, res: &mut Response) -> Result
 }
 
 #[fn_handler]
+async fn admin_list_all_unpublished(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+    let limit = parse_query::<i64>(req, "limit")?;
+    let offset = parse_query::<i64>(req, "offset")?;
+
+    match ArticleList::view_unpublished(limit, offset).await {
+        Ok(data) => set_json_response(res, 128, &JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+    }
+    Ok(())
+}
+
+#[fn_handler]
 async fn edit_article(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
     let body = parse_json_body::<EditArticle>(req)
         .await
@@ -103,7 +115,7 @@ async fn upload(req: &mut Request, res: &mut Response) {
         Some(files) => {
             let mut msgs = Vec::with_capacity(files.len());
             for file in files {
-                let dest = match file.headers.filename {
+                let dest = match file.file_name() {
                     Some(ref name) => format!("static/images/{}", name),
                     None => format!("static/images/{}", uuid::Uuid::new_v4().to_hyphenated()),
                 };
@@ -148,6 +160,12 @@ impl Routers for AdminArticle {
                     Router::new()
                         .path("admin/view_all")
                         .get(admin_list_all_article),
+                )
+                // http get /article/admin/view_unpublished limit==5 offset==0
+                .push(
+                    Router::new()
+                        .path("admin/view_unpublished")
+                        .get(admin_list_all_unpublished),
                 )
                 // http post /article/new title=something raw_content=something
                 .push(Router::new().path("new").post(create_article))

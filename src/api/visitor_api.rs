@@ -66,13 +66,13 @@ async fn list_comments(
     let limit = parse_query::<i64>(req, "limit")?;
     let offset = parse_query::<i64>(req, "offset")?;
 
-    let (user_id, admin) = match depot.take::<_, Option<i16>>(PERMISSION) {
+    let (user_id, admin) = match depot.take::<Option<i16>>(PERMISSION) {
         Some(0) => {
-            let info = depot.take::<_, UserInfo>(USER_INFO);
+            let info = depot.take::<UserInfo>(USER_INFO);
             (Some(info.id), true)
         }
         Some(_) => {
-            let info = depot.take::<_, UserInfo>(USER_INFO);
+            let info = depot.take::<UserInfo>(USER_INFO);
             (Some(info.id), false)
         }
         None => (None, false),

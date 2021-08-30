@@ -17,7 +17,7 @@ use crate::{
 #[tracing::instrument]
 #[fn_handler]
 async fn index(depot: &mut Depot, res: &mut Response) {
-    let mut web = depot.take::<_, Context>(WEB);
+    let mut web = depot.take::<Context>(WEB);
 
     match TagCount::view_tag_count().await {
         Ok(data) => web.insert("tags", &data),
@@ -29,23 +29,23 @@ async fn index(depot: &mut Depot, res: &mut Response) {
 
 #[fn_handler]
 async fn about(depot: &mut Depot, res: &mut Response) {
-    let web = depot.take::<_, Context>(WEB);
+    let web = depot.take::<Context>(WEB);
 
     render(res, "visitor/about.html", &web)
 }
 
 #[fn_handler]
 async fn list(depot: &mut Depot, res: &mut Response) {
-    let web = depot.take::<_, Context>(WEB);
+    let web = depot.take::<Context>(WEB);
 
     render(res, "visitor/list.html", &web)
 }
 
 #[fn_handler]
 async fn home(depot: &mut Depot, res: &mut Response) {
-    let web = depot.take::<_, Context>(WEB);
+    let web = depot.take::<Context>(WEB);
 
-    let permission = depot.take::<_, Option<i16>>(PERMISSION);
+    let permission = depot.take::<Option<i16>>(PERMISSION);
 
     match permission {
         Some(_) => render(res, "visitor/user.html", &web),
@@ -56,7 +56,7 @@ async fn home(depot: &mut Depot, res: &mut Response) {
 #[fn_handler]
 async fn user(req: &mut Request, depot: &mut Depot, res: &mut Response) -> Result<(), HttpError> {
     let id = parse_last_path::<Uuid>(req)?;
-    let mut web = depot.take::<_, Context>(WEB);
+    let mut web = depot.take::<Context>(WEB);
 
     match UserInfo::view_user(id).await {
         Ok(ref data) => {
@@ -75,12 +75,12 @@ async fn article_view(
     res: &mut Response,
 ) -> Result<(), HttpError> {
     let id = parse_last_path::<Uuid>(req)?;
-    let mut web = depot.take::<_, Context>(WEB);
+    let mut web = depot.take::<Context>(WEB);
 
     match ArticlesWithTag::query_article(id, false).await {
         Ok(data) => {
             web.insert("article", &data);
-            if let Some(cookie) = depot.try_take::<_, String>(COOKIE) {
+            if let Some(cookie) = depot.try_take::<String>(COOKIE) {
                 if let Ok(info) = get_redis().hget::<String>(&cookie, "info").await {
                     let info = serde_json::from_str::<UserInfo>(&info).unwrap();
 

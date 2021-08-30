@@ -22,7 +22,7 @@ static PAGE_MAX: RwLock<PageMeta> = RwLock::const_new(PageMeta::new());
 
 #[fn_handler]
 async fn block_unlogin(depot: &mut salvo::Depot) -> Result<(), salvo::http::HttpError> {
-    match depot.try_borrow::<_, Option<i16>>(crate::PERMISSION) {
+    match depot.try_borrow::<Option<i16>>(crate::PERMISSION) {
         Some(Some(_)) => Ok(()),
         _ => Err(crate::utils::from_code(
             salvo::hyper::StatusCode::FORBIDDEN,
@@ -33,7 +33,7 @@ async fn block_unlogin(depot: &mut salvo::Depot) -> Result<(), salvo::http::Http
 
 #[fn_handler]
 async fn block_no_admin(depot: &mut salvo::Depot) -> Result<(), salvo::http::HttpError> {
-    match depot.try_borrow::<_, Option<i16>>(crate::PERMISSION) {
+    match depot.try_borrow::<Option<i16>>(crate::PERMISSION) {
         Some(Some(0)) => Ok(()),
         _ => Err(crate::utils::from_code(
             salvo::hyper::StatusCode::FORBIDDEN,

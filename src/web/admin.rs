@@ -14,7 +14,7 @@ use crate::{
 
 #[fn_handler]
 async fn block_no_admin(depot: &mut Depot) -> Result<(), HttpError> {
-    match depot.try_borrow::<_, Option<i16>>(PERMISSION) {
+    match depot.try_borrow::<Option<i16>>(PERMISSION) {
         Some(Some(0)) => Ok(()),
         _ => Err(from_code(StatusCode::FORBIDDEN, "No permission")),
     }
@@ -22,22 +22,29 @@ async fn block_no_admin(depot: &mut Depot) -> Result<(), HttpError> {
 
 #[fn_handler]
 async fn admin(depot: &mut Depot, res: &mut Response) {
-    let web = depot.take::<_, Context>(WEB);
+    let web = depot.take::<Context>(WEB);
 
     render(res, "admin/admin.html", &web)
 }
 
 #[fn_handler]
 async fn admin_list(depot: &mut Depot, res: &mut Response) {
-    let web = depot.take::<_, Context>(WEB);
+    let web = depot.take::<Context>(WEB);
 
     render(res, "admin/admin_list.html", &web)
+}
+
+#[fn_handler]
+async fn unpublished(depot: &mut Depot, res: &mut Response) {
+    let web = depot.take::<Context>(WEB);
+
+    render(res, "admin/unpublished_list.html", &web)
 }
 
 #[tracing::instrument]
 #[fn_handler]
 async fn new_(depot: &mut Depot, res: &mut Response) {
-    let mut web = depot.take::<_, Context>(WEB);
+    let mut web = depot.take::<Context>(WEB);
 
     match Tags::view_list_tag().await {
         Ok(tags_) => web.insert("tags", &tags_),
@@ -54,7 +61,7 @@ async fn admin_view_article(
     res: &mut Response,
 ) -> Result<(), HttpError> {
     let id = parse_query::<uuid::Uuid>(&req, "id")?;
-    let mut web = depot.take::<_, Context>(WEB);
+    let mut web = depot.take::<Context>(WEB);
 
     match ArticlesWithTag::query_article(id, true).await {
         Ok(data) => web.insert("article", &data),
@@ -74,7 +81,7 @@ async fn article_edit(
     res: &mut Response,
 ) -> Result<(), HttpError> {
     let id = parse_query::<String>(&req, "id")?;
-    let mut web = depot.take::<_, Context>(WEB);
+    let mut web = depot.take::<Context>(WEB);
     web.insert("id", &id);
 
     match Tags::view_list_tag().await {
@@ -88,28 +95,28 @@ async fn article_edit(
 
 #[fn_handler]
 async fn tags(depot: &mut Depot, res: &mut Response) {
-    let web = depot.take::<_, Context>(WEB);
+    let web = depot.take::<Context>(WEB);
 
     render(res, "admin/tags.html", &web)
 }
 
 #[fn_handler]
 async fn users(depot: &mut Depot, res: &mut Response) {
-    let web = depot.take::<_, Context>(WEB);
+    let web = depot.take::<Context>(WEB);
 
     render(res, "admin/users.html", &web)
 }
 
 #[fn_handler]
 async fn visitor_ip_log(depot: &mut Depot, res: &mut Response) {
-    let web = depot.take::<_, Context>(WEB);
+    let web = depot.take::<Context>(WEB);
 
     render(res, "admin/ip.html", &web)
 }
 
 #[fn_handler]
 async fn notify(depot: &mut Depot, res: &mut Response) {
-    let web = depot.take::<_, Context>(WEB);
+    let web = depot.take::<Context>(WEB);
 
     render(res, "admin/notify.html", &web)
 }
@@ -127,6 +134,8 @@ impl Routers for Admin {
             .push(Router::new().path("new").get(new_))
             // http {ip}/admin/list
             .push(Router::new().path("list").get(admin_list))
+            // http {ip}/admin/unpublished
+            .push(Router::new().path("unpublished").get(unpublished))
             // http {ip}/admin/article/view?id=xxx
             .push(Router::new().path("article/view").get(admin_view_article))
             // http {ip}/admin/article/edit?id=xxx

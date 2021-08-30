@@ -155,6 +155,26 @@ impl ArticleList {
         }
     }
 
+    pub async fn view_unpublished(limit: i64, offset: i64) -> Result<Vec<ArticleList>, String> {
+        let res = sqlx::query_as!(
+                ArticleList,
+                r#"SELECT id, title, published, create_time, modify_time
+                    FROM articles
+                    WHERE published = false
+                    ORDER BY create_time DESC
+                    LIMIT $1 OFFSET $2 "#,
+                limit,
+                offset
+            )
+            .fetch_all(get_postgres())
+            .await;
+
+        match res {
+            Ok(data) => Ok(data),
+            Err(err) => Err(format!("{}", err)),
+        }
+    }
+
     pub async fn query_with_tag(tag_id: Uuid) -> Result<Vec<ArticleList>, String> {
         let sql = format!(
             r#"
