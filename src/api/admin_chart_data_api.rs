@@ -1,7 +1,7 @@
 use salvo::{
     http::HttpError,
     prelude::{async_trait, fn_handler},
-    Request, Response, Router, Writer,
+    Request, Response, Router,
 };
 
 use crate::{
@@ -42,12 +42,12 @@ impl Routers for ChartData {
             // http {ip}/article/month
             Router::new()
                 .path(PREFIX.to_owned() + "article/month")
-                .before(block_no_admin)
+                .hoop(block_no_admin)
                 .get(publish_by_month),
             // http {ip}/ip/view limit==5 offset==0
             Router::new()
                 .path(PREFIX.to_owned() + "ip/view")
-                .before(block_no_admin)
+                .hoop(block_no_admin)
                 .get(get_ip_chart),
         ]
     }

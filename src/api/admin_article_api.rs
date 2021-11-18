@@ -1,7 +1,7 @@
 use salvo::{
     http::{HttpError, StatusCode},
     prelude::{async_trait, fn_handler},
-    Request, Response, Router, Writer,
+    Request, Response, Router,
 };
 
 use crate::{
@@ -72,7 +72,10 @@ async fn admin_list_all_article(req: &mut Request, res: &mut Response) -> Result
 }
 
 #[fn_handler]
-async fn admin_list_all_unpublished(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+async fn admin_list_all_unpublished(
+    req: &mut Request,
+    res: &mut Response,
+) -> Result<(), HttpError> {
     let limit = parse_query::<i64>(req, "limit")?;
     let offset = parse_query::<i64>(req, "offset")?;
 
@@ -119,7 +122,7 @@ async fn upload(req: &mut Request, res: &mut Response) {
                     Some(ref name) => format!("static/images/{}", name),
                     None => format!("static/images/{}", uuid::Uuid::new_v4().to_hyphenated()),
                 };
-                match tokio::fs::copy(&file.path, ::std::path::Path::new(&dest)).await {
+                match tokio::fs::copy(&file.path(), ::std::path::Path::new(&dest)).await {
                     Ok(_) => {
                         msgs.push(dest);
                     }
@@ -146,7 +149,7 @@ impl Routers for AdminArticle {
         vec![
             Router::new()
                 .path(PREFIX.to_owned() + "article")
-                .before(block_no_admin)
+                .hoop(block_no_admin)
                 // http get /article/admin/view?id==4
                 .push(Router::new().path("admin/view").get(admin_view_article))
                 // http get /article/admin/view_raw?id==4
@@ -178,7 +181,7 @@ impl Routers for AdminArticle {
             // http post /upload
             Router::new()
                 .path(PREFIX.to_owned() + "upload")
-                .before(block_no_admin)
+                .hoop(block_no_admin)
                 .post(upload),
         ]
     }

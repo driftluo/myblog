@@ -10,6 +10,7 @@ use salvo::{
     http::{cookie::Cookie, response::Body, HttpError, StatusCode},
     hyper::{body::to_bytes, header},
     prelude::{async_trait, fn_handler},
+    routing::FlowCtrl,
     Depot, Request, Response,
 };
 use std::str::FromStr;
@@ -222,7 +223,12 @@ where
 }
 
 #[fn_handler]
-pub async fn visitor_log(req: &Request) {
+pub async fn visitor_log(
+    req: &mut Request,
+    depot: &mut Depot,
+    res: &mut Response,
+    ctrl: &mut FlowCtrl,
+) {
     if let Some(ip) = req.get_header::<String>("X-Real-IP") {
         if let Ok(key) = ::std::env::var("IPSTACK_KEY") {
             let timestamp = chrono::Utc::now();
@@ -261,6 +267,7 @@ pub async fn visitor_log(req: &Request) {
             });
         }
     }
+    ctrl.call_next(req, depot, res).await;
 }
 
 #[cfg(test)]

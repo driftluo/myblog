@@ -4,7 +4,7 @@ use salvo::{
     http::{response::Body, HttpError, StatusCode},
     hyper::header::{self, HeaderValue},
     prelude::{async_trait, fn_handler},
-    Depot, Request, Response, Router, Writer,
+    Depot, Request, Response, Router,
 };
 use uuid::Uuid;
 
@@ -66,13 +66,13 @@ async fn list_comments(
     let limit = parse_query::<i64>(req, "limit")?;
     let offset = parse_query::<i64>(req, "offset")?;
 
-    let (user_id, admin) = match depot.take::<Option<i16>>(PERMISSION) {
+    let (user_id, admin) = match depot.remove::<Option<i16>>(PERMISSION).unwrap() {
         Some(0) => {
-            let info = depot.take::<UserInfo>(USER_INFO);
+            let info = depot.remove::<UserInfo>(USER_INFO).unwrap();
             (Some(info.id), true)
         }
         Some(_) => {
-            let info = depot.take::<UserInfo>(USER_INFO);
+            let info = depot.remove::<UserInfo>(USER_INFO).unwrap();
             (Some(info.id), false)
         }
         None => (None, false),

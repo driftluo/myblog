@@ -1,7 +1,7 @@
 use salvo::{
     http::{HttpError, StatusCode},
     prelude::{async_trait, fn_handler},
-    Request, Response, Router, Writer,
+    Request, Response, Router,
 };
 
 use crate::{
@@ -72,7 +72,7 @@ impl Routers for Tag {
         use crate::api::PREFIX;
         vec![Router::new()
             .path(PREFIX.to_owned() + "tag")
-            .before(block_no_admin)
+            .hoop(block_no_admin)
             // http get {ip}/tag/view limit==5 offset==0
             .push(Router::new().path("view").get(view_tag))
             // http post {ip}/tag/new tag="Rust"

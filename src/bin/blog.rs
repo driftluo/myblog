@@ -9,7 +9,9 @@ use new_blog::{
 use salvo::{
     extra::serve::StaticDir,
     http::{header, response::Body, StatusCode},
+    listener::TcpListener,
     prelude::{async_trait, fn_handler},
+    routing::FlowCtrl,
     Depot, Request, Response, Router, Server,
 };
 use tracing::{Instrument, Level};
@@ -35,7 +37,7 @@ fn main() {
         init_page_size().await;
 
         let root = Router::new()
-            .before(global)
+            .hoop(global)
             .append(ArticleWeb.build())
             .append(Admin.build())
             .append(AdminUser.build())
@@ -51,19 +53,20 @@ fn main() {
                     .get(StaticDir::new("static")),
             );
 
-        Server::new(root)
-            .bind(([127, 0, 0, 1], listen_port))
+        Server::new(TcpListener::bind(([127, 0, 0, 1], listen_port)))
+            .serve(root)
             .instrument(tracing::info_span!("listen start"))
             .await
     });
 }
 
 #[fn_handler]
-async fn global(req: &mut Request, depot: &mut Depot) {
+async fn global(req: &mut Request, depot: &mut Depot, res: &mut Response, ctrl: &mut FlowCtrl) {
     let (identity, web) = get_identity_and_web_context(req, depot).await;
 
     depot.insert(PERMISSION, identity);
     depot.insert(WEB, web);
+    ctrl.call_next(req, depot, res).await;
 }
 
 #[fn_handler]

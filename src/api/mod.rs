@@ -12,7 +12,11 @@ pub use admin_user_api::AdminUser;
 pub use user_api::User;
 pub use visitor_api::Visitor;
 
-use salvo::prelude::{async_trait, fn_handler, Writer};
+use salvo::{
+    prelude::{async_trait, fn_handler},
+    routing::FlowCtrl,
+    Depot, Request, Response,
+};
 use tokio::sync::RwLock;
 
 // todo: remove on delete all template
@@ -21,24 +25,51 @@ const PREFIX: &str = "api/v1/";
 static PAGE_MAX: RwLock<PageMeta> = RwLock::const_new(PageMeta::new());
 
 #[fn_handler]
-async fn block_unlogin(depot: &mut salvo::Depot) -> Result<(), salvo::http::HttpError> {
-    match depot.try_borrow::<Option<i16>>(crate::PERMISSION) {
-        Some(Some(_)) => Ok(()),
-        _ => Err(crate::utils::from_code(
+async fn block_unlogin(
+    req: &mut Request,
+    depot: &mut Depot,
+    res: &mut Response,
+    ctrl: &mut FlowCtrl,
+) -> Result<(), salvo::http::HttpError> {
+    let permission = {
+        depot
+            .get::<Option<i16>>(crate::PERMISSION)
+            .map(|a| a.is_some())
+            .unwrap_or_default()
+    };
+    if permission {
+        ctrl.call_next(req, depot, res).await;
+        Ok(())
+    } else {
+        Err(crate::utils::from_code(
             salvo::hyper::StatusCode::FORBIDDEN,
             "No permission",
-        )),
+        ))
     }
 }
 
 #[fn_handler]
-async fn block_no_admin(depot: &mut salvo::Depot) -> Result<(), salvo::http::HttpError> {
-    match depot.try_borrow::<Option<i16>>(crate::PERMISSION) {
-        Some(Some(0)) => Ok(()),
-        _ => Err(crate::utils::from_code(
+pub(crate) async fn block_no_admin(
+    req: &mut Request,
+    depot: &mut Depot,
+    res: &mut Response,
+    ctrl: &mut FlowCtrl,
+) -> Result<(), salvo::http::HttpError> {
+    let permission = {
+        depot
+            .get::<Option<i16>>(crate::PERMISSION)
+            .map(|a| a.map(|b| b == 0))
+            .flatten()
+            .unwrap_or_default()
+    };
+    if permission {
+        ctrl.call_next(req, depot, res).await;
+        Ok(())
+    } else {
+        Err(crate::utils::from_code(
             salvo::hyper::StatusCode::FORBIDDEN,
             "No permission",
-        )),
+        ))
     }
 }
 

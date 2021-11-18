@@ -1,7 +1,7 @@
 use salvo::{
     http::{HttpError, StatusCode},
     prelude::{async_trait, fn_handler},
-    Request, Response, Router, Writer,
+    Request, Response, Router,
 };
 
 use crate::{
@@ -68,17 +68,13 @@ impl Routers for AdminUser {
         use crate::api::PREFIX;
         vec![Router::new()
             .path(PREFIX.to_owned() + "user")
-            .before(block_no_admin)
+            .hoop(block_no_admin)
             // http get {ip}/user/view_all limit==5 offset==0
             .push(Router::new().path("view_all").get(view_user_list))
             // http post {ip}/user/delete/uuid
             .push(Router::new().path("delete/<id>").post(delete_user))
             // http post {ip}/user/permission id:=uuid permission:=0
-            .push(
-                Router::new()
-                    .path("permission")
-                    .post(change_permission),
-            )
+            .push(Router::new().path("permission").post(change_permission))
             // http post {ip}/user/permission id:=uuid disabled:=1
             .push(Router::new().path("delete/disable").post(change_disabled))]
     }

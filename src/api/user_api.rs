@@ -1,7 +1,7 @@
 use salvo::{
     http::{HttpError, StatusCode},
     prelude::{async_trait, fn_handler},
-    Depot, Request, Response, Router, Writer,
+    Depot, Request, Response, Router,
 };
 
 use crate::{
@@ -18,7 +18,7 @@ use crate::{
 
 #[fn_handler]
 async fn view_user(depot: &mut Depot, res: &mut Response) {
-    let info = depot.take::<UserInfo>(USER_INFO);
+    let info = depot.remove::<UserInfo>(USER_INFO).unwrap();
     set_json_response(res, 128, &JsonOkResponse::ok(info))
 }
 
@@ -32,7 +32,7 @@ async fn change_pwd(
         .await
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
 
-    let cookie = depot.take::<String>(COOKIE);
+    let cookie = depot.remove::<String>(COOKIE).unwrap();
 
     match body.change_password(&cookie).await {
         Ok(num) => set_json_response(res, 32, &JsonOkResponse::ok(num)),
@@ -47,7 +47,7 @@ async fn edit(req: &mut Request, depot: &mut Depot, res: &mut Response) -> Resul
         .await
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
 
-    let cookie = depot.take::<String>(COOKIE);
+    let cookie = depot.remove::<String>(COOKIE).unwrap();
 
     match body.edit_user(&cookie).await {
         Ok(num) => set_json_response(res, 32, &JsonOkResponse::ok(num)),
@@ -59,7 +59,7 @@ async fn edit(req: &mut Request, depot: &mut Depot, res: &mut Response) -> Resul
 
 #[fn_handler]
 async fn sign_out(depot: &mut Depot, res: &mut Response) {
-    let cookie = depot.take::<String>(COOKIE);
+    let cookie = depot.remove::<String>(COOKIE).unwrap();
     let a = LoginUser::sign_out(&cookie).await;
     set_json_response(res, 32, &JsonOkResponse::status(a));
 }
@@ -78,7 +78,7 @@ async fn new_comment(
         .await
         .map_err(|_| from_code(StatusCode::NOT_FOUND, "Article doesn't exist"))?;
     let admin = UserInfo::view_admin().await;
-    let user = depot.take::<UserInfo>(USER_INFO);
+    let user = depot.remove::<UserInfo>(USER_INFO).unwrap();
 
     match body.reply_user_id() {
         // Reply comment
@@ -133,8 +133,8 @@ async fn delete_comment(
     let body = parse_json_body::<DeleteComment>(req)
         .await
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
-    let permission = depot.take::<Option<i16>>(PERMISSION);
-    let info = depot.take::<UserInfo>(USER_INFO);
+    let permission = depot.remove::<Option<i16>>(PERMISSION).unwrap();
+    let info = depot.remove::<UserInfo>(USER_INFO).unwrap();
 
     set_json_response(
         res,
@@ -152,7 +152,7 @@ impl Routers for User {
         vec![
             Router::new()
                 .path(PREFIX.to_owned() + "user")
-                .before(block_unlogin)
+                .hoop(block_unlogin)
                 // http {ip}/PREFIX/user/view
                 .push(Router::new().path("view").get(view_user))
                 // http post {ip}/user/change_pwd old_password=1234 new_password=12345
@@ -163,7 +163,7 @@ impl Routers for User {
                 .push(Router::new().path("edit").post(edit)),
             Router::new()
                 .path(PREFIX.to_owned() + "comment")
-                .before(block_unlogin)
+                .hoop(block_unlogin)
                 // http post {ip}/comment/new comment=xxx article_id=xxx reply_user_id=xxx
                 .push(Router::new().path("new").post(new_comment))
                 // http post {ip}/comment/delete comment_id=xxx user_id=xxx
