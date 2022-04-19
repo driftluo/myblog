@@ -1,5 +1,5 @@
 use salvo::{
-    http::{HttpError, StatusCode},
+    http::{StatusCode, StatusError},
     prelude::{async_trait, fn_handler},
     Request, Response, Router,
 };
@@ -13,7 +13,7 @@ use crate::{
 };
 
 #[fn_handler]
-async fn create_tag(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+async fn create_tag(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     #[derive(serde::Deserialize, serde::Serialize)]
     pub struct NewTag {
         tag: String,
@@ -30,7 +30,7 @@ async fn create_tag(req: &mut Request, res: &mut Response) -> Result<(), HttpErr
 }
 
 #[fn_handler]
-async fn delete_tag(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+async fn delete_tag(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let id = parse_last_path::<uuid::Uuid>(req)?;
 
     match Tags::delete_tag(id).await {
@@ -41,7 +41,7 @@ async fn delete_tag(req: &mut Request, res: &mut Response) -> Result<(), HttpErr
 }
 
 #[fn_handler]
-async fn view_tag(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+async fn view_tag(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let limit = parse_query::<i64>(req, "limit")?;
     let offset = parse_query::<i64>(req, "offset")?;
 
@@ -53,7 +53,7 @@ async fn view_tag(req: &mut Request, res: &mut Response) -> Result<(), HttpError
 }
 
 #[fn_handler]
-async fn edit_tag(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+async fn edit_tag(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let body = parse_json_body::<Tags>(req)
         .await
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;

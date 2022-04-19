@@ -1,7 +1,7 @@
 use chrono::offset::TimeZone;
 use rss::{ChannelBuilder, Item, ItemBuilder};
 use salvo::{
-    http::{response::Body, HttpError, StatusCode},
+    http::{response::Body, StatusCode, StatusError},
     hyper::header::{self, HeaderValue},
     prelude::{async_trait, fn_handler},
     Depot, Request, Response, Router,
@@ -27,7 +27,7 @@ use crate::{
 use bytes::BytesMut;
 
 #[fn_handler]
-async fn list_all_article(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+async fn list_all_article(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let limit = parse_query::<i64>(req, "limit")?;
     let offset = parse_query::<i64>(req, "offset")?;
 
@@ -46,7 +46,7 @@ async fn list_all_article(req: &mut Request, res: &mut Response) -> Result<(), H
 async fn list_all_article_filter_by_tag(
     req: &mut Request,
     res: &mut Response,
-) -> Result<(), HttpError> {
+) -> Result<(), StatusError> {
     let tag_id = parse_last_path::<Uuid>(req)?;
 
     match ArticleList::query_with_tag(tag_id).await {
@@ -61,7 +61,7 @@ async fn list_comments(
     req: &mut Request,
     depot: &mut Depot,
     res: &mut Response,
-) -> Result<(), HttpError> {
+) -> Result<(), StatusError> {
     let article_id = parse_last_path::<Uuid>(req)?;
     let limit = parse_query::<i64>(req, "limit")?;
     let offset = parse_query::<i64>(req, "offset")?;
@@ -105,7 +105,7 @@ async fn list_comments(
 }
 
 #[fn_handler]
-async fn view_article(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+async fn view_article(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let id = parse_query::<Uuid>(req, "id")?;
 
     match ArticlesWithTag::query_without_article(id, false).await {
@@ -117,7 +117,7 @@ async fn view_article(req: &mut Request, res: &mut Response) -> Result<(), HttpE
 }
 
 #[fn_handler]
-async fn login(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+async fn login(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let body = parse_json_body::<LoginUser>(req)
         .await
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
@@ -140,7 +140,7 @@ async fn login(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
 }
 
 #[fn_handler]
-async fn login_with_github(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+async fn login_with_github(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let code = parse_query::<String>(req, "code")?;
 
     let token = get_github_token(&code)
@@ -165,7 +165,7 @@ async fn login_with_github(req: &mut Request, res: &mut Response) -> Result<(), 
 }
 
 #[fn_handler]
-async fn create_user(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+async fn create_user(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let body = parse_json_body::<RegisteredUser>(req)
         .await
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;

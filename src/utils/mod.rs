@@ -7,7 +7,7 @@ use crate::{
 use pulldown_cmark::{html, Options, Parser};
 use rand::Rng;
 use salvo::{
-    http::{cookie::Cookie, response::Body, HttpError, StatusCode},
+    http::{cookie::Cookie, response::Body, StatusCode, StatusError},
     hyper::{body::to_bytes, header},
     prelude::{async_trait, fn_handler},
     routing::FlowCtrl,
@@ -115,7 +115,7 @@ pub fn set_cookie(
     res.add_cookie(cookie);
 }
 
-pub fn parse_query<T: FromStr>(req: &Request, name: &str) -> Result<T, HttpError> {
+pub fn parse_query<T: FromStr>(req: &Request, name: &str) -> Result<T, StatusError> {
     if let Some(q) = req.uri().query() {
         let query_iter = url::form_urlencoded::parse(q.as_bytes());
         for (key, val) in query_iter {
@@ -130,7 +130,7 @@ pub fn parse_query<T: FromStr>(req: &Request, name: &str) -> Result<T, HttpError
     Err(from_code(StatusCode::BAD_REQUEST, "Query Param Not Found"))
 }
 
-pub fn parse_last_path<T: FromStr>(req: &Request) -> Result<T, HttpError> {
+pub fn parse_last_path<T: FromStr>(req: &Request) -> Result<T, StatusError> {
     let path = req.uri().path();
 
     if let Some(k) = path.rsplitn(2, '/').next() {
@@ -210,11 +210,11 @@ pub fn set_xml_text_response(res: &mut Response, text: bytes::BytesMut) {
     res.set_status_code(StatusCode::OK)
 }
 
-pub fn from_code<T>(code: StatusCode, name: T) -> HttpError
+pub fn from_code<T>(code: StatusCode, name: T) -> StatusError
 where
     T: Into<String>,
 {
-    HttpError {
+    StatusError {
         code,
         name: name.into(),
         summary: None,

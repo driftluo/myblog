@@ -1,5 +1,5 @@
 use salvo::{
-    http::{HttpError, StatusCode},
+    http::{StatusCode, StatusError},
     prelude::{async_trait, fn_handler},
     Request, Response, Router,
 };
@@ -12,7 +12,7 @@ use crate::{
 };
 
 #[fn_handler]
-async fn delete_user(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+async fn delete_user(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let id = parse_last_path::<uuid::Uuid>(req)?;
 
     match UserInfo::delete(id).await {
@@ -24,7 +24,7 @@ async fn delete_user(req: &mut Request, res: &mut Response) -> Result<(), HttpEr
 }
 
 #[fn_handler]
-async fn view_user_list(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+async fn view_user_list(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let limit = parse_query::<i64>(req, "limit")?;
     let offset = parse_query::<i64>(req, "offset")?;
 
@@ -37,7 +37,7 @@ async fn view_user_list(req: &mut Request, res: &mut Response) -> Result<(), Htt
 }
 
 #[fn_handler]
-async fn change_permission(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+async fn change_permission(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let body = parse_json_body::<ChangePermission>(req)
         .await
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
@@ -50,7 +50,7 @@ async fn change_permission(req: &mut Request, res: &mut Response) -> Result<(), 
 }
 
 #[fn_handler]
-async fn change_disabled(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+async fn change_disabled(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let body = parse_json_body::<DisabledUser>(req)
         .await
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;

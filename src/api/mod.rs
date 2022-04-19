@@ -30,7 +30,7 @@ async fn block_unlogin(
     depot: &mut Depot,
     res: &mut Response,
     ctrl: &mut FlowCtrl,
-) -> Result<(), salvo::http::HttpError> {
+) -> Result<(), salvo::http::StatusError> {
     let permission = {
         depot
             .get::<Option<i16>>(crate::PERMISSION)
@@ -54,7 +54,7 @@ pub(crate) async fn block_no_admin(
     depot: &mut Depot,
     res: &mut Response,
     ctrl: &mut FlowCtrl,
-) -> Result<(), salvo::http::HttpError> {
+) -> Result<(), salvo::http::StatusError> {
     let permission = {
         depot
             .get::<Option<i16>>(crate::PERMISSION)

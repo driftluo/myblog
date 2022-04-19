@@ -1,5 +1,5 @@
 use salvo::{
-    http::{HttpError, StatusCode},
+    http::{StatusCode, StatusError},
     prelude::{async_trait, fn_handler},
     Depot, Request, Response, Router,
 };
@@ -27,7 +27,7 @@ async fn change_pwd(
     req: &mut Request,
     depot: &mut Depot,
     res: &mut Response,
-) -> Result<(), HttpError> {
+) -> Result<(), StatusError> {
     let body = parse_json_body::<ChangePassword>(req)
         .await
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
@@ -42,7 +42,7 @@ async fn change_pwd(
 }
 
 #[fn_handler]
-async fn edit(req: &mut Request, depot: &mut Depot, res: &mut Response) -> Result<(), HttpError> {
+async fn edit(req: &mut Request, depot: &mut Depot, res: &mut Response) -> Result<(), StatusError> {
     let body = parse_json_body::<EditUser>(req)
         .await
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
@@ -69,7 +69,7 @@ async fn new_comment(
     req: &mut Request,
     depot: &mut Depot,
     res: &mut Response,
-) -> Result<(), HttpError> {
+) -> Result<(), StatusError> {
     let mut body = parse_json_body::<NewComments>(req)
         .await
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
@@ -129,7 +129,7 @@ async fn delete_comment(
     req: &mut Request,
     depot: &mut Depot,
     res: &mut Response,
-) -> Result<(), HttpError> {
+) -> Result<(), StatusError> {
     let body = parse_json_body::<DeleteComment>(req)
         .await
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;

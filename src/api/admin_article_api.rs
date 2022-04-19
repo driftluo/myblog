@@ -1,5 +1,5 @@
 use salvo::{
-    http::{HttpError, StatusCode},
+    http::{StatusCode, StatusError},
     prelude::{async_trait, fn_handler},
     Request, Response, Router,
 };
@@ -12,7 +12,7 @@ use crate::{
 };
 
 #[fn_handler]
-async fn create_article(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+async fn create_article(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let body = parse_json_body::<NewArticle>(req)
         .await
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
@@ -23,7 +23,7 @@ async fn create_article(req: &mut Request, res: &mut Response) -> Result<(), Htt
 }
 
 #[fn_handler]
-async fn delete_article(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+async fn delete_article(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let id = parse_last_path::<uuid::Uuid>(req)?;
 
     match ArticlesWithTag::delete_with_id(id).await {
@@ -38,7 +38,7 @@ async fn delete_article(req: &mut Request, res: &mut Response) -> Result<(), Htt
 }
 
 #[fn_handler]
-async fn admin_view_article(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+async fn admin_view_article(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let id = parse_query::<uuid::Uuid>(req, "id")?;
 
     match ArticlesWithTag::query_without_article(id, true).await {
@@ -49,7 +49,7 @@ async fn admin_view_article(req: &mut Request, res: &mut Response) -> Result<(),
 }
 
 #[fn_handler]
-async fn admin_view_raw_article(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+async fn admin_view_raw_article(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let id = parse_query::<uuid::Uuid>(req, "id")?;
 
     match ArticlesWithTag::query_raw_article(id).await {
@@ -60,7 +60,7 @@ async fn admin_view_raw_article(req: &mut Request, res: &mut Response) -> Result
 }
 
 #[fn_handler]
-async fn admin_list_all_article(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+async fn admin_list_all_article(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let limit = parse_query::<i64>(req, "limit")?;
     let offset = parse_query::<i64>(req, "offset")?;
 
@@ -75,7 +75,7 @@ async fn admin_list_all_article(req: &mut Request, res: &mut Response) -> Result
 async fn admin_list_all_unpublished(
     req: &mut Request,
     res: &mut Response,
-) -> Result<(), HttpError> {
+) -> Result<(), StatusError> {
     let limit = parse_query::<i64>(req, "limit")?;
     let offset = parse_query::<i64>(req, "offset")?;
 
@@ -87,7 +87,7 @@ async fn admin_list_all_unpublished(
 }
 
 #[fn_handler]
-async fn edit_article(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+async fn edit_article(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let body = parse_json_body::<EditArticle>(req)
         .await
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
@@ -100,7 +100,7 @@ async fn edit_article(req: &mut Request, res: &mut Response) -> Result<(), HttpE
 }
 
 #[fn_handler]
-async fn update_publish(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+async fn update_publish(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let body = parse_json_body::<ModifyPublish>(req)
         .await
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;

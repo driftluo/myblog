@@ -1,5 +1,5 @@
 use salvo::{
-    http::HttpError,
+    http::StatusError,
     prelude::{async_trait, fn_handler},
     Depot, Request, Response, Router,
 };
@@ -52,7 +52,7 @@ async fn admin_view_article(
     req: &mut Request,
     depot: &mut Depot,
     res: &mut Response,
-) -> Result<(), HttpError> {
+) -> Result<(), StatusError> {
     let id = parse_query::<uuid::Uuid>(&req, "id")?;
     let mut web = depot.remove::<Context>(WEB).unwrap();
 
@@ -72,7 +72,7 @@ async fn article_edit(
     req: &mut Request,
     depot: &mut Depot,
     res: &mut Response,
-) -> Result<(), HttpError> {
+) -> Result<(), StatusError> {
     let id = parse_query::<String>(&req, "id")?;
     let mut web = depot.remove::<Context>(WEB).unwrap();
     web.insert("id", &id);

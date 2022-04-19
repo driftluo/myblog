@@ -1,5 +1,5 @@
 use salvo::{
-    http::HttpError,
+    http::StatusError,
     prelude::{async_trait, fn_handler},
     Request, Response, Router,
 };
@@ -21,7 +21,7 @@ async fn publish_by_month(res: &mut Response) {
 }
 
 #[fn_handler]
-async fn get_ip_chart(req: &mut Request, res: &mut Response) -> Result<(), HttpError> {
+async fn get_ip_chart(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let limit = parse_query::<i64>(req, "limit")?;
     let offset = parse_query::<i64>(req, "offset")?;
 

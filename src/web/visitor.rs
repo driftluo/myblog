@@ -1,5 +1,5 @@
 use salvo::{
-    http::{HttpError, StatusCode},
+    http::{StatusCode, StatusError},
     prelude::{async_trait, fn_handler},
     Depot, Request, Response, Router,
 };
@@ -54,7 +54,7 @@ async fn home(depot: &mut Depot, res: &mut Response) {
 }
 
 #[fn_handler]
-async fn user(req: &mut Request, depot: &mut Depot, res: &mut Response) -> Result<(), HttpError> {
+async fn user(req: &mut Request, depot: &mut Depot, res: &mut Response) -> Result<(), StatusError> {
     let id = parse_last_path::<Uuid>(req)?;
     let mut web = depot.remove::<Context>(WEB).unwrap();
 
@@ -73,7 +73,7 @@ async fn article_view(
     req: &mut Request,
     depot: &mut Depot,
     res: &mut Response,
-) -> Result<(), HttpError> {
+) -> Result<(), StatusError> {
     let id = parse_last_path::<Uuid>(req)?;
     let mut web = depot.remove::<Context>(WEB).unwrap();
 
