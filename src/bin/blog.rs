@@ -7,7 +7,7 @@ use new_blog::{
     Routers, PERMISSION, WEB,
 };
 use salvo::{
-    extra::serve::StaticDir,
+    extra::serve_static::DirHandler,
     http::{header, response::Body, StatusCode},
     listener::TcpListener,
     prelude::{async_trait, fn_handler},
@@ -50,7 +50,7 @@ fn main() {
             .push(
                 Router::new()
                     .path(r#"<*path:/(js|css|images)/.+\.(js|css|webp)/>"#)
-                    .get(StaticDir::new("static")),
+                    .get(DirHandler::new("static")),
             );
 
         Server::new(TcpListener::bind(([127, 0, 0, 1], listen_port)))

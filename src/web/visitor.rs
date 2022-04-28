@@ -113,11 +113,11 @@ impl Routers for ArticleWeb {
             Router::new().path("home").get(home),
             // http {ip}/<id>
             Router::new()
-                .path("user/<id:/[0-9a-z]{8}(-[0-9a-z]{4}){3}-[0-9a-z]{8}/>")
+                .path("user/<id:/[0-9a-z]{8}(-[0-9a-z]{4}){3}-[0-9a-z]{12}/>")
                 .get(user),
             // http {ip}/article/<id>
             Router::new()
-                .path("article/<id:/[0-9a-z]{8}(-[0-9a-z]{4}){3}-[0-9a-z]{8}/>")
+                .path("article/<id:/[0-9a-z]{8}(-[0-9a-z]{4}){3}-[0-9a-z]{12}/>")
                 .get(article_view),
         ]
     }
