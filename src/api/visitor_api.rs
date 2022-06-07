@@ -223,7 +223,7 @@ async fn rss_path(res: &mut Response) {
                 header::CONTENT_TYPE,
                 HeaderValue::from_static("text/xml; charset=utf-8"),
             );
-            res.set_body(Some(Body::Bytes(bytes.into_inner())));
+            res.set_body(Body::Bytes(bytes.into_inner()));
             res.set_status_code(StatusCode::OK)
         }
         Err(err) => set_json_response(res, 32, &JsonErrResponse::err(err)),

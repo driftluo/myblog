@@ -49,5 +49,5 @@ pub fn render(res: &mut Response, path: &str, ctx: &tera::Context) {
         header::HeaderValue::from_static("text/html; charset=utf-8"),
     );
     res.set_status_code(StatusCode::OK);
-    res.set_body(Some(Body::Bytes(body.into_inner())))
+    res.set_body(Body::Bytes(body.into_inner()))
 }

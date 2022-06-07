@@ -114,11 +114,11 @@ async fn update_publish(req: &mut Request, res: &mut Response) -> Result<(), Sta
 
 #[fn_handler]
 async fn upload(req: &mut Request, res: &mut Response) {
-    match req.get_files("files").await {
+    match req.files("files").await {
         Some(files) => {
             let mut msgs = Vec::with_capacity(files.len());
             for file in files {
-                let dest = match file.file_name() {
+                let dest = match file.name() {
                     Some(ref name) => format!("static/images/{}", name),
                     None => format!("static/images/{}", uuid::Uuid::new_v4().to_hyphenated()),
                 };

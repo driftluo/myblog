@@ -82,6 +82,6 @@ Sitemap:https://www.driftluo.com/rss
         header::CONTENT_TYPE,
         header::HeaderValue::from_static("text/plain; charset=utf-8"),
     );
-    res.set_body(Some(Body::Bytes(BytesMut::from(ROBOT))));
+    res.set_body(Body::Bytes(BytesMut::from(ROBOT)));
     res.set_status_code(StatusCode::OK)
 }

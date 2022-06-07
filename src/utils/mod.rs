@@ -188,7 +188,7 @@ pub fn set_json_response<T: serde::Serialize>(res: &mut Response, size: usize, j
     );
     let mut cache = Cache::with_capacity(size);
     serde_json::to_writer(&mut cache, &json).unwrap();
-    res.set_body(Some(Body::Bytes(cache.into_inner())));
+    res.set_body(Body::Bytes(cache.into_inner()));
     res.set_status_code(StatusCode::OK)
 }
 
@@ -197,7 +197,7 @@ pub fn set_plain_text_response(res: &mut Response, text: bytes::BytesMut) {
         header::CONTENT_TYPE,
         header::HeaderValue::from_static("application/plain; charset=utf-8"),
     );
-    res.set_body(Some(Body::Bytes(text)));
+    res.set_body(Body::Bytes(text));
     res.set_status_code(StatusCode::OK)
 }
 
@@ -206,7 +206,7 @@ pub fn set_xml_text_response(res: &mut Response, text: bytes::BytesMut) {
         header::CONTENT_TYPE,
         header::HeaderValue::from_static("application/xml; charset=utf-8"),
     );
-    res.set_body(Some(Body::Bytes(text)));
+    res.set_body(Body::Bytes(text));
     res.set_status_code(StatusCode::OK)
 }
 
@@ -229,7 +229,7 @@ pub async fn visitor_log(
     res: &mut Response,
     ctrl: &mut FlowCtrl,
 ) {
-    if let Some(ip) = req.get_header::<String>("X-Real-IP") {
+    if let Some(ip) = req.header::<String>("X-Real-IP") {
         if let Ok(key) = ::std::env::var("IPSTACK_KEY") {
             let timestamp = chrono::Utc::now();
             tokio::spawn(async move {
