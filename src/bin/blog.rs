@@ -10,7 +10,7 @@ use salvo::{
     extra::serve_static::DirHandler,
     http::{header, response::Body, StatusCode},
     listener::TcpListener,
-    prelude::{async_trait, fn_handler},
+    prelude::handler,
     routing::FlowCtrl,
     Depot, Request, Response, Router, Server,
 };
@@ -60,7 +60,7 @@ fn main() {
     });
 }
 
-#[fn_handler]
+#[handler]
 async fn global(req: &mut Request, depot: &mut Depot, res: &mut Response, ctrl: &mut FlowCtrl) {
     let (identity, web) = get_identity_and_web_context(req, depot).await;
 
@@ -69,7 +69,7 @@ async fn global(req: &mut Request, depot: &mut Depot, res: &mut Response, ctrl: 
     ctrl.call_next(req, depot, res).await;
 }
 
-#[fn_handler]
+#[handler]
 async fn robot(res: &mut Response) {
     const ROBOT: &str = r#"User-Agent: *
 Allow: /
@@ -82,6 +82,6 @@ Sitemap:https://www.driftluo.com/rss
         header::CONTENT_TYPE,
         header::HeaderValue::from_static("text/plain; charset=utf-8"),
     );
-    res.set_body(Body::Bytes(BytesMut::from(ROBOT)));
+    res.set_body(Body::Once(BytesMut::from(ROBOT).freeze()));
     res.set_status_code(StatusCode::OK)
 }

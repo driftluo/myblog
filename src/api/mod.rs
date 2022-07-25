@@ -12,11 +12,7 @@ pub use admin_user_api::AdminUser;
 pub use user_api::User;
 pub use visitor_api::Visitor;
 
-use salvo::{
-    prelude::{async_trait, fn_handler},
-    routing::FlowCtrl,
-    Depot, Request, Response,
-};
+use salvo::{prelude::handler, routing::FlowCtrl, Depot, Request, Response};
 use tokio::sync::RwLock;
 
 // todo: remove on delete all template
@@ -24,7 +20,7 @@ const PREFIX: &str = "api/v1/";
 
 static PAGE_MAX: RwLock<PageMeta> = RwLock::const_new(PageMeta::new());
 
-#[fn_handler]
+#[handler]
 async fn block_unlogin(
     req: &mut Request,
     depot: &mut Depot,
@@ -48,7 +44,7 @@ async fn block_unlogin(
     }
 }
 
-#[fn_handler]
+#[handler]
 pub(crate) async fn block_no_admin(
     req: &mut Request,
     depot: &mut Depot,

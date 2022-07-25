@@ -1,6 +1,6 @@
 use salvo::{
     http::{StatusCode, StatusError},
-    prelude::{async_trait, fn_handler},
+    prelude::handler,
     Depot, Request, Response, Router,
 };
 use tera::Context;
@@ -15,7 +15,7 @@ use crate::{
 };
 
 #[tracing::instrument]
-#[fn_handler]
+#[handler]
 async fn index(depot: &mut Depot, res: &mut Response) {
     let mut web = depot.remove::<Context>(WEB).unwrap();
 
@@ -27,21 +27,21 @@ async fn index(depot: &mut Depot, res: &mut Response) {
     render(res, "visitor/index.html", &web)
 }
 
-#[fn_handler]
+#[handler]
 async fn about(depot: &mut Depot, res: &mut Response) {
     let web = depot.remove::<Context>(WEB).unwrap();
 
     render(res, "visitor/about.html", &web)
 }
 
-#[fn_handler]
+#[handler]
 async fn list(depot: &mut Depot, res: &mut Response) {
     let web = depot.remove::<Context>(WEB).unwrap();
 
     render(res, "visitor/list.html", &web)
 }
 
-#[fn_handler]
+#[handler]
 async fn home(depot: &mut Depot, res: &mut Response) {
     let web = depot.remove::<Context>(WEB).unwrap();
 
@@ -53,7 +53,7 @@ async fn home(depot: &mut Depot, res: &mut Response) {
     }
 }
 
-#[fn_handler]
+#[handler]
 async fn user(req: &mut Request, depot: &mut Depot, res: &mut Response) -> Result<(), StatusError> {
     let id = parse_last_path::<Uuid>(req)?;
     let mut web = depot.remove::<Context>(WEB).unwrap();
@@ -68,7 +68,7 @@ async fn user(req: &mut Request, depot: &mut Depot, res: &mut Response) -> Resul
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn article_view(
     req: &mut Request,
     depot: &mut Depot,

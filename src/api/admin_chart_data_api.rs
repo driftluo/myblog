@@ -1,8 +1,4 @@
-use salvo::{
-    http::StatusError,
-    prelude::{async_trait, fn_handler},
-    Request, Response, Router,
-};
+use salvo::{http::StatusError, prelude::handler, Request, Response, Router};
 
 use crate::{
     api::{block_no_admin, JsonErrResponse, JsonOkResponse},
@@ -12,7 +8,7 @@ use crate::{
     Routers,
 };
 
-#[fn_handler]
+#[handler]
 async fn publish_by_month(res: &mut Response) {
     match PublishedStatistics::statistics_published_frequency_by_month().await {
         Ok(data) => set_json_response(res, 128, &JsonOkResponse::ok(data)),
@@ -20,7 +16,7 @@ async fn publish_by_month(res: &mut Response) {
     }
 }
 
-#[fn_handler]
+#[handler]
 async fn get_ip_chart(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let limit = parse_query::<i64>(req, "limit")?;
     let offset = parse_query::<i64>(req, "offset")?;

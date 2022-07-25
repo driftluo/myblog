@@ -17,8 +17,8 @@ impl UserNotify {
         let content = serde_json::to_string(self).unwrap();
         let notify_key = format!(
             "notify:{}:{}",
-            self.article_id.to_hyphenated().to_string(),
-            self.user_id.to_hyphenated().to_string()
+            self.article_id.hyphenated().to_string(),
+            self.user_id.hyphenated().to_string()
         );
 
         let redis_pool = get_redis();
@@ -35,7 +35,7 @@ impl UserNotify {
 
     /// Get all the notifications about the user
     pub async fn get_notifys(user_id: Uuid) -> Option<Vec<UserNotify>> {
-        let pattern = format!("notify:*:{}", user_id.to_hyphenated().to_string());
+        let pattern = format!("notify:*:{}", user_id.hyphenated().to_string());
         let mut notify = Vec::new();
         let redis_pool = get_redis();
 
@@ -62,15 +62,15 @@ impl UserNotify {
     pub async fn remove_notifys_with_article_and_user(user_id: Uuid, article_id: Uuid) {
         let notify_key = format!(
             "notify:{}:{}",
-            article_id.to_hyphenated().to_string(),
-            user_id.to_hyphenated().to_string()
+            article_id.hyphenated().to_string(),
+            user_id.hyphenated().to_string()
         );
         get_redis().del(notify_key).await;
     }
 
     /// Remove the notification of the specified article, e.g use on remove the specified article
     pub async fn remove_with_article(article_id: Uuid) {
-        let pattern = format!("notify:{}*", article_id.to_hyphenated().to_string());
+        let pattern = format!("notify:{}*", article_id.hyphenated().to_string());
         let redis_pool = get_redis();
         let keys = redis_pool.keys(&pattern).await;
         if !keys.is_empty() {
@@ -80,7 +80,7 @@ impl UserNotify {
 
     /// Remove the notification of the user, e.g use on remove the user
     pub async fn remove_with_user(user_id: Uuid) {
-        let pattern = format!("notify:*:{}", user_id.to_hyphenated().to_string());
+        let pattern = format!("notify:*:{}", user_id.hyphenated().to_string());
         let redis_pool = get_redis();
         let keys = redis_pool.keys(&pattern).await;
         if !keys.is_empty() {

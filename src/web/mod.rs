@@ -1,4 +1,4 @@
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, Bytes, BytesMut};
 use once_cell::sync::Lazy;
 use salvo::{
     http::{header, response::Body, StatusCode},
@@ -25,8 +25,8 @@ impl Cache {
         Cache(BytesMut::with_capacity(size))
     }
 
-    pub fn into_inner(self) -> BytesMut {
-        self.0
+    pub fn into_inner(self) -> Bytes {
+        self.0.freeze()
     }
 }
 
@@ -49,5 +49,5 @@ pub fn render(res: &mut Response, path: &str, ctx: &tera::Context) {
         header::HeaderValue::from_static("text/html; charset=utf-8"),
     );
     res.set_status_code(StatusCode::OK);
-    res.set_body(Body::Bytes(body.into_inner()))
+    res.set_body(Body::Once(body.into_inner()))
 }

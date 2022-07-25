@@ -1,6 +1,6 @@
 use salvo::{
     http::{StatusCode, StatusError},
-    prelude::{async_trait, fn_handler},
+    prelude::handler,
     Request, Response, Router,
 };
 
@@ -12,7 +12,7 @@ use crate::{
     Routers,
 };
 
-#[fn_handler]
+#[handler]
 async fn create_tag(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     #[derive(serde::Deserialize, serde::Serialize)]
     pub struct NewTag {
@@ -29,7 +29,7 @@ async fn create_tag(req: &mut Request, res: &mut Response) -> Result<(), StatusE
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn delete_tag(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let id = parse_last_path::<uuid::Uuid>(req)?;
 
@@ -40,7 +40,7 @@ async fn delete_tag(req: &mut Request, res: &mut Response) -> Result<(), StatusE
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn view_tag(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let limit = parse_query::<i64>(req, "limit")?;
     let offset = parse_query::<i64>(req, "offset")?;
@@ -52,7 +52,7 @@ async fn view_tag(req: &mut Request, res: &mut Response) -> Result<(), StatusErr
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn edit_tag(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let body = parse_json_body::<Tags>(req)
         .await

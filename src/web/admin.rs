@@ -1,8 +1,4 @@
-use salvo::{
-    http::StatusError,
-    prelude::{async_trait, fn_handler},
-    Depot, Request, Response, Router,
-};
+use salvo::{http::StatusError, prelude::handler, Depot, Request, Response, Router};
 use tera::Context;
 
 use crate::{
@@ -13,21 +9,21 @@ use crate::{
     Routers, WEB,
 };
 
-#[fn_handler]
+#[handler]
 async fn admin(depot: &mut Depot, res: &mut Response) {
     let web = depot.remove::<Context>(WEB).unwrap();
 
     render(res, "admin/admin.html", &web)
 }
 
-#[fn_handler]
+#[handler]
 async fn admin_list(depot: &mut Depot, res: &mut Response) {
     let web = depot.remove::<Context>(WEB).unwrap();
 
     render(res, "admin/admin_list.html", &web)
 }
 
-#[fn_handler]
+#[handler]
 async fn unpublished(depot: &mut Depot, res: &mut Response) {
     let web = depot.remove::<Context>(WEB).unwrap();
 
@@ -35,7 +31,7 @@ async fn unpublished(depot: &mut Depot, res: &mut Response) {
 }
 
 #[tracing::instrument]
-#[fn_handler]
+#[handler]
 async fn new_(depot: &mut Depot, res: &mut Response) {
     let mut web = depot.remove::<Context>(WEB).unwrap();
 
@@ -47,7 +43,7 @@ async fn new_(depot: &mut Depot, res: &mut Response) {
     render(res, "admin/article_new.html", &web);
 }
 
-#[fn_handler]
+#[handler]
 async fn admin_view_article(
     req: &mut Request,
     depot: &mut Depot,
@@ -67,7 +63,7 @@ async fn admin_view_article(
 }
 
 #[tracing::instrument]
-#[fn_handler]
+#[handler]
 async fn article_edit(
     req: &mut Request,
     depot: &mut Depot,
@@ -86,28 +82,28 @@ async fn article_edit(
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn tags(depot: &mut Depot, res: &mut Response) {
     let web = depot.remove::<Context>(WEB).unwrap();
 
     render(res, "admin/tags.html", &web)
 }
 
-#[fn_handler]
+#[handler]
 async fn users(depot: &mut Depot, res: &mut Response) {
     let web = depot.remove::<Context>(WEB).unwrap();
 
     render(res, "admin/users.html", &web)
 }
 
-#[fn_handler]
+#[handler]
 async fn visitor_ip_log(depot: &mut Depot, res: &mut Response) {
     let web = depot.remove::<Context>(WEB).unwrap();
 
     render(res, "admin/ip.html", &web)
 }
 
-#[fn_handler]
+#[handler]
 async fn notify(depot: &mut Depot, res: &mut Response) {
     let web = depot.remove::<Context>(WEB).unwrap();
 

@@ -1,6 +1,6 @@
 use salvo::{
     http::{StatusCode, StatusError},
-    prelude::{async_trait, fn_handler},
+    prelude::handler,
     Request, Response, Router,
 };
 
@@ -11,7 +11,7 @@ use crate::{
     Routers,
 };
 
-#[fn_handler]
+#[handler]
 async fn delete_user(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let id = parse_last_path::<uuid::Uuid>(req)?;
 
@@ -23,7 +23,7 @@ async fn delete_user(req: &mut Request, res: &mut Response) -> Result<(), Status
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn view_user_list(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let limit = parse_query::<i64>(req, "limit")?;
     let offset = parse_query::<i64>(req, "offset")?;
@@ -36,7 +36,7 @@ async fn view_user_list(req: &mut Request, res: &mut Response) -> Result<(), Sta
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn change_permission(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let body = parse_json_body::<ChangePermission>(req)
         .await
@@ -49,7 +49,7 @@ async fn change_permission(req: &mut Request, res: &mut Response) -> Result<(), 
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn change_disabled(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let body = parse_json_body::<DisabledUser>(req)
         .await

@@ -1,6 +1,6 @@
 use salvo::{
     http::{StatusCode, StatusError},
-    prelude::{async_trait, fn_handler},
+    prelude::handler,
     Request, Response, Router,
 };
 
@@ -11,7 +11,7 @@ use crate::{
     Routers,
 };
 
-#[fn_handler]
+#[handler]
 async fn create_article(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let body = parse_json_body::<NewArticle>(req)
         .await
@@ -22,7 +22,7 @@ async fn create_article(req: &mut Request, res: &mut Response) -> Result<(), Sta
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn delete_article(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let id = parse_last_path::<uuid::Uuid>(req)?;
 
@@ -37,7 +37,7 @@ async fn delete_article(req: &mut Request, res: &mut Response) -> Result<(), Sta
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn admin_view_article(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let id = parse_query::<uuid::Uuid>(req, "id")?;
 
@@ -48,7 +48,7 @@ async fn admin_view_article(req: &mut Request, res: &mut Response) -> Result<(),
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn admin_view_raw_article(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let id = parse_query::<uuid::Uuid>(req, "id")?;
 
@@ -59,7 +59,7 @@ async fn admin_view_raw_article(req: &mut Request, res: &mut Response) -> Result
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn admin_list_all_article(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let limit = parse_query::<i64>(req, "limit")?;
     let offset = parse_query::<i64>(req, "offset")?;
@@ -71,7 +71,7 @@ async fn admin_list_all_article(req: &mut Request, res: &mut Response) -> Result
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn admin_list_all_unpublished(
     req: &mut Request,
     res: &mut Response,
@@ -86,7 +86,7 @@ async fn admin_list_all_unpublished(
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn edit_article(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let body = parse_json_body::<EditArticle>(req)
         .await
@@ -99,7 +99,7 @@ async fn edit_article(req: &mut Request, res: &mut Response) -> Result<(), Statu
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn update_publish(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let body = parse_json_body::<ModifyPublish>(req)
         .await
@@ -112,7 +112,7 @@ async fn update_publish(req: &mut Request, res: &mut Response) -> Result<(), Sta
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn upload(req: &mut Request, res: &mut Response) {
     match req.files("files").await {
         Some(files) => {
@@ -120,7 +120,7 @@ async fn upload(req: &mut Request, res: &mut Response) {
             for file in files {
                 let dest = match file.name() {
                     Some(ref name) => format!("static/images/{}", name),
-                    None => format!("static/images/{}", uuid::Uuid::new_v4().to_hyphenated()),
+                    None => format!("static/images/{}", uuid::Uuid::new_v4().hyphenated()),
                 };
                 match tokio::fs::copy(&file.path(), ::std::path::Path::new(&dest)).await {
                     Ok(_) => {

@@ -1,6 +1,6 @@
 use salvo::{
     http::{StatusCode, StatusError},
-    prelude::{async_trait, fn_handler},
+    prelude::handler,
     Depot, Request, Response, Router,
 };
 
@@ -16,13 +16,13 @@ use crate::{
     Routers, COOKIE, PERMISSION, USER_INFO,
 };
 
-#[fn_handler]
+#[handler]
 async fn view_user(depot: &mut Depot, res: &mut Response) {
     let info = depot.remove::<UserInfo>(USER_INFO).unwrap();
     set_json_response(res, 128, &JsonOkResponse::ok(info))
 }
 
-#[fn_handler]
+#[handler]
 async fn change_pwd(
     req: &mut Request,
     depot: &mut Depot,
@@ -41,7 +41,7 @@ async fn change_pwd(
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn edit(req: &mut Request, depot: &mut Depot, res: &mut Response) -> Result<(), StatusError> {
     let body = parse_json_body::<EditUser>(req)
         .await
@@ -57,14 +57,14 @@ async fn edit(req: &mut Request, depot: &mut Depot, res: &mut Response) -> Resul
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn sign_out(depot: &mut Depot, res: &mut Response) {
     let cookie = depot.remove::<String>(COOKIE).unwrap();
     let a = LoginUser::sign_out(&cookie).await;
     set_json_response(res, 32, &JsonOkResponse::status(a));
 }
 
-#[fn_handler]
+#[handler]
 async fn new_comment(
     req: &mut Request,
     depot: &mut Depot,
@@ -124,7 +124,7 @@ async fn new_comment(
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn delete_comment(
     req: &mut Request,
     depot: &mut Depot,

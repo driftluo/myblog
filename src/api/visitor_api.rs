@@ -3,7 +3,7 @@ use rss::{ChannelBuilder, Item, ItemBuilder};
 use salvo::{
     http::{response::Body, StatusCode, StatusError},
     hyper::header::{self, HeaderValue},
-    prelude::{async_trait, fn_handler},
+    prelude::handler,
     Depot, Request, Response, Router,
 };
 use uuid::Uuid;
@@ -26,7 +26,7 @@ use crate::{
 };
 use bytes::BytesMut;
 
-#[fn_handler]
+#[handler]
 async fn list_all_article(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let limit = parse_query::<i64>(req, "limit")?;
     let offset = parse_query::<i64>(req, "offset")?;
@@ -42,7 +42,7 @@ async fn list_all_article(req: &mut Request, res: &mut Response) -> Result<(), S
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn list_all_article_filter_by_tag(
     req: &mut Request,
     res: &mut Response,
@@ -56,7 +56,7 @@ async fn list_all_article_filter_by_tag(
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn list_comments(
     req: &mut Request,
     depot: &mut Depot,
@@ -104,7 +104,7 @@ async fn list_comments(
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn view_article(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let id = parse_query::<Uuid>(req, "id")?;
 
@@ -116,7 +116,7 @@ async fn view_article(req: &mut Request, res: &mut Response) -> Result<(), Statu
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn login(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let body = parse_json_body::<LoginUser>(req)
         .await
@@ -139,7 +139,7 @@ async fn login(req: &mut Request, res: &mut Response) -> Result<(), StatusError>
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn login_with_github(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let code = parse_query::<String>(req, "code")?;
 
@@ -164,7 +164,7 @@ async fn login_with_github(req: &mut Request, res: &mut Response) -> Result<(), 
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn create_user(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let body = parse_json_body::<RegisteredUser>(req)
         .await
@@ -180,7 +180,7 @@ async fn create_user(req: &mut Request, res: &mut Response) -> Result<(), Status
     Ok(())
 }
 
-#[fn_handler]
+#[handler]
 async fn rss_path(res: &mut Response) {
     let mut channel = ChannelBuilder::default()
         .title("driftluo's blog")
@@ -223,7 +223,7 @@ async fn rss_path(res: &mut Response) {
                 header::CONTENT_TYPE,
                 HeaderValue::from_static("text/xml; charset=utf-8"),
             );
-            res.set_body(Body::Bytes(bytes.into_inner()));
+            res.set_body(Body::Once(bytes.into_inner()));
             res.set_status_code(StatusCode::OK)
         }
         Err(err) => set_json_response(res, 32, &JsonErrResponse::err(err)),
