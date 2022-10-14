@@ -7,11 +7,11 @@ use new_blog::{
     Routers, PERMISSION, WEB,
 };
 use salvo::{
-    extra::serve_static::DirHandler,
-    http::{header, response::Body, StatusCode},
+    http::{header, response::ResBody, StatusCode},
     listener::TcpListener,
     prelude::handler,
     routing::FlowCtrl,
+    serve_static::StaticDir,
     Depot, Request, Response, Router, Server,
 };
 use tracing::{Instrument, Level};
@@ -50,7 +50,7 @@ fn main() {
             .push(
                 Router::new()
                     .path(r#"<*path:/(js|css|images)/.+\.(js|css|webp)/>"#)
-                    .get(DirHandler::new("static")),
+                    .get(StaticDir::new("static")),
             );
 
         Server::new(TcpListener::bind(([127, 0, 0, 1], listen_port)))
@@ -82,6 +82,6 @@ Sitemap:https://www.driftluo.com/rss
         header::CONTENT_TYPE,
         header::HeaderValue::from_static("text/plain; charset=utf-8"),
     );
-    res.set_body(Body::Once(BytesMut::from(ROBOT).freeze()));
+    res.set_body(ResBody::Once(BytesMut::from(ROBOT).freeze()));
     res.set_status_code(StatusCode::OK)
 }

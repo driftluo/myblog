@@ -1,7 +1,7 @@
 use bytes::{BufMut, Bytes, BytesMut};
 use once_cell::sync::Lazy;
 use salvo::{
-    http::{header, response::Body, StatusCode},
+    http::{header, response::ResBody, StatusCode},
     Response,
 };
 use std::io::{self, Write};
@@ -49,5 +49,5 @@ pub fn render(res: &mut Response, path: &str, ctx: &tera::Context) {
         header::HeaderValue::from_static("text/html; charset=utf-8"),
     );
     res.set_status_code(StatusCode::OK);
-    res.set_body(Body::Once(body.into_inner()))
+    res.set_body(ResBody::Once(body.into_inner()))
 }

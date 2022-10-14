@@ -7,7 +7,7 @@ use crate::{
 use pulldown_cmark::{html, Options, Parser};
 use rand::Rng;
 use salvo::{
-    http::{cookie::Cookie, response::Body, StatusCode, StatusError},
+    http::{cookie::Cookie, response::ResBody, StatusCode, StatusError},
     hyper::{body::to_bytes, header},
     prelude::handler,
     routing::FlowCtrl,
@@ -188,7 +188,7 @@ pub fn set_json_response<T: serde::Serialize>(res: &mut Response, size: usize, j
     );
     let mut cache = Cache::with_capacity(size);
     serde_json::to_writer(&mut cache, &json).unwrap();
-    res.set_body(Body::Once(cache.into_inner()));
+    res.set_body(ResBody::Once(cache.into_inner()));
     res.set_status_code(StatusCode::OK)
 }
 
@@ -197,7 +197,7 @@ pub fn set_plain_text_response(res: &mut Response, text: bytes::BytesMut) {
         header::CONTENT_TYPE,
         header::HeaderValue::from_static("application/plain; charset=utf-8"),
     );
-    res.set_body(Body::Once(text.freeze()));
+    res.set_body(ResBody::Once(text.freeze()));
     res.set_status_code(StatusCode::OK)
 }
 
@@ -206,7 +206,7 @@ pub fn set_xml_text_response(res: &mut Response, text: bytes::BytesMut) {
         header::CONTENT_TYPE,
         header::HeaderValue::from_static("application/xml; charset=utf-8"),
     );
-    res.set_body(Body::Once(text.freeze()));
+    res.set_body(ResBody::Once(text.freeze()));
     res.set_status_code(StatusCode::OK)
 }
 

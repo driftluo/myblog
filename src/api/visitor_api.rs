@@ -1,7 +1,7 @@
 use chrono::offset::TimeZone;
 use rss::{ChannelBuilder, Item, ItemBuilder};
 use salvo::{
-    http::{response::Body, StatusCode, StatusError},
+    http::{response::ResBody, StatusCode, StatusError},
     hyper::header::{self, HeaderValue},
     prelude::handler,
     Depot, Request, Response, Router,
@@ -223,7 +223,7 @@ async fn rss_path(res: &mut Response) {
                 header::CONTENT_TYPE,
                 HeaderValue::from_static("text/xml; charset=utf-8"),
             );
-            res.set_body(Body::Once(bytes.into_inner()));
+            res.set_body(ResBody::Once(bytes.into_inner()));
             res.set_status_code(StatusCode::OK)
         }
         Err(err) => set_json_response(res, 32, &JsonErrResponse::err(err)),
