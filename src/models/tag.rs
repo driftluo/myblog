@@ -2,7 +2,7 @@ use crate::{db_wrapper::get_postgres, models::article_tag_relation::Relations};
 use serde::{Deserialize, Serialize};
 use sqlx::types::Uuid;
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(sqlx::FromRow, Debug, Clone, Deserialize, Serialize)]
 pub struct Tags {
     id: Uuid,
     tag: String,
@@ -10,7 +10,8 @@ pub struct Tags {
 
 impl Tags {
     pub async fn insert(tag: &str) -> Result<u64, String> {
-        sqlx::query!(r#"INSERT INTO tags (tag) VALUES ($1)"#, tag)
+        sqlx::query(r#"INSERT INTO tags (tag) VALUES ($1)"#)
+            .bind(tag)
             .execute(get_postgres())
             .await
             .map(|r| r.rows_affected())
@@ -18,7 +19,7 @@ impl Tags {
     }
 
     pub async fn view_list_tag() -> Result<Vec<Tags>, String> {
-        sqlx::query_as!(Tags, r#"SELECT * FROM tags"#)
+        sqlx::query_as::<_, Tags>(r#"SELECT * FROM tags"#)
             .fetch_all(get_postgres())
             .await
             .map_err(|e| format!("{}", e))
@@ -26,7 +27,8 @@ impl Tags {
 
     pub async fn delete_tag(id: Uuid) -> Result<u64, String> {
         Relations::delete_all(id, false).await;
-        sqlx::query!(r#"DELETE FROM tags WHERE id = $1"#, id)
+        sqlx::query(r#"DELETE FROM tags WHERE id = $1"#)
+            .bind(id)
             .execute(get_postgres())
             .await
             .map(|r| r.rows_affected())
@@ -34,11 +36,11 @@ impl Tags {
     }
 
     pub async fn edit_tag(&self) -> Result<u64, String> {
-        sqlx::query!(
+        sqlx::query(
             r#"UPDATE tags SET tag = $1 WHERE id = $2"#,
-            self.tag,
-            self.id
         )
+        .bind(&self.tag)
+        .bind(self.id)
         .execute(get_postgres())
         .await
         .map(|r| r.rows_affected())
@@ -62,7 +64,10 @@ impl TagCount {
             .map_err(|e| format!("{}", e))
     }
 
+    /// Query all tags with their article counts
+    /// Max limit is 50 to prevent loading too much data
     pub async fn view_all_tag_count(limit: i64, offset: i64) -> Result<Vec<Self>, String> {
+        let limit = limit.min(50);
         sqlx::query_as(
             r#"select a.id, a.tag, (case when b.count is null then 0 else b.count end) as count from tags a left join (select tag_id, count(*) from article_tag_relation group by tag_id) b on a.id = b.tag_id order by a.id limit $1 offset $2"#
         )

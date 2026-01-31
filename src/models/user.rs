@@ -11,7 +11,7 @@ use sqlx::types::{
     Uuid,
 };
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(sqlx::FromRow, Debug, Clone, Deserialize, Serialize)]
 pub struct UserInfo {
     pub id: Uuid,
     pub account: String,
@@ -25,7 +25,8 @@ pub struct UserInfo {
 
 impl UserInfo {
     pub async fn delete(id: Uuid) -> Result<u64, String> {
-        let res = sqlx::query!(r#"DELETE FROM users WHERE id = $1"#, id)
+        let res = sqlx::query(r#"DELETE FROM users WHERE id = $1"#)
+            .bind(id)
             .execute(get_postgres())
             .await
             .map(|r| r.rows_affected())
@@ -35,11 +36,11 @@ impl UserInfo {
     }
 
     pub async fn change_permission(data: ChangePermission) -> Result<u64, String> {
-        sqlx::query!(
+        sqlx::query(
             r#"UPDATE users SET groups = $1 WHERE id = $2"#,
-            data.permission,
-            data.id
         )
+        .bind(data.permission)
+        .bind(data.id)
         .execute(get_postgres())
         .await
         .map(|r| r.rows_affected())
@@ -47,11 +48,11 @@ impl UserInfo {
     }
 
     pub async fn disabled_user(data: DisabledUser) -> Result<u64, String> {
-        sqlx::query!(
+        sqlx::query(
             r#"UPDATE users SET disabled = $1 WHERE id = $2"#,
-            data.disabled,
-            data.id
         )
+        .bind(data.disabled)
+        .bind(data.id)
         .execute(get_postgres())
         .await
         .map(|r| r.rows_affected())
@@ -59,36 +60,33 @@ impl UserInfo {
     }
 
     pub async fn view_user(id: Uuid) -> Result<Self, String> {
-        sqlx::query_as!(
-            UserInfo,
+        sqlx::query_as::<_, UserInfo>(
             r#"SELECT id, account, nickname, groups, say, email, create_time, github FROM users
             WHERE id = $1"#,
-            id
         )
+        .bind(id)
         .fetch_one(get_postgres())
         .await
         .map_err(|e| format!("{}", e))
     }
 
     pub async fn view_user_with_github(github: &str) -> Result<Self, String> {
-        sqlx::query_as!(
-            UserInfo,
+        sqlx::query_as::<_, UserInfo>(
             r#"SELECT id, account, nickname, groups, say, email, create_time, github FROM users
             WHERE github = $1 AND disabled = 0"#,
-            github
         )
+        .bind(github)
         .fetch_one(get_postgres())
         .await
         .map_err(|e| format!("{}", e))
     }
 
     pub async fn view_user_with_email(email: &str) -> Result<Self, String> {
-        sqlx::query_as!(
-            UserInfo,
+        sqlx::query_as::<_, UserInfo>(
             r#"SELECT id, account, nickname, groups, say, email, create_time, github FROM users
             WHERE email = $1 AND disabled = 0"#,
-            email
         )
+        .bind(email)
         .fetch_one(get_postgres())
         .await
         .map_err(|e| format!("{}", e))
@@ -98,15 +96,17 @@ impl UserInfo {
         get_redis().hget::<String>(cookie, "info").await.unwrap()
     }
 
+    /// Query user list
+    /// Max limit is 50 to prevent loading too much data
     pub async fn view_user_list(limit: i64, offset: i64) -> Result<Vec<Self>, String> {
-        sqlx::query_as!(
-            UserInfo,
+        let limit = limit.min(50);
+        sqlx::query_as::<_, UserInfo>(
             r#"SELECT id, account, nickname, groups, say, email, create_time, github FROM users
             ORDER BY create_time
             LIMIT $1 OFFSET $2"#,
-            limit,
-            offset
         )
+        .bind(limit)
+        .bind(offset)
         .fetch_all(get_postgres())
         .await
         .map_err(|e| format!("{}", e))
@@ -119,8 +119,7 @@ impl UserInfo {
         if let Ok(Some(info)) = redis_pool.get("admin_info").await {
             serde_json::from_str::<UserInfo>(&info).unwrap()
         } else {
-            let info = sqlx::query_as!(
-                UserInfo,
+            let info = sqlx::query_as::<_, UserInfo>(
                 r#"SELECT id, account, nickname, groups, say, email, create_time, github FROM users WHERE account = 'admin'"#,
             )
                 .fetch_one(get_postgres())
@@ -146,18 +145,20 @@ struct NewUser {
 }
 
 impl NewUser {
-    pub fn new(reg: RegisteredUser) -> Self {
+    pub fn new(reg: RegisteredUser) -> Result<Self, String> {
         let salt = random_string(6);
+        let password = get_password(&reg.password)
+            .ok_or_else(|| "Invalid password format: length insufficient".to_string())?;
 
-        NewUser {
+        Ok(NewUser {
             account: reg.account,
-            password: sha3_256_encode(get_password(&reg.password) + &salt),
+            password: sha3_256_encode(password + &salt),
             salt,
             nickname: reg.nickname,
             say: reg.say,
             email: reg.email,
             github: None,
-        }
+        })
     }
     pub fn new_with_github(
         email: String,
@@ -177,19 +178,18 @@ impl NewUser {
     }
 
     pub async fn insert(self) -> Result<String, String> {
-        let res = sqlx::query_as!(
-            UserInfo,
+        let res = sqlx::query_as::<_, UserInfo>(
             r#"INSERT INTO users (account, password, salt, nickname, say, email, github)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING id, account, nickname, groups, say, email, create_time, github"#,
-            self.account,
-            self.password,
-            self.salt,
-            self.nickname,
-            self.say,
-            self.email,
-            self.github
         )
+        .bind(&self.account)
+        .bind(&self.password)
+        .bind(&self.salt)
+        .bind(&self.nickname)
+        .bind(&self.say)
+        .bind(&self.email)
+        .bind(&self.github)
         .fetch_one(get_postgres())
         .await;
         match res {
@@ -223,7 +223,7 @@ pub struct RegisteredUser {
 
 impl RegisteredUser {
     pub async fn insert(self) -> Result<String, String> {
-        NewUser::new(self).insert().await
+        NewUser::new(self)?.insert().await
     }
 }
 
@@ -240,44 +240,47 @@ impl ChangePassword {
         )
         .unwrap();
 
-        if !self.verification(info.id).await {
+        if !self.verification(info.id).await? {
             return Err("Verification error".to_string());
         }
 
+        let new_password = get_password(&self.new_password)
+            .ok_or_else(|| "Invalid new password format: length insufficient".to_string())?;
         let salt = random_string(6);
-        let password = sha3_256_encode(get_password(&self.new_password) + &salt);
+        let password = sha3_256_encode(new_password + &salt);
 
-        sqlx::query!(
+        sqlx::query(
             r#"UPDATE users SET password = $1, salt = $2 WHERE id = $3"#,
-            password,
-            salt,
-            info.id
         )
+        .bind(&password)
+        .bind(&salt)
+        .bind(info.id)
         .execute(get_postgres())
         .await
         .map(|r| r.rows_affected())
         .map_err(|e| format!("{}", e))
     }
 
-    async fn verification(&self, id: Uuid) -> bool {
+    async fn verification(&self, id: Uuid) -> Result<bool, String> {
         #[derive(sqlx::FromRow)]
         struct Old {
             password: String,
             salt: String,
         }
-        let old_user = sqlx::query_as!(
-            Old,
+        let old_password = get_password(&self.old_password)
+            .ok_or_else(|| "Invalid old password format: length insufficient".to_string())?;
+        let old_user = sqlx::query_as::<_, Old>(
             r#"SELECT password, salt FROM users
             WHERE id = $1"#,
-            id
         )
+        .bind(id)
         .fetch_one(get_postgres())
         .await;
         match old_user {
             Ok(old) => {
-                old.password == sha3_256_encode(get_password(&self.old_password) + &old.salt)
+                Ok(old.password == sha3_256_encode(old_password + &old.salt))
             }
-            Err(_) => false,
+            Err(_) => Ok(false),
         }
     }
 }
@@ -296,15 +299,14 @@ impl EditUser {
             &redis_pool.hget::<String>(cookie, "info").await.unwrap(),
         )
         .unwrap();
-        let res = sqlx::query_as!(
-            UserInfo,
+        let res = sqlx::query_as::<_, UserInfo>(
             r#"UPDATE users SET nickname = $1, say = $2, email = $3 WHERE id = $4
             RETURNING id, account, nickname, groups, say, email, create_time, github"#,
-            self.nickname,
-            self.say,
-            self.email,
-            info.id,
         )
+        .bind(&self.nickname)
+        .bind(&self.say)
+        .bind(&self.email)
+        .bind(info.id)
         .fetch_one(get_postgres())
         .await;
         match res {
@@ -328,16 +330,17 @@ pub struct LoginUser {
 
 impl LoginUser {
     pub async fn verification(&self, max_age: &Option<i64>) -> Result<String, String> {
-        let res = sqlx::query_as!(
-            Users,
+        let password = get_password(&self.password)
+            .ok_or_else(|| "Invalid password format: length insufficient".to_string())?;
+        let res = sqlx::query_as::<_, Users>(
             r#"SELECT * FROM users WHERE disabled = 0 AND account = $1"#,
-            self.account
         )
+        .bind(&self.account)
         .fetch_one(get_postgres())
         .await;
         match res {
             Ok(data) => {
-                if data.password == sha3_256_encode(get_password(&self.password) + &data.salt) {
+                if data.password == sha3_256_encode(password + &data.salt) {
                     let ttl = match *max_age {
                         Some(t) => t * 3600,
                         None => 24 * 60 * 60,
@@ -358,7 +361,7 @@ impl LoginUser {
                     redis_pool.expire(&cookie, ttl).await;
                     Ok(cookie)
                 } else {
-                    Err(String::from("用户或密码错误"))
+                    Err(String::from("Invalid username or password"))
                 }
             }
             Err(err) => Err(format!("{}", err)),
@@ -403,11 +406,11 @@ impl LoginUser {
                 match UserInfo::view_user_with_email(&email).await {
                     // Account already exists but not linked
                     Ok(mut data) => {
-                        match sqlx::query!(
-                            r#"UPDATe users SET github = $1 WHERE id = $2"#,
-                            github,
-                            data.id
+                        match sqlx::query(
+                            r#"UPDATE users SET github = $1 WHERE id = $2"#,
                         )
+                        .bind(&github)
+                        .bind(data.id)
                         .execute(get_postgres())
                         .await
                         {

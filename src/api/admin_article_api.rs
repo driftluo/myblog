@@ -136,7 +136,7 @@ async fn upload(req: &mut Request, res: &mut Response) {
         }
         None => {
             set_json_response(res, 32, &JsonErrResponse::err("file not found in request"));
-            res.set_status_code(StatusCode::BAD_REQUEST);
+            res.status_code(StatusCode::BAD_REQUEST);
         }
     }
 }
@@ -173,7 +173,7 @@ impl Routers for AdminArticle {
                 // http post /article/new title=something raw_content=something
                 .push(Router::new().path("new").post(create_article))
                 // http post /article/delete/3
-                .push(Router::new().path("delete/<id>").post(delete_article))
+                .push(Router::new().path("delete/{id}").post(delete_article))
                 // http post /article/edit id:=1 title=something raw_content=something
                 .push(Router::new().path("edit").post(edit_article))
                 // http post /article/publish id:=5 published:=true

@@ -13,7 +13,10 @@ pub struct Comments {
 }
 
 impl Comments {
+    /// Query comment list
+    /// Max limit is 50 to prevent loading too much data
     pub async fn query(limit: i64, offset: i64, id: Uuid) -> Result<Vec<Self>, String> {
+        let limit = limit.min(50);
         let sql = format!("SELECT a.id, a.comment, a.article_id, a.user_id, b.nickname, a.create_time FROM comments a JOIN users b ON a.user_id=b.id WHERE a.article_id='{}' ORDER BY a.create_time LIMIT $1 OFFSET $2", id);
         sqlx::query_as(&sql)
             .bind(&limit)
@@ -33,12 +36,12 @@ pub struct NewComments {
 
 impl NewComments {
     pub async fn insert(&self, user_id: Uuid) -> bool {
-        sqlx::query!(
+        sqlx::query(
             r#"INSERT INTO comments (comment, article_id, user_id) VALUES ($1, $2, $3)"#,
-            self.comment,
-            self.article_id,
-            user_id
         )
+        .bind(&self.comment)
+        .bind(self.article_id)
+        .bind(user_id)
         .execute(get_postgres())
         .await
         .is_ok()
@@ -75,14 +78,16 @@ impl DeleteComment {
 }
 
 async fn delete_with_comment_id(comment_id: Uuid) -> bool {
-    sqlx::query!(r#"DELETE FROM comments where id = $1"#, comment_id)
+    sqlx::query(r#"DELETE FROM comments where id = $1"#)
+        .bind(comment_id)
         .execute(get_postgres())
         .await
         .is_ok()
 }
 
 async fn delete_with_user_id(user_id: Uuid) -> bool {
-    sqlx::query!(r#"DELETE FROM comments where user_id = $1"#, user_id)
+    sqlx::query(r#"DELETE FROM comments where user_id = $1"#)
+        .bind(user_id)
         .execute(get_postgres())
         .await
         .is_ok()

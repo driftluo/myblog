@@ -18,7 +18,7 @@ impl RedisManager {
     {
         let re = redis::Client::open(address).unwrap();
         let manager = loop {
-            if let Ok(m) = re.get_tokio_connection_manager().await {
+            if let Ok(m) = re.get_connection_manager().await {
                 break m;
             };
         };
@@ -34,7 +34,7 @@ impl RedisManager {
     {
         let re = redis::Client::open(address).unwrap();
         let manager = loop {
-            if let Ok(m) = re.get_tokio_connection_manager().await {
+            if let Ok(m) = re.get_connection_manager().await {
                 break m;
             };
         };

@@ -1,11 +1,11 @@
 use chrono::offset::TimeZone;
 use rss::{ChannelBuilder, Item, ItemBuilder};
 use salvo::{
-    http::{response::ResBody, StatusCode, StatusError},
-    hyper::header::{self, HeaderValue},
+    http::{ResBody, StatusCode, StatusError},
     prelude::handler,
     Depot, Request, Response, Router,
 };
+use salvo::http::header::{self, HeaderValue};
 use uuid::Uuid;
 
 use crate::{
@@ -68,11 +68,11 @@ async fn list_comments(
 
     let (user_id, admin) = match depot.remove::<Option<i16>>(PERMISSION).unwrap() {
         Some(0) => {
-            let info = depot.remove::<UserInfo>(USER_INFO).unwrap();
+            let info = depot.remove::<UserInfo>(USER_INFO).ok().unwrap();
             (Some(info.id), true)
         }
         Some(_) => {
-            let info = depot.remove::<UserInfo>(USER_INFO).unwrap();
+            let info = depot.remove::<UserInfo>(USER_INFO).ok().unwrap();
             (Some(info.id), false)
         }
         None => (None, false),
@@ -153,7 +153,7 @@ async fn login_with_github(req: &mut Request, res: &mut Response) -> Result<(), 
     match LoginUser::login_with_github(github_address, nickname, account, &token).await {
         Ok(cookie) => {
             set_cookie(res, cookie, None, Some("/"), None, Some(24));
-            res.set_status_code(StatusCode::FOUND);
+            res.status_code(StatusCode::FOUND);
             res.headers_mut()
                 .insert(header::LOCATION, "/home".parse().unwrap());
             set_plain_text_response(res, BytesMut::from(r#"{"status": true}"#));
@@ -186,11 +186,10 @@ async fn rss_path(res: &mut Response) {
         .title("driftluo's blog")
         .link("https://driftluo.com")
         .description("This is driftluo's Personal Blog's RSS feed.")
-        .build()
-        .unwrap();
+        .build();
 
     let hour = 3600;
-    let fix_offset = chrono::FixedOffset::east(8 * hour);
+    let fix_offset = chrono::FixedOffset::east_opt(8 * hour).unwrap();
 
     match ArticleList::query_article(10, 0, false).await {
         Ok(articles) => {
@@ -211,8 +210,7 @@ async fn rss_path(res: &mut Response) {
                             .format("%Y-%m-%d %H:%M:%S")
                             .to_string(),
                     )
-                    .build()
-                    .unwrap();
+                    .build();
 
                 items.push(item);
             }
@@ -223,8 +221,8 @@ async fn rss_path(res: &mut Response) {
                 header::CONTENT_TYPE,
                 HeaderValue::from_static("text/xml; charset=utf-8"),
             );
-            res.set_body(ResBody::Once(bytes.into_inner()));
-            res.set_status_code(StatusCode::OK)
+            res.body(ResBody::Once(bytes.into_inner()));
+            res.status_code(StatusCode::OK);
         }
         Err(err) => set_json_response(res, 32, &JsonErrResponse::err(err)),
     }
@@ -240,13 +238,13 @@ impl Routers for Visitor {
             Router::new()
                 .path(PREFIX.to_owned() + "article/view_all")
                 .get(list_all_article),
-            // http {ip}/PREFIX/article/view_all/<tag_id>
+            // http {ip}/PREFIX/article/view_all/{tag_id}
             Router::new()
-                .path(PREFIX.to_owned() + "article/view_all/<tag_id>")
+                .path(PREFIX.to_owned() + "article/view_all/{tag_id}")
                 .get(list_all_article_filter_by_tag),
-            // http {ip}/PREFIX/article/view_all/<tag_id>
+            // http {ip}/PREFIX/article/view_comment/{id}
             Router::new()
-                .path(PREFIX.to_owned() + "article/view_comment/<id>")
+                .path(PREFIX.to_owned() + "article/view_comment/{id}")
                 .get(list_comments),
             // http {ip}/PREFIX/article/view/<id>
             Router::new()

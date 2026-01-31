@@ -7,13 +7,14 @@ use new_blog::{
     Routers, PERMISSION, WEB,
 };
 use salvo::{
-    http::{header, response::ResBody, StatusCode},
-    listener::TcpListener,
+    http::{header, ResBody, StatusCode},
+    conn::TcpListener,
     prelude::handler,
     routing::FlowCtrl,
     serve_static::StaticDir,
     Depot, Request, Response, Router, Server,
 };
+use salvo::prelude::Listener;
 use tracing::{Instrument, Level};
 use tracing_subscriber::FmtSubscriber;
 
@@ -38,22 +39,27 @@ fn main() {
 
         let root = Router::new()
             .hoop(global)
-            .append(ArticleWeb.build())
-            .append(Admin.build())
-            .append(AdminUser.build())
-            .append(ChartData.build())
-            .append(Tag.build())
-            .append(AdminArticle.build())
-            .append(User.build())
-            .append(Visitor.build())
+            .append(&mut ArticleWeb.build())
+            .append(&mut Admin.build())
+            .append(&mut AdminUser.build())
+            .append(&mut ChartData.build())
+            .append(&mut Tag.build())
+            .append(&mut AdminArticle.build())
+            .append(&mut User.build())
+            .append(&mut Visitor.build())
             .push(Router::new().path("robots.txt").get(robot))
             .push(
                 Router::new()
-                    .path(r#"<*path:/(js|css|images)/.+\.(js|css|webp)/>"#)
-                    .get(StaticDir::new("static")),
+                    .path("{*path}")
+                    .get(StaticDir::new(["static"]).exclude(|path| {
+                        // Only allow specific file extensions for security
+                        let allowed = [".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".ico", ".webp", ".woff", ".woff2", ".svg"];
+                        !allowed.iter().any(|ext| path.to_lowercase().ends_with(ext))
+                    })),
             );
 
-        Server::new(TcpListener::bind(([127, 0, 0, 1], listen_port)))
+        let acceptor = TcpListener::new(format!("127.0.0.1:{}", listen_port)).bind().await;
+        Server::new(acceptor)
             .serve(root)
             .instrument(tracing::info_span!("listen start"))
             .await
@@ -82,6 +88,6 @@ Sitemap:https://www.driftluo.com/rss
         header::CONTENT_TYPE,
         header::HeaderValue::from_static("text/plain; charset=utf-8"),
     );
-    res.set_body(ResBody::Once(BytesMut::from(ROBOT).freeze()));
-    res.set_status_code(StatusCode::OK)
+    res.body(ResBody::Once(BytesMut::from(ROBOT).freeze()));
+    res.status_code(StatusCode::OK);
 }

@@ -7,10 +7,7 @@ use crate::{
     utils::markdown_render,
 };
 use serde::{Deserialize, Serialize};
-use sqlx::{
-    types::{chrono::NaiveDateTime, Uuid},
-    Row,
-};
+use sqlx::types::{chrono::NaiveDateTime, Uuid};
 struct InsertArticle<'a> {
     title: &'a str,
     raw_content: &'a str,
@@ -28,6 +25,7 @@ impl<'a> InsertArticle<'a> {
     }
 
     async fn insert(self) -> Uuid {
+        use sqlx::Row;
         sqlx::query(
             r#"Insert into articles (title, raw_content, content) VALUES ($1, $2, $3)
             RETURNING id
@@ -36,7 +34,7 @@ impl<'a> InsertArticle<'a> {
         .bind(self.title)
         .bind(self.raw_content)
         .bind(self.content)
-        .map(|row| row.get::<Uuid, _>(0))
+        .map(|row: sqlx::postgres::PgRow| row.get::<Uuid, _>(0))
         .fetch_one(get_postgres())
         .await
         .unwrap()
@@ -78,13 +76,13 @@ pub struct EditArticle {
 
 impl EditArticle {
     pub async fn edit_article(self) -> Result<u64, String> {
-        let res = sqlx::query!(
+        let res = sqlx::query(
             r#"UPDATE articles SET title = $1, content = $2, raw_content = $3 WHERE id = $4"#,
-            self.title,
-            markdown_render(&self.raw_content),
-            self.raw_content,
-            self.id
         )
+        .bind(&self.title)
+        .bind(markdown_render(&self.raw_content))
+        .bind(&self.raw_content)
+        .bind(self.id)
         .execute(get_postgres())
         .await
         .map(|r| r.rows_affected());
@@ -117,34 +115,35 @@ pub struct ArticleList {
 }
 
 impl ArticleList {
+    // Query article list
+    // Max limit is 50 to prevent loading too much data
     pub async fn query_article(
         limit: i64,
         offset: i64,
         admin: bool,
     ) -> Result<Vec<ArticleList>, String> {
+        let limit = limit.min(50);
         let res = if admin {
-            sqlx::query_as!(
-                ArticleList,
+            sqlx::query_as::<_, ArticleList>(
                 r#"SELECT id, title, published, create_time, modify_time
                     FROM articles
                     ORDER BY create_time DESC
                     LIMIT $1 OFFSET $2 "#,
-                limit,
-                offset
             )
+            .bind(limit)
+            .bind(offset)
             .fetch_all(get_postgres())
             .await
         } else {
-            sqlx::query_as!(
-                ArticleList,
+            sqlx::query_as::<_, ArticleList>(
                 r#"SELECT id, title, published, create_time, modify_time
                     FROM articles
                     WHERE published = true
                     ORDER BY create_time DESC
                     LIMIT $1 OFFSET $2 "#,
-                limit,
-                offset
             )
+            .bind(limit)
+            .bind(offset)
             .fetch_all(get_postgres())
             .await
         };
@@ -155,17 +154,19 @@ impl ArticleList {
         }
     }
 
+    /// Query unpublished article list
+    /// Max limit is 50 to prevent loading too much data
     pub async fn view_unpublished(limit: i64, offset: i64) -> Result<Vec<ArticleList>, String> {
-        let res = sqlx::query_as!(
-                ArticleList,
+        let limit = limit.min(50);
+        let res = sqlx::query_as::<_, ArticleList>(
                 r#"SELECT id, title, published, create_time, modify_time
                     FROM articles
                     WHERE published = false
                     ORDER BY create_time DESC
                     LIMIT $1 OFFSET $2 "#,
-                limit,
-                offset
             )
+            .bind(limit)
+            .bind(offset)
             .fetch_all(get_postgres())
             .await;
 
@@ -195,7 +196,7 @@ impl ArticleList {
         struct TP {
             count: Option<i64>,
         }
-        sqlx::query_as!(TP, r#"select count(*) from articles"#)
+        sqlx::query_as::<_, TP>(r#"select count(*) from articles"#)
             .fetch_one(get_postgres())
             .await
             .unwrap_or_default()
@@ -256,11 +257,11 @@ impl ArticlesWithTag {
     }
 
     pub async fn publish_article(data: ModifyPublish) -> Result<u64, String> {
-        sqlx::query!(
+        sqlx::query(
             r#"UPDATE articles SET published = $1 WHERE id = $2"#,
-            data.publish,
-            data.id
         )
+        .bind(data.publish)
+        .bind(data.id)
         .execute(get_postgres())
         .await
         .map(|r| r.rows_affected())
@@ -384,7 +385,8 @@ pub struct ModifyPublish {
 }
 
 async fn delete_article(id: Uuid) -> sqlx::Result<u64> {
-    sqlx::query!(r#"DELETE FROM articles WHERE id = $1"#, id)
+    sqlx::query(r#"DELETE FROM articles WHERE id = $1"#)
+        .bind(id)
         .execute(get_postgres())
         .await
         .map(|r| r.rows_affected())

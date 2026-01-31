@@ -30,6 +30,7 @@ async fn block_unlogin(
     let permission = {
         depot
             .get::<Option<i16>>(crate::PERMISSION)
+            .ok()
             .map(|a| a.is_some())
             .unwrap_or_default()
     };
@@ -38,7 +39,7 @@ async fn block_unlogin(
         Ok(())
     } else {
         Err(crate::utils::from_code(
-            salvo::hyper::StatusCode::FORBIDDEN,
+            salvo::http::StatusCode::FORBIDDEN,
             "No permission",
         ))
     }
@@ -54,8 +55,8 @@ pub(crate) async fn block_no_admin(
     let permission = {
         depot
             .get::<Option<i16>>(crate::PERMISSION)
-            .map(|a| a.map(|b| b == 0))
-            .flatten()
+            .ok()
+            .and_then(|a| a.map(|b| b == 0))
             .unwrap_or_default()
     };
     if permission {
@@ -63,7 +64,7 @@ pub(crate) async fn block_no_admin(
         Ok(())
     } else {
         Err(crate::utils::from_code(
-            salvo::hyper::StatusCode::FORBIDDEN,
+            salvo::http::StatusCode::FORBIDDEN,
             "No permission",
         ))
     }

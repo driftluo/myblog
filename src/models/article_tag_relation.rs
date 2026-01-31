@@ -13,11 +13,11 @@ impl Relations {
     }
 
     async fn insert(&self) -> bool {
-        sqlx::query!(
+        sqlx::query(
             r#"Insert into article_tag_relation (tag_id, article_id) VALUES ($1, $2)"#,
-            self.tag_id,
-            self.article_id
         )
+        .bind(self.tag_id)
+        .bind(self.article_id)
         .execute(get_postgres())
         .await
         .is_ok()
@@ -25,15 +25,16 @@ impl Relations {
 
     pub async fn delete_all(id: Uuid, filter_by_article: bool) {
         if filter_by_article {
-            sqlx::query!(
+            sqlx::query(
                 r#"DELETE FROM article_tag_relation WHERE article_id = $1"#,
-                id
             )
+            .bind(id)
             .execute(get_postgres())
             .await
             .unwrap();
         } else {
-            sqlx::query!(r#"DELETE FROM article_tag_relation WHERE tag_id = $1"#, id)
+            sqlx::query(r#"DELETE FROM article_tag_relation WHERE tag_id = $1"#)
+                .bind(id)
                 .execute(get_postgres())
                 .await
                 .unwrap();
@@ -41,11 +42,11 @@ impl Relations {
     }
 
     pub async fn delete_relation(&self) {
-        sqlx::query!(
+        sqlx::query(
             r#"DELETE FROM article_tag_relation WHERE article_id = $1 AND tag_id = $2"#,
-            self.article_id,
-            self.tag_id
         )
+        .bind(self.article_id)
+        .bind(self.tag_id)
         .execute(get_postgres())
         .await
         .unwrap();

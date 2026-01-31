@@ -17,7 +17,7 @@ use crate::{
 #[tracing::instrument]
 #[handler]
 async fn index(depot: &mut Depot, res: &mut Response) {
-    let mut web = depot.remove::<Context>(WEB).unwrap();
+    let mut web = depot.remove::<Context>(WEB).ok().unwrap();
 
     match TagCount::view_tag_count().await {
         Ok(data) => web.insert("tags", &data),
@@ -29,21 +29,21 @@ async fn index(depot: &mut Depot, res: &mut Response) {
 
 #[handler]
 async fn about(depot: &mut Depot, res: &mut Response) {
-    let web = depot.remove::<Context>(WEB).unwrap();
+    let web = depot.remove::<Context>(WEB).ok().unwrap();
 
     render(res, "visitor/about.html", &web)
 }
 
 #[handler]
 async fn list(depot: &mut Depot, res: &mut Response) {
-    let web = depot.remove::<Context>(WEB).unwrap();
+    let web = depot.remove::<Context>(WEB).ok().unwrap();
 
     render(res, "visitor/list.html", &web)
 }
 
 #[handler]
 async fn home(depot: &mut Depot, res: &mut Response) {
-    let web = depot.remove::<Context>(WEB).unwrap();
+    let web = depot.remove::<Context>(WEB).ok().unwrap();
 
     let permission = depot.remove::<Option<i16>>(PERMISSION).unwrap();
 
@@ -56,7 +56,7 @@ async fn home(depot: &mut Depot, res: &mut Response) {
 #[handler]
 async fn user(req: &mut Request, depot: &mut Depot, res: &mut Response) -> Result<(), StatusError> {
     let id = parse_last_path::<Uuid>(req)?;
-    let mut web = depot.remove::<Context>(WEB).unwrap();
+    let mut web = depot.remove::<Context>(WEB).ok().unwrap();
 
     match UserInfo::view_user(id).await {
         Ok(ref data) => {
@@ -75,12 +75,12 @@ async fn article_view(
     res: &mut Response,
 ) -> Result<(), StatusError> {
     let id = parse_last_path::<Uuid>(req)?;
-    let mut web = depot.remove::<Context>(WEB).unwrap();
+    let mut web = depot.remove::<Context>(WEB).ok().unwrap();
 
     match ArticlesWithTag::query_article(id, false).await {
         Ok(data) => {
             web.insert("article", &data);
-            if let Some(cookie) = depot.remove::<String>(COOKIE) {
+            if let Ok(cookie) = depot.remove::<String>(COOKIE) {
                 if let Ok(info) = get_redis().hget::<String>(&cookie, "info").await {
                     let info = serde_json::from_str::<UserInfo>(&info).unwrap();
 
@@ -113,11 +113,11 @@ impl Routers for ArticleWeb {
             Router::new().path("home").get(home),
             // http {ip}/<id>
             Router::new()
-                .path("user/<id:/[0-9a-z]{8}(-[0-9a-z]{4}){3}-[0-9a-z]{12}/>")
+                .path("user/{id}")
                 .get(user),
             // http {ip}/article/<id>
             Router::new()
-                .path("article/<id:/[0-9a-z]{8}(-[0-9a-z]{4}){3}-[0-9a-z]{12}/>")
+                .path("article/{id}")
                 .get(article_view),
         ]
     }

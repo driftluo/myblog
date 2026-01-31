@@ -6,13 +6,14 @@ use crate::{
 };
 use pulldown_cmark::{html, Options, Parser};
 use rand::Rng;
+use http_body_util::BodyExt;
 use salvo::{
-    http::{cookie::Cookie, response::ResBody, StatusCode, StatusError},
-    hyper::{body::to_bytes, header},
+    http::{cookie::Cookie, ResBody, StatusCode, StatusError},
     prelude::handler,
     routing::FlowCtrl,
     Depot, Request, Response,
 };
+use salvo::http::header;
 use std::str::FromStr;
 use std::{fmt::Write, iter};
 use tiny_keccak::Hasher;
@@ -53,10 +54,16 @@ pub fn sha3_256_encode(s: String) -> String {
     hex
 }
 
+/// Extract real password from frontend input
+/// Frontend adds 6 random characters as prefix for obfuscation
+/// Returns None if password length is less than 6 characters
 #[inline]
-pub fn get_password(raw: &str) -> String {
+pub fn get_password(raw: &str) -> Option<String> {
+    if raw.len() < 6 {
+        return None;
+    }
     let (_, password) = raw.split_at(6);
-    password.to_string()
+    Some(password.to_string())
 }
 
 /// Get visitor's permission and user info
@@ -154,7 +161,9 @@ where
         .and_then(|h| h.to_str().ok())
     {
         if ctype.starts_with("application/json") || ctype.starts_with("text/") {
-            return serde_json::from_slice(&to_bytes(req.take_body()?).await.ok()?).ok();
+            let body = req.take_body();
+            let bytes = body.collect().await.ok()?.to_bytes();
+            return serde_json::from_slice(&bytes).ok();
         }
     }
 
@@ -168,7 +177,8 @@ pub async fn parse_form_body<T>(req: &mut Request, name: &str) -> Option<String>
         .and_then(|h| h.to_str().ok())
     {
         if ctype == "application/x-www-form-urlencoded" {
-            let data = to_bytes(req.take_body()?).await.ok()?;
+            let body = req.take_body();
+            let data = body.collect().await.ok()?.to_bytes();
             let form_iter = url::form_urlencoded::parse(&data);
             for (key, val) in form_iter {
                 if key == name {
@@ -188,8 +198,8 @@ pub fn set_json_response<T: serde::Serialize>(res: &mut Response, size: usize, j
     );
     let mut cache = Cache::with_capacity(size);
     serde_json::to_writer(&mut cache, &json).unwrap();
-    res.set_body(ResBody::Once(cache.into_inner()));
-    res.set_status_code(StatusCode::OK)
+    res.body(ResBody::Once(cache.into_inner()));
+    res.status_code(StatusCode::OK);
 }
 
 pub fn set_plain_text_response(res: &mut Response, text: bytes::BytesMut) {
@@ -197,8 +207,8 @@ pub fn set_plain_text_response(res: &mut Response, text: bytes::BytesMut) {
         header::CONTENT_TYPE,
         header::HeaderValue::from_static("application/plain; charset=utf-8"),
     );
-    res.set_body(ResBody::Once(text.freeze()));
-    res.set_status_code(StatusCode::OK)
+    res.body(ResBody::Once(text.freeze()));
+    res.status_code(StatusCode::OK);
 }
 
 pub fn set_xml_text_response(res: &mut Response, text: bytes::BytesMut) {
@@ -206,20 +216,15 @@ pub fn set_xml_text_response(res: &mut Response, text: bytes::BytesMut) {
         header::CONTENT_TYPE,
         header::HeaderValue::from_static("application/xml; charset=utf-8"),
     );
-    res.set_body(ResBody::Once(text.freeze()));
-    res.set_status_code(StatusCode::OK)
+    res.body(ResBody::Once(text.freeze()));
+    res.status_code(StatusCode::OK);
 }
 
 pub fn from_code<T>(code: StatusCode, name: T) -> StatusError
 where
     T: Into<String>,
 {
-    StatusError {
-        code,
-        name: name.into(),
-        summary: None,
-        detail: None,
-    }
+    StatusError::from_code(code).unwrap().brief(name)
 }
 
 #[handler]
@@ -272,25 +277,18 @@ pub async fn visitor_log(
 
 #[cfg(test)]
 mod test {
-    use super::{parse_last_path, parse_query, Request};
-    use salvo::{
-        http::uri::Uri,
-        hyper::{Body, Request as HyperRequest},
-    };
+    use super::{parse_last_path, parse_query};
+    use salvo::Request;
 
-    fn build_request(uri: Uri) -> Request {
-        Request::from_hyper(
-            HyperRequest::builder()
-                .uri(uri)
-                .body(Body::empty())
-                .unwrap(),
-        )
+    fn build_request(uri: &str) -> Request {
+        let mut req = Request::default();
+        req.set_uri(uri.parse().unwrap());
+        req
     }
 
     #[test]
     fn test_get_query() {
-        let uri: Uri = "/hello/world?key=value&foo=bar".parse().unwrap();
-        let res = build_request(uri);
+        let res = build_request("/hello/world?key=value&foo=bar");
         let v = parse_query::<String>(&res, "key").unwrap();
         let v2 = parse_query::<String>(&res, "foo").unwrap();
 
@@ -300,29 +298,23 @@ mod test {
 
     #[test]
     fn test_get_last_path() {
-        let uri_0: Uri = "/hello/world?key=value&foo=bar".parse().unwrap();
-
-        let res = build_request(uri_0);
+        let res = build_request("/hello/world?key=value&foo=bar");
         let v = parse_last_path::<String>(&res).unwrap();
         assert_eq!(v, "world");
 
-        let uri_1: Uri = "/hello".parse().unwrap();
-        let res = build_request(uri_1);
+        let res = build_request("/hello");
         let v = parse_last_path::<String>(&res).unwrap();
         assert_eq!(v, "hello");
 
-        let uri_2: Uri = "/hello/world/you".parse().unwrap();
-        let res = build_request(uri_2);
+        let res = build_request("/hello/world/you");
         let v = parse_last_path::<String>(&res).unwrap();
         assert_eq!(v, "you");
 
-        let uri_3: Uri = "/hello/world/your".parse().unwrap();
-        let res = build_request(uri_3);
+        let res = build_request("/hello/world/your");
         let v = parse_last_path::<String>(&res).unwrap();
         assert_eq!(v, "your");
 
-        let uri_4: Uri = "/hello/world/your/b/c/d".parse().unwrap();
-        let res = build_request(uri_4);
+        let res = build_request("/hello/world/your/b/c/d");
         let v = parse_last_path::<String>(&res).unwrap();
         assert_eq!(v, "d");
     }

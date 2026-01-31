@@ -18,7 +18,7 @@ use crate::{
 
 #[handler]
 async fn view_user(depot: &mut Depot, res: &mut Response) {
-    let info = depot.remove::<UserInfo>(USER_INFO).unwrap();
+    let info = depot.remove::<UserInfo>(USER_INFO).ok().unwrap();
     set_json_response(res, 128, &JsonOkResponse::ok(info))
 }
 
@@ -32,7 +32,7 @@ async fn change_pwd(
         .await
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
 
-    let cookie = depot.remove::<String>(COOKIE).unwrap();
+    let cookie = depot.remove::<String>(COOKIE).ok().unwrap();
 
     match body.change_password(&cookie).await {
         Ok(num) => set_json_response(res, 32, &JsonOkResponse::ok(num)),
@@ -47,7 +47,7 @@ async fn edit(req: &mut Request, depot: &mut Depot, res: &mut Response) -> Resul
         .await
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
 
-    let cookie = depot.remove::<String>(COOKIE).unwrap();
+    let cookie = depot.remove::<String>(COOKIE).ok().unwrap();
 
     match body.edit_user(&cookie).await {
         Ok(num) => set_json_response(res, 32, &JsonOkResponse::ok(num)),
@@ -59,7 +59,7 @@ async fn edit(req: &mut Request, depot: &mut Depot, res: &mut Response) -> Resul
 
 #[handler]
 async fn sign_out(depot: &mut Depot, res: &mut Response) {
-    let cookie = depot.remove::<String>(COOKIE).unwrap();
+    let cookie = depot.remove::<String>(COOKIE).ok().unwrap();
     let a = LoginUser::sign_out(&cookie).await;
     set_json_response(res, 32, &JsonOkResponse::status(a));
 }
@@ -78,7 +78,7 @@ async fn new_comment(
         .await
         .map_err(|_| from_code(StatusCode::NOT_FOUND, "Article doesn't exist"))?;
     let admin = UserInfo::view_admin().await;
-    let user = depot.remove::<UserInfo>(USER_INFO).unwrap();
+    let user = depot.remove::<UserInfo>(USER_INFO).ok().unwrap();
 
     match body.reply_user_id() {
         // Reply comment
@@ -134,7 +134,7 @@ async fn delete_comment(
         .await
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
     let permission = depot.remove::<Option<i16>>(PERMISSION).unwrap();
-    let info = depot.remove::<UserInfo>(USER_INFO).unwrap();
+    let info = depot.remove::<UserInfo>(USER_INFO).ok().unwrap();
 
     set_json_response(
         res,

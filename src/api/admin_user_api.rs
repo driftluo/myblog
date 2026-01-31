@@ -72,7 +72,7 @@ impl Routers for AdminUser {
             // http get {ip}/user/view_all limit==5 offset==0
             .push(Router::new().path("view_all").get(view_user_list))
             // http post {ip}/user/delete/uuid
-            .push(Router::new().path("delete/<id>").post(delete_user))
+            .push(Router::new().path("delete/{id}").post(delete_user))
             // http post {ip}/user/permission id:=uuid permission:=0
             .push(Router::new().path("permission").post(change_permission))
             // http post {ip}/user/permission id:=uuid disabled:=1
