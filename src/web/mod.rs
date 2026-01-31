@@ -1,10 +1,10 @@
 use bytes::{BufMut, Bytes, BytesMut};
 use once_cell::sync::Lazy;
+use salvo::http::header;
 use salvo::{
     http::{ResBody, StatusCode},
     Response,
 };
-use salvo::http::header;
 use std::io::{self, Write};
 
 mod admin;
@@ -44,7 +44,7 @@ impl Write for Cache {
 
 pub fn render(res: &mut Response, path: &str, ctx: &tera::Context) {
     let mut body = Cache::new();
-    TERA.render_to(path, &ctx, &mut body).unwrap();
+    TERA.render_to(path, ctx, &mut body).unwrap();
     res.headers_mut().insert(
         header::CONTENT_TYPE,
         header::HeaderValue::from_static("text/html; charset=utf-8"),

@@ -49,7 +49,7 @@ async fn admin_view_article(
     depot: &mut Depot,
     res: &mut Response,
 ) -> Result<(), StatusError> {
-    let id = parse_query::<uuid::Uuid>(&req, "id")?;
+    let id = parse_query::<uuid::Uuid>(req, "id")?;
     let mut web = depot.remove::<Context>(WEB).ok().unwrap();
 
     match ArticlesWithTag::query_article(id, true).await {
@@ -69,7 +69,7 @@ async fn article_edit(
     depot: &mut Depot,
     res: &mut Response,
 ) -> Result<(), StatusError> {
-    let id = parse_query::<String>(&req, "id")?;
+    let id = parse_query::<String>(req, "id")?;
     let mut web = depot.remove::<Context>(WEB).ok().unwrap();
     web.insert("id", &id);
 

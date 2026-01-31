@@ -13,25 +13,21 @@ impl Relations {
     }
 
     async fn insert(&self) -> bool {
-        sqlx::query(
-            r#"Insert into article_tag_relation (tag_id, article_id) VALUES ($1, $2)"#,
-        )
-        .bind(self.tag_id)
-        .bind(self.article_id)
-        .execute(get_postgres())
-        .await
-        .is_ok()
+        sqlx::query(r#"Insert into article_tag_relation (tag_id, article_id) VALUES ($1, $2)"#)
+            .bind(self.tag_id)
+            .bind(self.article_id)
+            .execute(get_postgres())
+            .await
+            .is_ok()
     }
 
     pub async fn delete_all(id: Uuid, filter_by_article: bool) {
         if filter_by_article {
-            sqlx::query(
-                r#"DELETE FROM article_tag_relation WHERE article_id = $1"#,
-            )
-            .bind(id)
-            .execute(get_postgres())
-            .await
-            .unwrap();
+            sqlx::query(r#"DELETE FROM article_tag_relation WHERE article_id = $1"#)
+                .bind(id)
+                .execute(get_postgres())
+                .await
+                .unwrap();
         } else {
             sqlx::query(r#"DELETE FROM article_tag_relation WHERE tag_id = $1"#)
                 .bind(id)
@@ -42,14 +38,12 @@ impl Relations {
     }
 
     pub async fn delete_relation(&self) {
-        sqlx::query(
-            r#"DELETE FROM article_tag_relation WHERE article_id = $1 AND tag_id = $2"#,
-        )
-        .bind(self.article_id)
-        .bind(self.tag_id)
-        .execute(get_postgres())
-        .await
-        .unwrap();
+        sqlx::query(r#"DELETE FROM article_tag_relation WHERE article_id = $1 AND tag_id = $2"#)
+            .bind(self.article_id)
+            .bind(self.tag_id)
+            .execute(get_postgres())
+            .await
+            .unwrap();
     }
 }
 
@@ -71,9 +65,7 @@ impl RelationTag {
     pub async fn insert_all(self) -> bool {
         // If `tag` exist, insert all the new tags into the table all at once,
         // and return the ID of the newly added tag
-        let mut tags_id = if self.tag.is_some() {
-            let tags = self.tag.unwrap();
-            // https://github.com/launchbadge/sqlx/issues/294
+        let mut tags_id = if let Some(tags) = self.tag {
             sqlx::query(
                 r#"INSERT INTO tags (tag)
                 SELECT * FROM UNNEST($1)
@@ -89,13 +81,11 @@ impl RelationTag {
         };
 
         // Combine all tag id
-        if self.tag_id.is_some() {
-            tags_id.append(&mut self.tag_id.unwrap())
+        if let Some(mut tag_ids) = self.tag_id {
+            tags_id.append(&mut tag_ids)
         }
 
-        let article_ids: Vec<Uuid> = ::std::iter::repeat(self.article_id)
-            .take(tags_id.len())
-            .collect();
+        let article_ids: Vec<Uuid> = std::iter::repeat_n(self.article_id, tags_id.len()).collect();
 
         // Insert the relationships into the table
         sqlx::query(

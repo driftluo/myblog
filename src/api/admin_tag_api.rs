@@ -23,8 +23,8 @@ async fn create_tag(req: &mut Request, res: &mut Response) -> Result<(), StatusE
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
 
     match Tags::insert(&body.tag).await {
-        Ok(data) => set_json_response(res, 32, &JsonOkResponse::ok(data)),
-        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+        Ok(data) => set_json_response(res, 32, JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, JsonErrResponse::err(e)),
     }
     Ok(())
 }
@@ -34,8 +34,8 @@ async fn delete_tag(req: &mut Request, res: &mut Response) -> Result<(), StatusE
     let id = parse_last_path::<uuid::Uuid>(req)?;
 
     match Tags::delete_tag(id).await {
-        Ok(data) => set_json_response(res, 32, &JsonOkResponse::ok(data)),
-        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+        Ok(data) => set_json_response(res, 32, JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, JsonErrResponse::err(e)),
     }
     Ok(())
 }
@@ -46,8 +46,8 @@ async fn view_tag(req: &mut Request, res: &mut Response) -> Result<(), StatusErr
     let offset = parse_query::<i64>(req, "offset")?;
 
     match TagCount::view_all_tag_count(limit, offset).await {
-        Ok(data) => set_json_response(res, 128, &JsonOkResponse::ok(data)),
-        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+        Ok(data) => set_json_response(res, 128, JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, JsonErrResponse::err(e)),
     }
     Ok(())
 }
@@ -59,8 +59,8 @@ async fn edit_tag(req: &mut Request, res: &mut Response) -> Result<(), StatusErr
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
 
     match body.edit_tag().await {
-        Ok(data) => set_json_response(res, 32, &JsonOkResponse::ok(data)),
-        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+        Ok(data) => set_json_response(res, 32, JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, JsonErrResponse::err(e)),
     }
     Ok(())
 }

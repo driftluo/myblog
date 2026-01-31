@@ -18,7 +18,7 @@ async fn create_article(req: &mut Request, res: &mut Response) -> Result<(), Sta
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
 
     tokio::spawn(async { size_add().await });
-    set_json_response(res, 32, &JsonOkResponse::status(body.insert().await));
+    set_json_response(res, 32, JsonOkResponse::status(body.insert().await));
     Ok(())
 }
 
@@ -29,9 +29,9 @@ async fn delete_article(req: &mut Request, res: &mut Response) -> Result<(), Sta
     match ArticlesWithTag::delete_with_id(id).await {
         Ok(data) => {
             tokio::spawn(async { size_reduce().await });
-            set_json_response(res, 32, &JsonOkResponse::ok(data))
+            set_json_response(res, 32, JsonOkResponse::ok(data))
         }
-        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+        Err(e) => set_json_response(res, 32, JsonErrResponse::err(e)),
     }
 
     Ok(())
@@ -42,8 +42,8 @@ async fn admin_view_article(req: &mut Request, res: &mut Response) -> Result<(),
     let id = parse_query::<uuid::Uuid>(req, "id")?;
 
     match ArticlesWithTag::query_without_article(id, true).await {
-        Ok(data) => set_json_response(res, 128, &JsonOkResponse::ok(data)),
-        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+        Ok(data) => set_json_response(res, 128, JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, JsonErrResponse::err(e)),
     }
     Ok(())
 }
@@ -53,8 +53,8 @@ async fn admin_view_raw_article(req: &mut Request, res: &mut Response) -> Result
     let id = parse_query::<uuid::Uuid>(req, "id")?;
 
     match ArticlesWithTag::query_raw_article(id).await {
-        Ok(data) => set_json_response(res, 128, &JsonOkResponse::ok(data)),
-        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+        Ok(data) => set_json_response(res, 128, JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, JsonErrResponse::err(e)),
     }
     Ok(())
 }
@@ -65,8 +65,8 @@ async fn admin_list_all_article(req: &mut Request, res: &mut Response) -> Result
     let offset = parse_query::<i64>(req, "offset")?;
 
     match ArticleList::query_article(limit, offset, true).await {
-        Ok(data) => set_json_response(res, 128, &JsonOkResponse::ok(data)),
-        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+        Ok(data) => set_json_response(res, 128, JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, JsonErrResponse::err(e)),
     }
     Ok(())
 }
@@ -80,8 +80,8 @@ async fn admin_list_all_unpublished(
     let offset = parse_query::<i64>(req, "offset")?;
 
     match ArticleList::view_unpublished(limit, offset).await {
-        Ok(data) => set_json_response(res, 128, &JsonOkResponse::ok(data)),
-        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+        Ok(data) => set_json_response(res, 128, JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, JsonErrResponse::err(e)),
     }
     Ok(())
 }
@@ -93,8 +93,8 @@ async fn edit_article(req: &mut Request, res: &mut Response) -> Result<(), Statu
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
 
     match body.edit_article().await {
-        Ok(data) => set_json_response(res, 32, &JsonOkResponse::ok(data)),
-        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+        Ok(data) => set_json_response(res, 32, JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, JsonErrResponse::err(e)),
     }
     Ok(())
 }
@@ -106,8 +106,8 @@ async fn update_publish(req: &mut Request, res: &mut Response) -> Result<(), Sta
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
 
     match ArticlesWithTag::publish_article(body).await {
-        Ok(data) => set_json_response(res, 32, &JsonOkResponse::ok(data)),
-        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+        Ok(data) => set_json_response(res, 32, JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, JsonErrResponse::err(e)),
     }
     Ok(())
 }
@@ -127,15 +127,15 @@ async fn upload(req: &mut Request, res: &mut Response) {
                         msgs.push(dest);
                     }
                     Err(e) => {
-                        set_json_response(res, 32, &JsonErrResponse::err(e.to_string()));
+                        set_json_response(res, 32, JsonErrResponse::err(e.to_string()));
                         return;
                     }
                 }
             }
-            set_json_response(res, 32, &JsonOkResponse::ok(msgs))
+            set_json_response(res, 32, JsonOkResponse::ok(msgs))
         }
         None => {
-            set_json_response(res, 32, &JsonErrResponse::err("file not found in request"));
+            set_json_response(res, 32, JsonErrResponse::err("file not found in request"));
             res.status_code(StatusCode::BAD_REQUEST);
         }
     }

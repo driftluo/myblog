@@ -11,8 +11,8 @@ use crate::{
 #[handler]
 async fn publish_by_month(res: &mut Response) {
     match PublishedStatistics::statistics_published_frequency_by_month().await {
-        Ok(data) => set_json_response(res, 128, &JsonOkResponse::ok(data)),
-        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+        Ok(data) => set_json_response(res, 128, JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, JsonErrResponse::err(e)),
     }
 }
 
@@ -25,7 +25,7 @@ async fn get_ip_chart(req: &mut Request, res: &mut Response) -> Result<(), Statu
         .lrange::<Vec<String>>("visitor_log", offset, offset + limit - 1)
         .await;
 
-    set_json_response(res, 128, &JsonOkResponse::ok(data));
+    set_json_response(res, 128, JsonOkResponse::ok(data));
     Ok(())
 }
 

@@ -19,7 +19,7 @@ use crate::{
 #[handler]
 async fn view_user(depot: &mut Depot, res: &mut Response) {
     let info = depot.remove::<UserInfo>(USER_INFO).ok().unwrap();
-    set_json_response(res, 128, &JsonOkResponse::ok(info))
+    set_json_response(res, 128, JsonOkResponse::ok(info))
 }
 
 #[handler]
@@ -35,8 +35,8 @@ async fn change_pwd(
     let cookie = depot.remove::<String>(COOKIE).ok().unwrap();
 
     match body.change_password(&cookie).await {
-        Ok(num) => set_json_response(res, 32, &JsonOkResponse::ok(num)),
-        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+        Ok(num) => set_json_response(res, 32, JsonOkResponse::ok(num)),
+        Err(e) => set_json_response(res, 32, JsonErrResponse::err(e)),
     }
     Ok(())
 }
@@ -50,8 +50,8 @@ async fn edit(req: &mut Request, depot: &mut Depot, res: &mut Response) -> Resul
     let cookie = depot.remove::<String>(COOKIE).ok().unwrap();
 
     match body.edit_user(&cookie).await {
-        Ok(num) => set_json_response(res, 32, &JsonOkResponse::ok(num)),
-        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+        Ok(num) => set_json_response(res, 32, JsonOkResponse::ok(num)),
+        Err(e) => set_json_response(res, 32, JsonErrResponse::err(e)),
     }
 
     Ok(())
@@ -61,7 +61,7 @@ async fn edit(req: &mut Request, depot: &mut Depot, res: &mut Response) -> Resul
 async fn sign_out(depot: &mut Depot, res: &mut Response) {
     let cookie = depot.remove::<String>(COOKIE).ok().unwrap();
     let a = LoginUser::sign_out(&cookie).await;
-    set_json_response(res, 32, &JsonOkResponse::status(a));
+    set_json_response(res, 32, JsonOkResponse::status(a));
 }
 
 #[handler]
@@ -120,7 +120,7 @@ async fn new_comment(
         }
     }
 
-    set_json_response(res, 32, &JsonOkResponse::status(body.insert(user.id).await));
+    set_json_response(res, 32, JsonOkResponse::status(body.insert(user.id).await));
     Ok(())
 }
 
@@ -139,7 +139,7 @@ async fn delete_comment(
     set_json_response(
         res,
         32,
-        &JsonOkResponse::status(body.delete(info.id, permission).await),
+        JsonOkResponse::status(body.delete(info.id, permission).await),
     );
     Ok(())
 }

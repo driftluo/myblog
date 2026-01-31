@@ -1,11 +1,11 @@
 use chrono::offset::TimeZone;
 use rss::{ChannelBuilder, Item, ItemBuilder};
+use salvo::http::header::{self, HeaderValue};
 use salvo::{
     http::{ResBody, StatusCode, StatusError},
     prelude::handler,
     Depot, Request, Response, Router,
 };
-use salvo::http::header::{self, HeaderValue};
 use uuid::Uuid;
 
 use crate::{
@@ -36,8 +36,8 @@ async fn list_all_article(req: &mut Request, res: &mut Response) -> Result<(), S
     }
 
     match ArticleList::query_article(limit, offset, false).await {
-        Ok(data) => set_json_response(res, 128, &JsonOkResponse::ok(data)),
-        Err(err) => set_json_response(res, 32, &JsonErrResponse::err(err)),
+        Ok(data) => set_json_response(res, 128, JsonOkResponse::ok(data)),
+        Err(err) => set_json_response(res, 32, JsonErrResponse::err(err)),
     }
     Ok(())
 }
@@ -50,8 +50,8 @@ async fn list_all_article_filter_by_tag(
     let tag_id = parse_last_path::<Uuid>(req)?;
 
     match ArticleList::query_with_tag(tag_id).await {
-        Ok(data) => set_json_response(res, 128, &JsonOkResponse::ok(data)),
-        Err(err) => set_json_response(res, 32, &JsonErrResponse::err(err)),
+        Ok(data) => set_json_response(res, 128, JsonOkResponse::ok(data)),
+        Err(err) => set_json_response(res, 32, JsonErrResponse::err(err)),
     }
     Ok(())
 }
@@ -98,7 +98,7 @@ async fn list_comments(
                 },
             )
         }
-        Err(err) => set_json_response(res, 32, &JsonErrResponse::err(err)),
+        Err(err) => set_json_response(res, 32, JsonErrResponse::err(err)),
     }
 
     Ok(())
@@ -109,8 +109,8 @@ async fn view_article(req: &mut Request, res: &mut Response) -> Result<(), Statu
     let id = parse_query::<Uuid>(req, "id")?;
 
     match ArticlesWithTag::query_without_article(id, false).await {
-        Ok(data) => set_json_response(res, 128, &JsonOkResponse::ok(data)),
-        Err(err) => set_json_response(res, 32, &JsonErrResponse::err(err)),
+        Ok(data) => set_json_response(res, 128, JsonOkResponse::ok(data)),
+        Err(err) => set_json_response(res, 32, JsonErrResponse::err(err)),
     }
 
     Ok(())
@@ -133,7 +133,7 @@ async fn login(req: &mut Request, res: &mut Response) -> Result<(), StatusError>
             set_cookie(res, cookie, None, Some("/"), None, max_age);
             set_plain_text_response(res, BytesMut::from(r#"{"status": true}"#));
         }
-        Err(err) => set_json_response(res, 32, &JsonErrResponse::err(err)),
+        Err(err) => set_json_response(res, 32, JsonErrResponse::err(err)),
     }
 
     Ok(())
@@ -158,7 +158,7 @@ async fn login_with_github(req: &mut Request, res: &mut Response) -> Result<(), 
                 .insert(header::LOCATION, "/home".parse().unwrap());
             set_plain_text_response(res, BytesMut::from(r#"{"status": true}"#));
         }
-        Err(err) => set_json_response(res, 32, &JsonErrResponse::err(err)),
+        Err(err) => set_json_response(res, 32, JsonErrResponse::err(err)),
     }
 
     Ok(())
@@ -175,7 +175,7 @@ async fn create_user(req: &mut Request, res: &mut Response) -> Result<(), Status
             set_cookie(res, cookie, None, Some("/"), None, Some(24));
             set_plain_text_response(res, BytesMut::from(r#"{"status": true}"#));
         }
-        Err(err) => set_json_response(res, 32, &JsonErrResponse::err(err)),
+        Err(err) => set_json_response(res, 32, JsonErrResponse::err(err)),
     }
     Ok(())
 }
@@ -224,7 +224,7 @@ async fn rss_path(res: &mut Response) {
             res.body(ResBody::Once(bytes.into_inner()));
             res.status_code(StatusCode::OK);
         }
-        Err(err) => set_json_response(res, 32, &JsonErrResponse::err(err)),
+        Err(err) => set_json_response(res, 32, JsonErrResponse::err(err)),
     }
 }
 

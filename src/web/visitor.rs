@@ -112,13 +112,9 @@ impl Routers for ArticleWeb {
             // http {ip}/home
             Router::new().path("home").get(home),
             // http {ip}/<id>
-            Router::new()
-                .path("user/{id}")
-                .get(user),
+            Router::new().path("user/{id}").get(user),
             // http {ip}/article/<id>
-            Router::new()
-                .path("article/{id}")
-                .get(article_view),
+            Router::new().path("article/{id}").get(article_view),
         ]
     }
 }

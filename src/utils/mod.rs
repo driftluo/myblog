@@ -4,16 +4,16 @@ use crate::{
     web::Cache,
     COOKIE, USER_INFO,
 };
+use http_body_util::BodyExt;
 use pulldown_cmark::{html, Options, Parser};
 use rand::Rng;
-use http_body_util::BodyExt;
+use salvo::http::header;
 use salvo::{
     http::{cookie::Cookie, ResBody, StatusCode, StatusError},
     prelude::handler,
     routing::FlowCtrl,
     Depot, Request, Response,
 };
-use salvo::http::header;
 use std::str::FromStr;
 use std::{fmt::Write, iter};
 use tiny_keccak::Hasher;
@@ -140,7 +140,7 @@ pub fn parse_query<T: FromStr>(req: &Request, name: &str) -> Result<T, StatusErr
 pub fn parse_last_path<T: FromStr>(req: &Request) -> Result<T, StatusError> {
     let path = req.uri().path();
 
-    if let Some(k) = path.rsplitn(2, '/').next() {
+    if let Some(k) = path.rsplit('/').next() {
         k.parse()
             .map_err(|_| from_code(StatusCode::BAD_REQUEST, "Path Param is Incorrect"))
     } else {

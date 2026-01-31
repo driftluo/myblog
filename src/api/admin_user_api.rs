@@ -16,8 +16,8 @@ async fn delete_user(req: &mut Request, res: &mut Response) -> Result<(), Status
     let id = parse_last_path::<uuid::Uuid>(req)?;
 
     match UserInfo::delete(id).await {
-        Ok(num) => set_json_response(res, 32, &JsonOkResponse::ok(num)),
-        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+        Ok(num) => set_json_response(res, 32, JsonOkResponse::ok(num)),
+        Err(e) => set_json_response(res, 32, JsonErrResponse::err(e)),
     }
 
     Ok(())
@@ -29,8 +29,8 @@ async fn view_user_list(req: &mut Request, res: &mut Response) -> Result<(), Sta
     let offset = parse_query::<i64>(req, "offset")?;
 
     match UserInfo::view_user_list(limit, offset).await {
-        Ok(data) => set_json_response(res, 128, &JsonOkResponse::ok(data)),
-        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+        Ok(data) => set_json_response(res, 128, JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, JsonErrResponse::err(e)),
     }
 
     Ok(())
@@ -43,8 +43,8 @@ async fn change_permission(req: &mut Request, res: &mut Response) -> Result<(), 
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
 
     match UserInfo::change_permission(body).await {
-        Ok(data) => set_json_response(res, 32, &JsonOkResponse::ok(data)),
-        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+        Ok(data) => set_json_response(res, 32, JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, JsonErrResponse::err(e)),
     }
     Ok(())
 }
@@ -56,8 +56,8 @@ async fn change_disabled(req: &mut Request, res: &mut Response) -> Result<(), St
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
 
     match UserInfo::disabled_user(body).await {
-        Ok(data) => set_json_response(res, 32, &JsonOkResponse::ok(data)),
-        Err(e) => set_json_response(res, 32, &JsonErrResponse::err(e)),
+        Ok(data) => set_json_response(res, 32, JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, JsonErrResponse::err(e)),
     }
     Ok(())
 }

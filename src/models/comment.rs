@@ -19,8 +19,8 @@ impl Comments {
         let limit = limit.min(50);
         let sql = format!("SELECT a.id, a.comment, a.article_id, a.user_id, b.nickname, a.create_time FROM comments a JOIN users b ON a.user_id=b.id WHERE a.article_id='{}' ORDER BY a.create_time LIMIT $1 OFFSET $2", id);
         sqlx::query_as(&sql)
-            .bind(&limit)
-            .bind(&offset)
+            .bind(limit)
+            .bind(offset)
             .fetch_all(get_postgres())
             .await
             .map_err(|e| format!("{}", e))
@@ -36,15 +36,13 @@ pub struct NewComments {
 
 impl NewComments {
     pub async fn insert(&self, user_id: Uuid) -> bool {
-        sqlx::query(
-            r#"INSERT INTO comments (comment, article_id, user_id) VALUES ($1, $2, $3)"#,
-        )
-        .bind(&self.comment)
-        .bind(self.article_id)
-        .bind(user_id)
-        .execute(get_postgres())
-        .await
-        .is_ok()
+        sqlx::query(r#"INSERT INTO comments (comment, article_id, user_id) VALUES ($1, $2, $3)"#)
+            .bind(&self.comment)
+            .bind(self.article_id)
+            .bind(user_id)
+            .execute(get_postgres())
+            .await
+            .is_ok()
     }
 
     pub fn reply_user_id(&mut self) -> Option<Uuid> {

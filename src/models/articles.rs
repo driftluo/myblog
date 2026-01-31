@@ -16,7 +16,7 @@ struct InsertArticle<'a> {
 
 impl<'a> InsertArticle<'a> {
     fn new(title: &'a str, raw_content: &'a str) -> Self {
-        let content = markdown_render(&raw_content);
+        let content = markdown_render(raw_content);
         InsertArticle {
             title,
             raw_content,
@@ -53,13 +53,14 @@ impl NewArticle {
     pub async fn insert(self) -> bool {
         let id = match InsertArticle::new(&self.title, &self.raw_content)
             .insert()
-            .await {
-                Ok(id) => id,
-                Err(e) => {
-                    tracing::error!("Failed to insert article: {}", e);
-                    return false;
-                }
-            };
+            .await
+        {
+            Ok(id) => id,
+            Err(e) => {
+                tracing::error!("Failed to insert article: {}", e);
+                return false;
+            }
+        };
         if self.new_tags.is_some() || self.exist_tags.is_some() {
             RelationTag::new(id, self.new_tags, self.exist_tags)
                 .insert_all()
@@ -99,8 +100,8 @@ impl EditArticle {
                         .insert_all()
                         .await;
                 }
-                if self.deselect_tags.is_some() {
-                    for i in self.deselect_tags.unwrap() {
+                if let Some(deselect_tags) = self.deselect_tags {
+                    for i in deselect_tags {
                         Relations::new(self.id, i).delete_relation().await;
                     }
                 }
@@ -165,16 +166,16 @@ impl ArticleList {
     pub async fn view_unpublished(limit: i64, offset: i64) -> Result<Vec<ArticleList>, String> {
         let limit = limit.min(50);
         let res = sqlx::query_as::<_, ArticleList>(
-                r#"SELECT id, title, published, create_time, modify_time
+            r#"SELECT id, title, published, create_time, modify_time
                     FROM articles
                     WHERE published = false
                     ORDER BY create_time DESC
                     LIMIT $1 OFFSET $2 "#,
-            )
-            .bind(limit)
-            .bind(offset)
-            .fetch_all(get_postgres())
-            .await;
+        )
+        .bind(limit)
+        .bind(offset)
+        .fetch_all(get_postgres())
+        .await;
 
         match res {
             Ok(data) => Ok(data),
@@ -263,15 +264,13 @@ impl ArticlesWithTag {
     }
 
     pub async fn publish_article(data: ModifyPublish) -> Result<u64, String> {
-        sqlx::query(
-            r#"UPDATE articles SET published = $1 WHERE id = $2"#,
-        )
-        .bind(data.publish)
-        .bind(data.id)
-        .execute(get_postgres())
-        .await
-        .map(|r| r.rows_affected())
-        .map_err(|e| format!("{}", e))
+        sqlx::query(r#"UPDATE articles SET published = $1 WHERE id = $2"#)
+            .bind(data.publish)
+            .bind(data.id)
+            .execute(get_postgres())
+            .await
+            .map(|r| r.rows_affected())
+            .map_err(|e| format!("{}", e))
     }
 }
 
@@ -292,12 +291,12 @@ impl RawArticlesWithTag {
     async fn query(uuid: Uuid, admin: bool) -> sqlx::Result<Self> {
         if admin {
             sqlx::query_as(r#"select * from article_with_tag where id = $1"#)
-                .bind(&uuid)
+                .bind(uuid)
                 .fetch_one(get_postgres())
                 .await
         } else {
             sqlx::query_as(r#"select * from article_with_tag where id = $1 AND published = true"#)
-                .bind(&uuid)
+                .bind(uuid)
                 .fetch_one(get_postgres())
                 .await
         }

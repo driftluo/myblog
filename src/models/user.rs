@@ -36,27 +36,23 @@ impl UserInfo {
     }
 
     pub async fn change_permission(data: ChangePermission) -> Result<u64, String> {
-        sqlx::query(
-            r#"UPDATE users SET groups = $1 WHERE id = $2"#,
-        )
-        .bind(data.permission)
-        .bind(data.id)
-        .execute(get_postgres())
-        .await
-        .map(|r| r.rows_affected())
-        .map_err(|e| format!("{}", e))
+        sqlx::query(r#"UPDATE users SET groups = $1 WHERE id = $2"#)
+            .bind(data.permission)
+            .bind(data.id)
+            .execute(get_postgres())
+            .await
+            .map(|r| r.rows_affected())
+            .map_err(|e| format!("{}", e))
     }
 
     pub async fn disabled_user(data: DisabledUser) -> Result<u64, String> {
-        sqlx::query(
-            r#"UPDATE users SET disabled = $1 WHERE id = $2"#,
-        )
-        .bind(data.disabled)
-        .bind(data.id)
-        .execute(get_postgres())
-        .await
-        .map(|r| r.rows_affected())
-        .map_err(|e| format!("{}", e))
+        sqlx::query(r#"UPDATE users SET disabled = $1 WHERE id = $2"#)
+            .bind(data.disabled)
+            .bind(data.id)
+            .execute(get_postgres())
+            .await
+            .map(|r| r.rows_affected())
+            .map_err(|e| format!("{}", e))
     }
 
     pub async fn view_user(id: Uuid) -> Result<Self, String> {
@@ -249,16 +245,14 @@ impl ChangePassword {
         let salt = random_string(6);
         let password = sha3_256_encode(new_password + &salt);
 
-        sqlx::query(
-            r#"UPDATE users SET password = $1, salt = $2 WHERE id = $3"#,
-        )
-        .bind(&password)
-        .bind(&salt)
-        .bind(info.id)
-        .execute(get_postgres())
-        .await
-        .map(|r| r.rows_affected())
-        .map_err(|e| format!("{}", e))
+        sqlx::query(r#"UPDATE users SET password = $1, salt = $2 WHERE id = $3"#)
+            .bind(&password)
+            .bind(&salt)
+            .bind(info.id)
+            .execute(get_postgres())
+            .await
+            .map(|r| r.rows_affected())
+            .map_err(|e| format!("{}", e))
     }
 
     async fn verification(&self, id: Uuid) -> Result<bool, String> {
@@ -277,9 +271,7 @@ impl ChangePassword {
         .fetch_one(get_postgres())
         .await;
         match old_user {
-            Ok(old) => {
-                Ok(old.password == sha3_256_encode(old_password + &old.salt))
-            }
+            Ok(old) => Ok(old.password == sha3_256_encode(old_password + &old.salt)),
             Err(_) => Ok(false),
         }
     }
@@ -406,13 +398,11 @@ impl LoginUser {
                 match UserInfo::view_user_with_email(&email).await {
                     // Account already exists but not linked
                     Ok(mut data) => {
-                        match sqlx::query(
-                            r#"UPDATE users SET github = $1 WHERE id = $2"#,
-                        )
-                        .bind(&github)
-                        .bind(data.id)
-                        .execute(get_postgres())
-                        .await
+                        match sqlx::query(r#"UPDATE users SET github = $1 WHERE id = $2"#)
+                            .bind(&github)
+                            .bind(data.id)
+                            .execute(get_postgres())
+                            .await
                         {
                             Ok(_) => {
                                 data.github = Some(github);

@@ -36,15 +36,13 @@ impl Tags {
     }
 
     pub async fn edit_tag(&self) -> Result<u64, String> {
-        sqlx::query(
-            r#"UPDATE tags SET tag = $1 WHERE id = $2"#,
-        )
-        .bind(&self.tag)
-        .bind(self.id)
-        .execute(get_postgres())
-        .await
-        .map(|r| r.rows_affected())
-        .map_err(|e| format!("{}", e))
+        sqlx::query(r#"UPDATE tags SET tag = $1 WHERE id = $2"#)
+            .bind(&self.tag)
+            .bind(self.id)
+            .execute(get_postgres())
+            .await
+            .map(|r| r.rows_affected())
+            .map_err(|e| format!("{}", e))
     }
 }
 
@@ -71,7 +69,7 @@ impl TagCount {
         sqlx::query_as(
             r#"select a.id, a.tag, (case when b.count is null then 0 else b.count end) as count from tags a left join (select tag_id, count(*) from article_tag_relation group by tag_id) b on a.id = b.tag_id order by a.id limit $1 offset $2"#
         )
-            .bind(&limit).bind(&offset).fetch_all(get_postgres())
+            .bind(limit).bind(offset).fetch_all(get_postgres())
             .await
             .map_err(|e| format!("{}", e))
     }

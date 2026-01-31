@@ -6,15 +6,15 @@ use new_blog::{
     web::{Admin, ArticleWeb},
     Routers, PERMISSION, WEB,
 };
+use salvo::prelude::Listener;
 use salvo::{
-    http::{header, ResBody, StatusCode},
     conn::TcpListener,
+    http::{header, ResBody, StatusCode},
     prelude::handler,
     routing::FlowCtrl,
     serve_static::StaticDir,
     Depot, Request, Response, Router, Server,
 };
-use salvo::prelude::Listener;
 use tracing::{Instrument, Level};
 use tracing_subscriber::FmtSubscriber;
 
@@ -53,12 +53,17 @@ fn main() {
                     .path("{*path}")
                     .get(StaticDir::new(["static"]).exclude(|path| {
                         // Only allow specific file extensions for security
-                        let allowed = [".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".ico", ".webp", ".woff", ".woff2", ".svg"];
+                        let allowed = [
+                            ".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".ico", ".webp",
+                            ".woff", ".woff2", ".svg",
+                        ];
                         !allowed.iter().any(|ext| path.to_lowercase().ends_with(ext))
                     })),
             );
 
-        let acceptor = TcpListener::new(format!("127.0.0.1:{}", listen_port)).bind().await;
+        let acceptor = TcpListener::new(format!("127.0.0.1:{}", listen_port))
+            .bind()
+            .await;
         Server::new(acceptor)
             .serve(root)
             .instrument(tracing::info_span!("listen start"))
