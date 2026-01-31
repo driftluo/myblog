@@ -24,7 +24,7 @@ impl<'a> InsertArticle<'a> {
         }
     }
 
-    async fn insert(self) -> Uuid {
+    async fn insert(self) -> Result<Uuid, String> {
         use sqlx::Row;
         sqlx::query(
             r#"Insert into articles (title, raw_content, content) VALUES ($1, $2, $3)
@@ -37,7 +37,7 @@ impl<'a> InsertArticle<'a> {
         .map(|row: sqlx::postgres::PgRow| row.get::<Uuid, _>(0))
         .fetch_one(get_postgres())
         .await
-        .unwrap()
+        .map_err(|e| format!("Failed to insert article: {}", e))
     }
 }
 
@@ -51,9 +51,15 @@ pub struct NewArticle {
 
 impl NewArticle {
     pub async fn insert(self) -> bool {
-        let id = InsertArticle::new(&self.title, &self.raw_content)
+        let id = match InsertArticle::new(&self.title, &self.raw_content)
             .insert()
-            .await;
+            .await {
+                Ok(id) => id,
+                Err(e) => {
+                    tracing::error!("Failed to insert article: {}", e);
+                    return false;
+                }
+            };
         if self.new_tags.is_some() || self.exist_tags.is_some() {
             RelationTag::new(id, self.new_tags, self.exist_tags)
                 .insert_all()

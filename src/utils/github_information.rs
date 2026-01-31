@@ -83,10 +83,14 @@ pub async fn get_github_primary_email(raw_token: &str) -> Result<String, String>
         .json::<Vec<serde_json::Value>>()
         .await
         .map_err(|e| format!("read body error: '{}'", e))?;
+    
+    // Safely find primary email without panicking
     let primary_email = res
         .iter()
-        .filter(|x| x["primary"].as_bool().unwrap())
-        .map(|x| x["email"].as_str().unwrap())
-        .collect::<Vec<&str>>()[0];
+        .filter(|x| x["primary"].as_bool().unwrap_or(false))
+        .filter_map(|x| x["email"].as_str())
+        .next()
+        .ok_or_else(|| "No primary email found in GitHub account".to_string())?;
+    
     Ok(primary_email.to_string())
 }
