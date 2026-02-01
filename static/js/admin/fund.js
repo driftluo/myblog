@@ -355,37 +355,31 @@
 
     if (!currentPortfolio) return;
 
-    // Add entries one by one (could be optimized with batch API)
-    let completed = 0;
-    let failed = 0;
-
-    entriesToAdd.forEach((entry, index) => {
-      $.ajax({
-        url: API.createEntry,
-        type: "POST",
-        contentType: "application/json",
-        data: JSON.stringify(entry),
-        success: function (response) {
-          if (!response.status) failed++;
-          completed++;
-          if (completed === entriesToAdd.length) {
-            $("#add-entry-form").slideUp();
-            loadPortfolio(currentPortfolio.portfolio.id);
-            if (failed > 0) {
-              alert(`添加完成，${failed} 条失败`);
-            }
-          }
-        },
-        error: function () {
-          failed++;
-          completed++;
-          if (completed === entriesToAdd.length) {
-            $("#add-entry-form").slideUp();
-            loadPortfolio(currentPortfolio.portfolio.id);
-            alert(`添加完成，${failed} 条失败`);
-          }
-        },
-      });
+    // Use batch create API: send all new entries in one request
+    $.ajax({
+      url: API.createEntry,
+      type: "POST",
+      contentType: "application/json",
+      data: JSON.stringify(entriesToAdd),
+      success: function (response) {
+        if (response && response.status) {
+          $("#add-entry-form").slideUp();
+          loadPortfolio(currentPortfolio.portfolio.id);
+          alert("添加成功");
+        } else {
+          alert(
+            "添加失败: " +
+              (response && (response.data || response.error)
+                ? response.data || response.error
+                : ""),
+          );
+        }
+      },
+      error: function () {
+        alert("添加失败");
+        $("#add-entry-form").slideUp();
+        if (currentPortfolio) loadPortfolio(currentPortfolio.portfolio.id);
+      },
     });
   }
 
@@ -473,8 +467,9 @@
       console.warn("校验大类比例失败", e);
     }
 
-    // We'll treat each individual entry update as one request, plus one request for the batch order.
-    let totalRequests = updates.length + (orderUpdates.length > 0 ? 1 : 0);
+    // We'll send updates in a single batch request, plus one request for the batch order if needed.
+    let totalRequests =
+      (updates.length > 0 ? 1 : 0) + (orderUpdates.length > 0 ? 1 : 0);
     let completed = 0;
     let failed = 0;
 
@@ -491,25 +486,23 @@
       }
     }
 
-    // Send individual entry updates
+    // Send a single batch update request for all changed entries
     if (updates.length > 0) {
-      updates.forEach((update) => {
-        $.ajax({
-          url: API.updateEntry,
-          type: "POST",
-          contentType: "application/json",
-          data: JSON.stringify(update),
-          success: function (response) {
-            if (!response.status) failed++;
-            completed++;
-            checkDone();
-          },
-          error: function () {
-            failed++;
-            completed++;
-            checkDone();
-          },
-        });
+      $.ajax({
+        url: API.updateEntry,
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify(updates),
+        success: function (response) {
+          if (!response.status) failed++;
+          completed++;
+          checkDone();
+        },
+        error: function () {
+          failed++;
+          completed++;
+          checkDone();
+        },
       });
     }
 
