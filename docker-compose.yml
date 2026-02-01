@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: myblog
+      POSTGRES_PASSWORD: myblog_pass
+      POSTGRES_DB: myblog_db
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  blog:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env.compose
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  redis_data:

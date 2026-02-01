@@ -1,0 +1,498 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}
+基金投资组合管理
+{% endblock title %}
+
+{% block css %}
+<style>
+    {%- if is_admin is defined and not is_admin -%}
+    /* Hide admin sidebar and hamburger on fund page for visitors */
+    #sidebar-wrapper, .hamburger {
+        display: none !important;
+    }
+    /* Ensure main content takes full width when sidebar hidden */
+    #wrapper.toggled + div, body > div {
+        margin-left: 0 !important;
+        padding-left: 0 !important;
+    }
+    {%- endif -%}
+
+    .fund-container {
+        margin-top: 50px;
+        padding: 0 20px;
+    }
+    
+    .table-wrapper {
+        overflow-x: auto;
+        max-height: 75vh;
+        overflow-y: auto;
+        width: 100%;
+    }
+    
+    .portfolio-selector {
+        margin-bottom: 20px;
+    }
+    
+    .portfolio-info {
+        background: #f5f5f5;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+    
+    .portfolio-info .info-item {
+        display: inline-block;
+        margin-right: 30px;
+        margin-bottom: 10px;
+    }
+    
+    .portfolio-info .info-label {
+        font-weight: bold;
+        color: #666;
+    }
+    
+    .portfolio-info .info-value {
+        font-size: 18px;
+        color: #333;
+    }
+    
+    .portfolio-info .info-value.positive {
+        color: #d9534f;
+    }
+    
+    .portfolio-info .info-value.negative {
+        color: #5cb85c;
+    }
+    
+    .fund-inputs {
+        background: #e7f3ff;
+        padding: 10px 15px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
+    
+    .fund-inputs .input-group {
+        display: inline-block;
+        margin-right: 30px;
+    }
+    
+    .fund-inputs label {
+        font-weight: bold;
+        margin-right: 8px;
+    }
+    
+    .fund-inputs input {
+        width: 150px;
+        padding: 5px 10px;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+    }
+    
+    .fund-table {
+        width: 100%;
+        table-layout: auto;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+    
+    .fund-table th, .fund-table td {
+        border: 1px solid #ddd;
+        padding: 6px 8px;
+        text-align: center;
+        white-space: nowrap;
+    }
+    
+    .fund-table .fund-name-cell {
+        white-space: normal;
+    }
+    
+    .fund-table th {
+        background: #f0f0f0;
+        font-weight: bold;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    .fund-table .major-category {
+        background: #ffffcc;
+        font-weight: bold;
+        vertical-align: middle;
+    }
+    
+    .fund-table .major-first-row td {
+        border-top: 2px solid #999;
+    }
+    
+    .fund-table .minor-subtotal-row {
+        background: #f0fff0;
+        font-style: italic;
+    }
+    
+    .fund-table .minor-subtotal-row td {
+        border-top: 1px dashed #a0d0a0;
+        text-align: center;
+    }
+
+    .fund-table .subtotal-row {
+        background: #e6ffe6;
+        font-weight: bold;
+    }
+    
+    .fund-table .subtotal-row td {
+        border-top: 1px solid #80b080;
+        font-weight: bold;
+        text-align: center;
+    }
+    
+    .fund-table .total-row {
+        background: #d9edf7;
+        font-weight: bold;
+    }
+    
+    .fund-table .total-row td {
+        text-align: center;
+        border-top: 2px solid #5bc0de;
+    }
+    
+    .fund-table .editable {
+        background: #fff;
+        cursor: pointer;
+    }
+    
+    .fund-table .editable:hover {
+        background: #e8f4ff;
+    }
+    
+    .fund-table input {
+        width: 100%;
+        border: 1px solid #ccc;
+        padding: 2px 4px;
+        text-align: center;
+        box-sizing: border-box;
+    }
+    
+    .fund-table input:focus {
+        outline: 2px solid #337ab7;
+    }
+    
+    .fund-table .positive {
+        color: #333;
+    }
+    
+    .fund-table .negative {
+        color: #d9534f;
+    }
+    
+    .unsaved-indicator {
+        display: none;
+        color: #f0ad4e;
+        font-weight: bold;
+        margin-left: 15px;
+        animation: blink 1.5s ease-in-out infinite;
+    }
+    
+    .unsaved-indicator.show {
+        display: inline-block;
+    }
+    
+    @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    
+    .btn-save-all.has-changes {
+        background-color: #f0ad4e;
+        border-color: #eea236;
+        animation: pulse 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+    
+    .btn-group-actions {
+        margin-bottom: 15px;
+    }
+    
+    .add-entry-form {
+        background: #f9f9f9;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        display: none;
+    }
+    
+    .add-entry-form h5 {
+        margin-top: 0;
+        margin-bottom: 15px;
+    }
+    
+    .entry-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 10px;
+        padding: 10px;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+    }
+    
+    .entry-row .form-group {
+        margin: 0;
+    }
+    
+    .entry-row label {
+        display: block;
+        font-size: 11px;
+        margin-bottom: 2px;
+        color: #666;
+    }
+    
+    .entry-row input, .entry-row select {
+        padding: 5px;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        font-size: 12px;
+    }
+    
+    .entry-row .btn-remove-row {
+        align-self: flex-end;
+        margin-bottom: 3px;
+    }
+    
+    .allocation-section {
+        background: #fff3cd;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 20px;
+    }
+    
+    .allocation-section h4 {
+        margin-top: 0;
+    }
+</style>
+{% endblock css %}
+
+{% block body %}
+<div class="col-sm-12 col-md-12 col-xs-12 fund-container">
+    <h3>基金投资组合管理</h3>
+    
+    {%- if is_admin is defined and is_admin -%}
+    <!-- Portfolio Selector -->
+    <div class="portfolio-selector">
+        <div class="row">
+            <div class="col-sm-4">
+                <select id="portfolio-select" class="form-control">
+                    <option value="">-- 选择投资组合 --</option>
+                </select>
+            </div>
+            <div class="col-sm-4">
+                <button type="button" class="btn btn-success" id="btn-new-portfolio">
+                    <span class="glyphicon glyphicon-plus"></span> 新建组合
+                </button>
+                <button type="button" class="btn btn-danger" id="btn-delete-portfolio" disabled>
+                    <span class="glyphicon glyphicon-trash"></span> 删除组合
+                </button>
+            </div>
+        </div>
+    </div>
+    {%- endif -%}
+    
+    <!-- Portfolio Info -->
+    <div class="portfolio-info" id="portfolio-info" style="display: none;">
+        <div id="visitor-banner" style="display:none; background:#fff3f0; padding:8px; border:1px solid #f2b8b0; margin-bottom:10px; border-radius:4px; color:#a94442; font-weight:600;">您以游客身份查看，无法保存更改。管理员请通过 /admin/fund 访问完整管理界面。</div>
+        <div class="info-item">
+            <span class="info-label">组合名称：</span>
+            <span class="info-value" id="info-name">-</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">总金额：</span>
+            <span class="info-value" id="info-total">¥0.00</span>
+        </div>
+    </div>
+    
+    <!-- Fund Inputs (Incremental & Redemption) -->
+    <div class="fund-inputs" id="fund-inputs" style="display: none;">
+        <div class="input-group">
+            <label for="input-incremental">增量资金：</label>
+            <input type="number" id="input-incremental" value="0" step="100" placeholder="输入增量资金">
+        </div>
+        <div class="input-group">
+            <label for="input-redemption">赎回资金：</label>
+            <input type="number" id="input-redemption" value="0" step="100" placeholder="输入赎回资金">
+        </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="btn-group-actions" id="action-buttons" style="display: none;">
+        <button type="button" class="btn btn-success btn-sm" id="btn-add-entry">
+            <span class="glyphicon glyphicon-plus"></span> 添加基金
+        </button>
+        {%- if is_admin is defined and not is_admin -%}
+        <a class="btn btn-default btn-sm" href="/index" id="btn-back-home">
+            <span class="glyphicon glyphicon-home"></span> 返回首页
+        </a>
+        {%- endif -%}
+        <button type="button" class="btn btn-primary btn-sm" id="btn-save-all">
+            <span class="glyphicon glyphicon-floppy-disk"></span> 保存所有更改
+        </button>
+        <button type="button" class="btn btn-info btn-sm" id="btn-calculate">
+            <span class="glyphicon glyphicon-refresh"></span> 重新计算
+        </button>
+        <span class="unsaved-indicator" id="unsaved-indicator">
+            <span class="glyphicon glyphicon-exclamation-sign"></span> 有未保存的修改
+        </span>
+        <div id="major-ratio-error" style="display:none; color: #d9534f; margin-left: 15px; font-weight: bold;"></div>
+    </div>
+    
+    <!-- Sort Controls -->
+    <div class="sort-controls" id="sort-controls" style="display: none; margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 5px;">
+        <span style="font-weight: bold; margin-right: 15px;">排序:</span>
+        <span style="margin-right: 10px;">
+            <label style="margin-right: 5px;">大类顺序:</label>
+            <select id="major-order-select" style="width: 80px; padding: 3px;">
+                <option value="股票">股票</option>
+                <option value="债券">债券</option>
+                <option value="大宗商品">大宗商品</option>
+                <option value="现金">现金</option>
+            </select>
+            <button type="button" class="btn btn-xs btn-default" id="btn-move-major-up" title="上移">
+                <span class="glyphicon glyphicon-arrow-up"></span>
+            </button>
+            <button type="button" class="btn btn-xs btn-default" id="btn-move-major-down" title="下移">
+                <span class="glyphicon glyphicon-arrow-down"></span>
+            </button>
+        </span>
+        <span style="margin-left: 20px; margin-right: 10px;">
+            <label style="margin-right: 5px;">基金排序:</label>
+            <select id="entry-sort-by" style="width: 100px; padding: 3px;">
+                <option value="default">默认</option>
+                <option value="target_ratio">计划比例</option>
+                <option value="amount">金额</option>
+                <option value="fund_name">基金名称</option>
+            </select>
+        </span>
+        <span>
+            <label style="margin-right: 5px;">
+                <input type="checkbox" id="entry-sort-asc"> 升序
+            </label>
+        </span>
+    </div>
+    
+    <!-- Add Entry Form (Multiple) -->
+    <div class="add-entry-form" id="add-entry-form">
+        <h5>批量添加基金 <button type="button" class="btn btn-xs btn-success" id="btn-add-more-row"><span class="glyphicon glyphicon-plus"></span> 添加一行</button></h5>
+        <div id="entry-rows-container">
+            <!-- Entry rows will be added here -->
+        </div>
+        <div style="margin-top: 15px;">
+            <button type="button" class="btn btn-success" id="btn-confirm-add-all">确认添加全部</button>
+            <button type="button" class="btn btn-default" id="btn-cancel-add">取消</button>
+        </div>
+    </div>
+    
+    <!-- Fund Table -->
+    <div class="table-wrapper">
+        <table class="fund-table" id="fund-table">
+            <thead>
+                <tr>
+                        <th style="width: 30px;"></th>
+                    <th style="min-width: 60px;">大类资产</th>
+                    <th style="min-width: 70px;">小类</th>
+                    <th style="min-width: 80px;">基金类别</th>
+                    <th style="min-width: 60px;">计划比例</th>
+                    <th>基金</th>
+                    <th style="min-width: 70px;">实际比例</th>
+                    <th style="min-width: 90px;">金额</th>
+                    <th style="min-width: 70px;">偏离比例</th>
+                    <th style="min-width: 90px;">再平衡金额</th>
+                    <th style="min-width: 90px;">增量资金分配</th>
+                    <th style="min-width: 90px;">赎回资金分配</th>
+                    <th style="min-width: 50px;">操作</th>
+                </tr>
+            </thead>
+            <tbody id="fund-table-body">
+                <tr>
+                    <td colspan="13" style="text-align: center; padding: 40px; color: #999;">
+                        请选择一个投资组合
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Allocation Algorithm Section -->
+    <div class="allocation-section" id="allocation-section" style="display: none;">
+        <h4>资金分配算法说明</h4>
+        <p><strong>增量资金分配策略：</strong></p>
+        <ol>
+            <li>先按大类资产的目标比例分配增量资金到各大类</li>
+            <li>然后在每个大类内部，按各基金的目标比例进行二次分配</li>
+            <li>优先分配给偏离目标比例最大的基金</li>
+        </ol>
+        <p><strong>赎回资金分配策略：</strong></p>
+        <ol>
+            <li>按大类资产的实际持仓比例分配赎回金额</li>
+            <li>在每个大类内部，按各基金的实际持仓比例进行二次分配</li>
+        </ol>
+        <p><strong>偏离比例计算：</strong>大类资产内部的偏离先进行内部加和，再取各大类偏离的绝对值相加。</p>
+    </div>
+</div>
+
+<!-- New Portfolio Modal -->
+<div id="new-portfolio-modal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                <h4 class="modal-title">新建投资组合</h4>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>组合名称 *</label>
+                    <input type="text" id="modal-portfolio-name" class="form-control" placeholder="如: 天天基金">
+                </div>
+                <div class="form-group">
+                    <label>描述</label>
+                    <textarea id="modal-portfolio-desc" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="btn-modal-create">创建</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div id="delete-modal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                <h4 class="modal-title">确认删除</h4>
+            </div>
+            <div class="modal-body">
+                <p id="delete-confirm-text">确定要删除吗？</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" id="btn-confirm-delete">确认删除</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock body %}
+
+{% block script %}
+<script>
+    // expose whether current render is admin or visitor
+    window.__is_admin = {%- if is_admin is defined and is_admin -%}true{%- else -%}false{%- endif -%};
+</script>
+<script src="/js/admin/fund.js"></script>
+{% endblock script %}

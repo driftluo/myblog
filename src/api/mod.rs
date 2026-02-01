@@ -1,5 +1,6 @@
 mod admin_article_api;
 mod admin_chart_data_api;
+mod admin_fund_api;
 mod admin_tag_api;
 mod admin_user_api;
 mod user_api;
@@ -7,6 +8,7 @@ mod visitor_api;
 
 pub use admin_article_api::AdminArticle;
 pub use admin_chart_data_api::ChartData;
+pub use admin_fund_api::AdminFund;
 pub use admin_tag_api::Tag;
 pub use admin_user_api::AdminUser;
 pub use user_api::User;

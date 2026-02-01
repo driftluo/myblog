@@ -1,0 +1,222 @@
+use salvo::{
+    http::{StatusCode, StatusError},
+    prelude::handler,
+    Request, Response, Router,
+};
+
+use crate::{
+    api::{block_no_admin, JsonErrResponse, JsonOkResponse},
+    models::fund::{
+        BatchUpdateEntry, FundEntry, FundPortfolio, NewFundEntry, NewPortfolio, PortfolioSimple,
+        PortfolioWithEntriesSimple, UpdateFundEntry, UpdatePortfolio,
+    },
+    utils::{from_code, parse_json_body, parse_last_path, set_json_response},
+    Routers,
+};
+
+// ============== Portfolio Handlers ==============
+
+#[handler]
+async fn list_portfolios(res: &mut Response) -> Result<(), StatusError> {
+    match FundPortfolio::list_all().await {
+        Ok(data) => {
+            let simple: Vec<PortfolioSimple> = data.into_iter().map(|p| p.into()).collect();
+            set_json_response(res, 256, &JsonOkResponse::ok(simple))
+        }
+        Err(e) => set_json_response(res, 64, &JsonErrResponse::err(e)),
+    }
+    Ok(())
+}
+
+#[handler]
+async fn get_portfolio(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
+    let id = parse_last_path::<i32>(req)?;
+
+    match PortfolioWithEntriesSimple::get(id).await {
+        Ok(data) => set_json_response(res, 1024, &JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 64, &JsonErrResponse::err(e)),
+    }
+    Ok(())
+}
+
+#[handler]
+async fn create_portfolio(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
+    let body = parse_json_body::<NewPortfolio>(req)
+        .await
+        .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
+
+    match FundPortfolio::create(body).await {
+        Ok(id) => set_json_response(res, 64, &JsonOkResponse::ok(id)),
+        Err(e) => set_json_response(res, 64, &JsonErrResponse::err(e)),
+    }
+    Ok(())
+}
+
+#[handler]
+async fn update_portfolio(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
+    let body = parse_json_body::<UpdatePortfolio>(req)
+        .await
+        .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
+
+    match FundPortfolio::update(body).await {
+        Ok(_) => set_json_response(res, 32, &JsonOkResponse::status(true)),
+        Err(e) => set_json_response(res, 64, &JsonErrResponse::err(e)),
+    }
+    Ok(())
+}
+
+#[handler]
+async fn delete_portfolio(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
+    let id = parse_last_path::<i32>(req)?;
+
+    match FundPortfolio::delete(id).await {
+        Ok(_) => set_json_response(res, 32, &JsonOkResponse::status(true)),
+        Err(e) => set_json_response(res, 64, &JsonErrResponse::err(e)),
+    }
+    Ok(())
+}
+
+// ============== Entry Handlers ==============
+
+#[handler]
+async fn list_entries(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
+    let portfolio_id = parse_last_path::<i32>(req)?;
+
+    match FundEntry::list_by_portfolio(portfolio_id).await {
+        Ok(data) => set_json_response(res, 1024, &JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 64, &JsonErrResponse::err(e)),
+    }
+    Ok(())
+}
+
+#[handler]
+async fn create_entry(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
+    let body = parse_json_body::<NewFundEntry>(req)
+        .await
+        .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
+
+    match FundEntry::create(body).await {
+        Ok(id) => set_json_response(res, 64, &JsonOkResponse::ok(id)),
+        Err(e) => set_json_response(res, 64, &JsonErrResponse::err(e)),
+    }
+    Ok(())
+}
+
+#[handler]
+async fn update_entry(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
+    let body = parse_json_body::<UpdateFundEntry>(req)
+        .await
+        .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
+
+    match FundEntry::update(body).await {
+        Ok(portfolio_id) => set_json_response(res, 64, &JsonOkResponse::ok(portfolio_id)),
+        Err(e) => set_json_response(res, 64, &JsonErrResponse::err(e)),
+    }
+    Ok(())
+}
+
+#[handler]
+async fn delete_entry(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
+    let id = parse_last_path::<i32>(req)?;
+
+    match FundEntry::delete(id).await {
+        Ok(portfolio_id) => set_json_response(res, 64, &JsonOkResponse::ok(portfolio_id)),
+        Err(e) => set_json_response(res, 64, &JsonErrResponse::err(e)),
+    }
+    Ok(())
+}
+
+#[derive(serde::Deserialize)]
+struct BatchUpdateRequest {
+    portfolio_id: i32,
+    updates: Vec<BatchUpdateEntry>,
+}
+
+#[derive(serde::Deserialize)]
+struct BatchUpdateOrderRequest {
+    portfolio_id: i32,
+    updates: Vec<crate::models::fund::BatchUpdateOrderEntry>,
+}
+
+#[handler]
+async fn batch_update_amounts(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
+    let body = parse_json_body::<BatchUpdateRequest>(req)
+        .await
+        .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
+
+    match FundEntry::batch_update_amounts(body.portfolio_id, body.updates).await {
+        Ok(_) => set_json_response(res, 32, &JsonOkResponse::status(true)),
+        Err(e) => set_json_response(res, 64, &JsonErrResponse::err(e)),
+    }
+    Ok(())
+}
+
+#[handler]
+async fn batch_update_order(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
+    let body = parse_json_body::<BatchUpdateOrderRequest>(req)
+        .await
+        .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
+
+    match FundEntry::batch_update_order(body.portfolio_id, body.updates).await {
+        Ok(_) => set_json_response(res, 32, &JsonOkResponse::status(true)),
+        Err(e) => set_json_response(res, 64, &JsonErrResponse::err(e)),
+    }
+    Ok(())
+}
+
+// ============== Router ==============
+
+pub struct AdminFund;
+
+impl Routers for AdminFund {
+    fn build(self) -> Vec<Router> {
+        use crate::api::PREFIX;
+        vec![Router::new()
+            .path(PREFIX.to_owned() + "fund")
+            .hoop(block_no_admin)
+            // Portfolio routes
+            // GET /api/v1/fund/portfolios - list all portfolios
+            .push(Router::new().path("portfolios").get(list_portfolios))
+            // GET /api/v1/fund/portfolio/{id} - get portfolio with entries
+            .push(Router::new().path("portfolio/{id}").get(get_portfolio))
+            // POST /api/v1/fund/portfolio - create new portfolio
+            .push(Router::new().path("portfolio").post(create_portfolio))
+            // POST /api/v1/fund/portfolio/update - update portfolio
+            .push(
+                Router::new()
+                    .path("portfolio/update")
+                    .post(update_portfolio),
+            )
+            // POST /api/v1/fund/portfolio/delete/{id} - delete portfolio
+            .push(
+                Router::new()
+                    .path("portfolio/delete/{id}")
+                    .post(delete_portfolio),
+            )
+            // Entry routes
+            // GET /api/v1/fund/entries/{portfolio_id} - list entries for portfolio
+            .push(
+                Router::new()
+                    .path("entries/{portfolio_id}")
+                    .get(list_entries),
+            )
+            // POST /api/v1/fund/entry - create new entry
+            .push(Router::new().path("entry").post(create_entry))
+            // POST /api/v1/fund/entry/update - update entry
+            .push(Router::new().path("entry/update").post(update_entry))
+            // POST /api/v1/fund/entry/delete/{id} - delete entry
+            .push(Router::new().path("entry/delete/{id}").post(delete_entry))
+            // POST /api/v1/fund/entries/batch-update - batch update amounts
+            .push(
+                Router::new()
+                    .path("entries/batch-update")
+                    .post(batch_update_amounts),
+            )
+            // POST /api/v1/fund/entries/batch-order - batch update order
+            .push(
+                Router::new()
+                    .path("entries/batch-order")
+                    .post(batch_update_order),
+            )]
+    }
+}

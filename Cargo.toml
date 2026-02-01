@@ -8,12 +8,21 @@ resolver = "2"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "uuid", "postgres", "chrono"] }
+sqlx = { version = "0.8", features = [
+    "runtime-tokio-rustls",
+    "uuid",
+    "postgres",
+    "chrono",
+    "bigdecimal",
+] }
 tokio = { version = "1.0", features = ["full"] }
 redis = { version = "0.27", features = ["tokio-comp", "connection-manager"] }
 futures = "0.3"
 once_cell = "1.7.2"
-reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features= false }
+reqwest = { version = "0.12", features = [
+    "json",
+    "rustls-tls",
+], default-features = false }
 serde_urlencoded = "0.7.0"
 url = "2"
 salvo = { version = "0.89", features = ["cookie", "serve-static"] }
@@ -28,7 +37,7 @@ rand = "0.8"
 tiny-keccak = { version = "2.0.0", features = ["sha3"] }
 time = "0.3"
 
-chrono = { version = "0.4.19", features = ["serde"]}
+chrono = { version = "0.4.19", features = ["serde"] }
 dotenv = "^0.15.0"
 uuid = { version = "1", features = ["serde", "v4"] }
 serde_json = { version = "1" }
@@ -36,7 +45,11 @@ serde = { version = "1", features = ["rc"] }
 http-body-util = "0.1"
 
 [dev-dependencies]
-reqwest = { version = "0.12", features = ["json", "rustls-tls", "cookies"], default-features = false }
+reqwest = { version = "0.12", features = [
+    "json",
+    "rustls-tls",
+    "cookies",
+], default-features = false }
 
 [profile.release]
 debug = false

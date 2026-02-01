@@ -1,6 +1,6 @@
 use bytes::BytesMut;
 use new_blog::{
-    api::{init_page_size, AdminArticle, AdminUser, ChartData, Tag, User, Visitor},
+    api::{init_page_size, AdminArticle, AdminFund, AdminUser, ChartData, Tag, User, Visitor},
     db_wrapper::{create_pg_pool, create_redis_pool},
     utils::get_identity_and_web_context,
     web::{Admin, ArticleWeb},
@@ -45,6 +45,7 @@ fn main() {
             .append(&mut ChartData.build())
             .append(&mut Tag.build())
             .append(&mut AdminArticle.build())
+            .append(&mut AdminFund.build())
             .append(&mut User.build())
             .append(&mut Visitor.build())
             .push(Router::new().path("robots.txt").get(robot))

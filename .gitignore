@@ -2,3 +2,6 @@
 **/*.rs.bk
 cmake*/
 .idea/
+
+# Ignore compose-specific env file with credentials
+.env.compose

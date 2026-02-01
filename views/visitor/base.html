@@ -17,6 +17,19 @@
     <link href="//at.alicdn.com/t/font_492194_3ot3r19j8yjbgldi.css" rel="stylesheet" />
     <link href="//at.alicdn.com/t/font_492194_nlr9fntm97djkyb9.css" rel="stylesheet" />
     {% block css %}{% endblock css %}
+    <style>
+        /* Ensure navbar dropdown items are visible against the light dropdown background */
+        .my-navbar .dropdown-menu {
+            background: rgba(255,255,255,0.97) !important;
+        }
+        .my-navbar .dropdown-menu li a {
+            color: #333 !important;
+        }
+        .my-navbar .dropdown-menu li a:hover {
+            color: #ec0629 !important;
+            background: transparent;
+        }
+    </style>
 </head>
 
 <body>
@@ -68,6 +81,12 @@
                             {% endif %}
                             <li><a href="/home"><span class="glyphicon glyphicon-user"></span> Home</a></li>
                             <li><a href="/list"><span class="glyphicon glyphicon-list"></span> Blog List</a></li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-wrench"></span> Tools <span class="caret"></span></a>
+                                <ul class="dropdown-menu" role="menu">
+                                    <li><a href="/fund"><span class="glyphicon glyphicon-stats"></span> Fund</a></li>
+                                </ul>
+                            </li>
                             <li><a href="/rss"><span class="glyphicon glyphicon-book"></span> Rss</a></li>
                             <li><a href="/about"><i class="iconfont icon-about"></i> About</a></li>
                         </ul>

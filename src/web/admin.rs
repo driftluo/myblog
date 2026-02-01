@@ -110,6 +110,15 @@ async fn notify(depot: &mut Depot, res: &mut Response) {
     render(res, "admin/notify.html", &web)
 }
 
+#[handler]
+async fn fund(depot: &mut Depot, res: &mut Response) {
+    let mut web = depot.remove::<Context>(WEB).ok().unwrap();
+
+    // mark template as admin view
+    web.insert("is_admin", &true);
+    render(res, "admin/fund.html", &web)
+}
+
 pub struct Admin;
 
 impl Routers for Admin {
@@ -136,6 +145,8 @@ impl Routers for Admin {
             // http {ip}/admin/ip
             .push(Router::new().path("ip").get(visitor_ip_log))
             // http {ip}/admin/notify
-            .push(Router::new().path("notify").get(notify))]
+            .push(Router::new().path("notify").get(notify))
+            // http {ip}/admin/fund
+            .push(Router::new().path("fund").get(fund))]
     }
 }

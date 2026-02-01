@@ -97,6 +97,15 @@ async fn article_view(
     Ok(())
 }
 
+#[handler]
+async fn fund_visitor(depot: &mut Depot, res: &mut Response) {
+    let mut web = depot.remove::<Context>(WEB).ok().unwrap();
+
+    // mark as visitor (not admin)
+    web.insert("is_admin", &false);
+    render(res, "admin/fund.html", &web)
+}
+
 pub struct ArticleWeb;
 
 impl Routers for ArticleWeb {
@@ -115,6 +124,8 @@ impl Routers for ArticleWeb {
             Router::new().path("user/{id}").get(user),
             // http {ip}/article/<id>
             Router::new().path("article/{id}").get(article_view),
+            // visitor fund page (read-only, no DB portfolios loaded from client)
+            Router::new().path("fund").get(fund_visitor),
         ]
     }
 }

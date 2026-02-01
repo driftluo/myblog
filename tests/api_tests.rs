@@ -275,6 +275,147 @@ mod admin_api_tests {
 
     #[tokio::test]
     #[ignore = "requires running server and valid admin account"]
+    async fn test_fund_crud_and_batch_operations() {
+        let client = login_as_admin().await;
+
+        // 1. Create portfolio
+        let create_portfolio_url = format!("{}{}/fund/portfolio", BASE_URL, API_PREFIX);
+        let resp = client
+            .post(&create_portfolio_url)
+            .json(&json!({ "name": "API Test Portfolio", "description": "created by tests" }))
+            .send()
+            .await
+            .expect("Create portfolio request failed");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body: Value = resp.json().await.expect("Failed to parse JSON");
+        assert_eq!(body["status"], true);
+        let portfolio_id = body["data"].as_i64().expect("id missing") as i32;
+
+        // 2. Create two entries
+        let create_entry_url = format!("{}{}/fund/entry", BASE_URL, API_PREFIX);
+        let resp1 = client
+            .post(&create_entry_url)
+            .json(&json!({
+                "portfolio_id": portfolio_id,
+                "major_category": "Stocks",
+                "minor_category": "Tech",
+                "fund_type": "ETF",
+                "fund_name": "Test Fund A",
+                "target_ratio": 0.5,
+                "amount": 1000.0
+            }))
+            .send()
+            .await
+            .expect("Create entry A failed");
+        assert_eq!(resp1.status(), StatusCode::OK);
+        let b1: Value = resp1.json().await.expect("Parse create A");
+        assert_eq!(b1["status"], true);
+        let entry_a_id = b1["data"].as_i64().expect("id missing") as i32;
+
+        let resp2 = client
+            .post(&create_entry_url)
+            .json(&json!({
+                "portfolio_id": portfolio_id,
+                "major_category": "Stocks",
+                "minor_category": "Tech",
+                "fund_type": "ETF",
+                "fund_name": "Test Fund B",
+                "target_ratio": 0.5,
+                "amount": 500.0
+            }))
+            .send()
+            .await
+            .expect("Create entry B failed");
+        assert_eq!(resp2.status(), StatusCode::OK);
+        let b2: Value = resp2.json().await.expect("Parse create B");
+        assert_eq!(b2["status"], true);
+        let entry_b_id = b2["data"].as_i64().expect("id missing") as i32;
+
+        // 3. List entries
+        let list_url = format!("{}{}/fund/entries/{}", BASE_URL, API_PREFIX, portfolio_id);
+        let resp = client
+            .get(&list_url)
+            .send()
+            .await
+            .expect("List entries failed");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let list_body: Value = resp.json().await.expect("Parse list");
+        assert_eq!(list_body["status"], true);
+        let arr = list_body["data"].as_array().expect("data array");
+        assert!(arr.len() >= 2);
+
+        // 4. Update one entry (change minor_category)
+        let update_url = format!("{}{}/fund/entry/update", BASE_URL, API_PREFIX);
+        let resp = client
+            .post(&update_url)
+            .json(&json!({ "id": entry_a_id, "minor_category": "Software" }))
+            .send()
+            .await
+            .expect("Update entry failed");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let upb: Value = resp.json().await.expect("Parse update");
+        assert_eq!(upb["status"], true);
+
+        // 5. Batch update amounts
+        let batch_amount_url = format!("{}{}/fund/entries/batch-update", BASE_URL, API_PREFIX);
+        let resp = client
+            .post(&batch_amount_url)
+            .json(&json!({ "portfolio_id": portfolio_id, "updates": [{ "id": entry_a_id, "amount": 1200.0 }, { "id": entry_b_id, "amount": 300.0 }] }))
+            .send()
+            .await
+            .expect("Batch update amounts failed");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let bab: Value = resp.json().await.expect("Parse batch amounts");
+        assert_eq!(bab["status"], true);
+
+        // 6. Batch update order
+        let batch_order_url = format!("{}{}/fund/entries/batch-order", BASE_URL, API_PREFIX);
+        let resp = client
+            .post(&batch_order_url)
+            .json(&json!({ "portfolio_id": portfolio_id, "updates": [{ "id": entry_b_id, "sort_index": 0 }, { "id": entry_a_id, "sort_index": 1 }] }))
+            .send()
+            .await
+            .expect("Batch order failed");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let bor: Value = resp.json().await.expect("Parse batch order");
+        assert_eq!(bor["status"], true);
+
+        // 7. Delete entries
+        let del_a = format!(
+            "{}{}/fund/entry/delete/{}",
+            BASE_URL, API_PREFIX, entry_a_id
+        );
+        let resp = client.post(&del_a).send().await.expect("Delete A failed");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let dab: Value = resp.json().await.expect("Parse delete A");
+        assert_eq!(dab["status"], true);
+
+        let del_b = format!(
+            "{}{}/fund/entry/delete/{}",
+            BASE_URL, API_PREFIX, entry_b_id
+        );
+        let resp = client.post(&del_b).send().await.expect("Delete B failed");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let dbb: Value = resp.json().await.expect("Parse delete B");
+        assert_eq!(dbb["status"], true);
+
+        // 8. Delete portfolio
+        let del_p = format!(
+            "{}{}/fund/portfolio/delete/{}",
+            BASE_URL, API_PREFIX, portfolio_id
+        );
+        let resp = client
+            .post(&del_p)
+            .send()
+            .await
+            .expect("Delete portfolio failed");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let dpb: Value = resp.json().await.expect("Parse delete portfolio");
+        assert_eq!(dpb["status"], true);
+    }
+
+    #[tokio::test]
+    #[ignore = "requires running server and valid admin account"]
     async fn test_admin_unpublished_articles() {
         let client = login_as_admin().await;
         let url = format!(

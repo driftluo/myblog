@@ -90,3 +90,48 @@ $ cargo run --release // listen on 127.0.0.1:8080
 ```
 
 if you want to login admin, the account is `admin`, password is `admin`
+
+## Using Docker Compose
+
+This project includes `docker-compose.yml` to run the application together with Postgres and Redis using container-friendly settings.
+
+Quick start (recommended):
+
+1. Copy or create the compose env file. A compose-specific file named `.env.compose` is provided. Do NOT overwrite your development `.env`.
+
+```bash
+# if you want to edit values, copy the example first:
+cp .env.compose .env.compose.local
+# edit .env.compose.local as needed, then
+# (optional) move/rename to .env.compose if you prefer
+```
+
+2. Build and start services:
+
+```bash
+docker compose up --build
+# or run in background
+docker compose up -d --build
+```
+
+3. View logs:
+
+```bash
+docker compose logs -f blog
+```
+
+4. Database migrations (optional):
+
+If you want the `blog` container to run migrations, either exec into the container and run `sqlx migrate run` (requires `sqlx-cli` available), or run migrations from your host against the compose DB:
+
+```bash
+# run migrations from host (requires DATABASE_URL in .env.compose to point to compose db)
+sqlx database create
+sqlx migrate run
+```
+
+Notes
+- The project `.env` is reserved for native development and is not used by compose. Compose loads `.env.compose` into the `blog` container.
+- `.env.compose` is included in `.gitignore` to avoid committing secrets. Use `.env.example` or `.env.compose` as a template.
+- If you change service names or ports in `docker-compose.yml`, update `.env.compose` accordingly.
+
