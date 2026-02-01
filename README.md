@@ -8,8 +8,6 @@ This is my personal blog.
 
 ## Status
 
-- [ ] The third-party login function of Github is in disrepair for a long time, and the api seems 
-  to be deprecated, and there is no time to rewrite it for the time being
 - [ ] js uses a very old technology (I'm not familiar with the front-end technology)
 
 ## Dependences

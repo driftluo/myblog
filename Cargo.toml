@@ -2,7 +2,7 @@
 name = "new_blog"
 version = "0.1.0"
 authors = ["driftluo <driftluo@foxmail.com>"]
-edition = "2021"
+edition = "2024"
 resolver = "2"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
