@@ -1,18 +1,18 @@
 use crate::{
+    COOKIE, USER_INFO,
     db_wrapper::get_redis,
     models::{notify::UserNotify, user::UserInfo},
     web::Cache,
-    COOKIE, USER_INFO,
 };
 use http_body_util::BodyExt;
-use pulldown_cmark::{html, Options, Parser};
+use pulldown_cmark::{Options, Parser, html};
 use rand::Rng;
 use salvo::http::header;
 use salvo::{
-    http::{cookie::Cookie, ResBody, StatusCode, StatusError},
+    Depot, Request, Response,
+    http::{ResBody, StatusCode, StatusError, cookie::Cookie},
     prelude::handler,
     routing::FlowCtrl,
-    Depot, Request, Response,
 };
 use std::str::FromStr;
 use std::{fmt::Write, iter};

@@ -1,6 +1,6 @@
 use crate::db_wrapper::get_postgres;
 use serde::{Deserialize, Serialize};
-use sqlx::types::{chrono::NaiveDateTime, Uuid};
+use sqlx::types::{Uuid, chrono::NaiveDateTime};
 
 #[derive(sqlx::FromRow, Debug, Clone, Deserialize, Serialize)]
 pub struct Comments {
@@ -17,7 +17,10 @@ impl Comments {
     /// Max limit is 50 to prevent loading too much data
     pub async fn query(limit: i64, offset: i64, id: Uuid) -> Result<Vec<Self>, String> {
         let limit = limit.min(50);
-        let sql = format!("SELECT a.id, a.comment, a.article_id, a.user_id, b.nickname, a.create_time FROM comments a JOIN users b ON a.user_id=b.id WHERE a.article_id='{}' ORDER BY a.create_time LIMIT $1 OFFSET $2", id);
+        let sql = format!(
+            "SELECT a.id, a.comment, a.article_id, a.user_id, b.nickname, a.create_time FROM comments a JOIN users b ON a.user_id=b.id WHERE a.article_id='{}' ORDER BY a.create_time LIMIT $1 OFFSET $2",
+            id
+        );
         sqlx::query_as(&sql)
             .bind(limit)
             .bind(offset)

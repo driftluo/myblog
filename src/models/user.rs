@@ -7,8 +7,8 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use sqlx::types::{
-    chrono::{Local, NaiveDateTime},
     Uuid,
+    chrono::{Local, NaiveDateTime},
 };
 
 #[derive(sqlx::FromRow, Debug, Clone, Deserialize, Serialize)]

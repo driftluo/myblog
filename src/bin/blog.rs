@@ -1,19 +1,19 @@
 use bytes::BytesMut;
 use new_blog::{
-    api::{init_page_size, AdminArticle, AdminFund, AdminUser, ChartData, Tag, User, Visitor},
+    PERMISSION, Routers, WEB,
+    api::{AdminArticle, AdminFund, AdminUser, ChartData, Tag, User, Visitor, init_page_size},
     db_wrapper::{create_pg_pool, create_redis_pool},
     utils::get_identity_and_web_context,
     web::{Admin, ArticleWeb},
-    Routers, PERMISSION, WEB,
 };
 use salvo::prelude::Listener;
 use salvo::{
+    Depot, Request, Response, Router, Server,
     conn::TcpListener,
-    http::{header, ResBody, StatusCode},
+    http::{ResBody, StatusCode, header},
     prelude::handler,
     routing::FlowCtrl,
     serve_static::StaticDir,
-    Depot, Request, Response, Router, Server,
 };
 use tracing::{Instrument, Level};
 use tracing_subscriber::FmtSubscriber;

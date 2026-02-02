@@ -7,7 +7,7 @@ use crate::{
     utils::markdown_render,
 };
 use serde::{Deserialize, Serialize};
-use sqlx::types::{chrono::NaiveDateTime, Uuid};
+use sqlx::types::{Uuid, chrono::NaiveDateTime};
 struct InsertArticle<'a> {
     title: &'a str,
     raw_content: &'a str,
@@ -404,8 +404,8 @@ pub struct PublishedStatistics {
 }
 
 impl PublishedStatistics {
-    pub async fn statistics_published_frequency_by_month(
-    ) -> Result<Vec<PublishedStatistics>, String> {
+    pub async fn statistics_published_frequency_by_month()
+    -> Result<Vec<PublishedStatistics>, String> {
         let res = sqlx::query_as(
             r#"
         SELECT to_char(create_time, 'yyyy-mm') as dimension, count(*) as quantity FROM articles

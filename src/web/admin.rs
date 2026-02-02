@@ -1,12 +1,12 @@
-use salvo::{http::StatusError, prelude::handler, Depot, Request, Response, Router};
+use salvo::{Depot, Request, Response, Router, http::StatusError, prelude::handler};
 use tera::Context;
 
 use crate::{
+    Routers, WEB,
     api::block_no_admin,
     models::{articles::ArticlesWithTag, tag::Tags},
     utils::parse_query,
     web::render,
-    Routers, WEB,
 };
 
 #[handler]
@@ -123,30 +123,32 @@ pub struct Admin;
 
 impl Routers for Admin {
     fn build(self) -> Vec<Router> {
-        vec![Router::new()
-            .path("admin")
-            .hoop(block_no_admin)
-            // http {ip}/admin
-            .get(admin)
-            // http {ip}/admin/new
-            .push(Router::new().path("new").get(new_))
-            // http {ip}/admin/list
-            .push(Router::new().path("list").get(admin_list))
-            // http {ip}/admin/unpublished
-            .push(Router::new().path("unpublished").get(unpublished))
-            // http {ip}/admin/article/view?id=xxx
-            .push(Router::new().path("article/view").get(admin_view_article))
-            // http {ip}/admin/article/edit?id=xxx
-            .push(Router::new().path("article/edit").get(article_edit))
-            // http {ip}/admin/tags
-            .push(Router::new().path("tags").get(tags))
-            // http {ip}/admin/users
-            .push(Router::new().path("users").get(users))
-            // http {ip}/admin/ip
-            .push(Router::new().path("ip").get(visitor_ip_log))
-            // http {ip}/admin/notify
-            .push(Router::new().path("notify").get(notify))
-            // http {ip}/admin/fund
-            .push(Router::new().path("fund").get(fund))]
+        vec![
+            Router::new()
+                .path("admin")
+                .hoop(block_no_admin)
+                // http {ip}/admin
+                .get(admin)
+                // http {ip}/admin/new
+                .push(Router::new().path("new").get(new_))
+                // http {ip}/admin/list
+                .push(Router::new().path("list").get(admin_list))
+                // http {ip}/admin/unpublished
+                .push(Router::new().path("unpublished").get(unpublished))
+                // http {ip}/admin/article/view?id=xxx
+                .push(Router::new().path("article/view").get(admin_view_article))
+                // http {ip}/admin/article/edit?id=xxx
+                .push(Router::new().path("article/edit").get(article_edit))
+                // http {ip}/admin/tags
+                .push(Router::new().path("tags").get(tags))
+                // http {ip}/admin/users
+                .push(Router::new().path("users").get(users))
+                // http {ip}/admin/ip
+                .push(Router::new().path("ip").get(visitor_ip_log))
+                // http {ip}/admin/notify
+                .push(Router::new().path("notify").get(notify))
+                // http {ip}/admin/fund
+                .push(Router::new().path("fund").get(fund)),
+        ]
     }
 }

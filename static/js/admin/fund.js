@@ -9,10 +9,341 @@
  * 5. Minor category subtotals
  * 6. Real-time calculation on input change (no save button for incremental/redemption)
  * 7. Redemption fund allocation
+ * 8. Share portfolio via URL with LZString compression
  */
 
 (function () {
   "use strict";
+
+  // ============== URL Sharing Utilities ==============
+
+  /**
+   * Compress and encode portfolio data for URL sharing
+   * @param {Array} entries - Array of fund entries
+   * @param {Object} options - Additional options (incremental, redemption amounts)
+   * @returns {string} Compressed and URL-safe encoded string
+   */
+  function compressPortfolioData(entries, options = {}) {
+    // Create minimal data structure for sharing
+    const shareData = {
+      v: 1, // version for future compatibility
+      n: options.name || "分享的组合",
+      e: entries.map((entry) => ({
+        m: entry.major_category, // major_category
+        i: entry.minor_category || "", // minor_category
+        t: entry.fund_type || "", // fund_type
+        f: entry.fund_name, // fund_name
+        r: Math.round(entry.target_ratio * 10000) / 10000, // target_ratio (keep precision)
+        a: Math.round(entry.amount * 100) / 100, // amount
+      })),
+    };
+
+    // Add optional fields
+    if (options.incremental && options.incremental > 0) {
+      shareData.inc = options.incremental;
+    }
+    if (options.redemption && options.redemption > 0) {
+      shareData.red = options.redemption;
+    }
+
+    // Convert to JSON and compress
+    const jsonStr = JSON.stringify(shareData);
+
+    // Use LZString to compress and make URL-safe (access via window for global scope)
+    if (typeof window.LZString !== "undefined" && window.LZString.compressToEncodedURIComponent) {
+      return window.LZString.compressToEncodedURIComponent(jsonStr);
+    }
+
+    // Fallback: Base64 encode (less efficient)
+    console.warn("LZString not available, using Base64 fallback");
+    return btoa(encodeURIComponent(jsonStr));
+  }
+
+  /**
+   * Decompress and decode portfolio data from URL parameter
+   * @param {string} compressed - Compressed and encoded string
+   * @returns {Object|null} Decompressed data object or null if failed
+   */
+  function decompressPortfolioData(compressed) {
+    try {
+      let jsonStr;
+
+      // Try LZString decompression first (access via window for global scope)
+      if (typeof window.LZString !== "undefined" && window.LZString.decompressFromEncodedURIComponent) {
+        jsonStr = window.LZString.decompressFromEncodedURIComponent(compressed);
+      }
+
+      // Fallback to Base64 decode
+      if (!jsonStr) {
+        try {
+          jsonStr = decodeURIComponent(atob(compressed));
+        } catch (e) {
+          console.warn("Base64 decode failed", e);
+          return null;
+        }
+      }
+
+      if (!jsonStr) return null;
+
+      const data = JSON.parse(jsonStr);
+
+      // Validate version and structure
+      if (!data || !data.e || !Array.isArray(data.e)) {
+        console.warn("Invalid share data structure");
+        return null;
+      }
+
+      // Convert back to full entry format
+      const entries = data.e.map((e, idx) => ({
+        id: -(idx + 1), // Temporary negative IDs for local entries
+        major_category: e.m,
+        minor_category: e.i || null,
+        fund_type: e.t || null,
+        fund_name: e.f,
+        target_ratio: e.r,
+        amount: e.a,
+        sort_index: idx,
+      }));
+
+      return {
+        name: data.n || "分享的组合",
+        entries: entries,
+        incremental: data.inc || 0,
+        redemption: data.red || 0,
+      };
+    } catch (e) {
+      console.error("Failed to decompress portfolio data", e);
+      return null;
+    }
+  }
+
+  /**
+   * Generate share URL for current portfolio
+   * @returns {string} Full URL with compressed portfolio data
+   */
+  function generateShareUrl() {
+    const options = {
+      name: currentPortfolio
+        ? currentPortfolio.portfolio.name
+        : "分享的组合",
+      incremental: parseFloat($("#input-incremental").val()) || 0,
+      redemption: parseFloat($("#input-redemption").val()) || 0,
+    };
+
+    const compressed = compressPortfolioData(entries, options);
+    const baseUrl = window.location.origin + "/fund";
+    return `${baseUrl}?d=${compressed}`;
+  }
+
+  /**
+   * Copy text to clipboard with fallback
+   * @param {string} text - Text to copy
+   * @returns {Promise<boolean>} Success status
+   */
+  async function copyToClipboard(text) {
+    // Modern Clipboard API
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (e) {
+        console.warn("Clipboard API failed, trying fallback", e);
+      }
+    }
+
+    // Fallback for older browsers or insecure context
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-9999px";
+    textArea.style.top = "-9999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      return true;
+    } catch (e) {
+      console.error("Fallback copy failed", e);
+      document.body.removeChild(textArea);
+      return false;
+    }
+  }
+
+  /**
+   * Share current portfolio - generate URL and copy to clipboard
+   */
+  async function sharePortfolio() {
+    if (entries.length === 0) {
+      alert("没有数据可以分享，请先添加基金");
+      return;
+    }
+
+    const url = generateShareUrl();
+
+    // Check URL length (browsers typically support up to ~2000 chars, but we allow more)
+    if (url.length > 8000) {
+      alert(
+        `分享链接过长 (${url.length} 字符)，部分浏览器可能无法正常打开。建议减少基金数量后重试。`,
+      );
+    }
+
+    const success = await copyToClipboard(url);
+
+    if (success) {
+      // Show success feedback
+      showShareToast("分享链接已复制到剪贴板！");
+    } else {
+      // Show URL in a modal for manual copy
+      showShareModal(url);
+    }
+  }
+
+  /**
+   * Show a brief toast notification
+   * @param {string} message - Toast message
+   */
+  function showShareToast(message) {
+    // Remove existing toast if any
+    $(".share-toast").remove();
+
+    const toast = $(
+      `<div class="share-toast" style="
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #5cb85c;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        z-index: 9999;
+        font-weight: bold;
+        animation: fadeInUp 0.3s ease;
+      ">${message}</div>`,
+    );
+
+    $("body").append(toast);
+
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+      toast.fadeOut(300, function () {
+        $(this).remove();
+      });
+    }, 3000);
+  }
+
+  /**
+   * Show modal with URL for manual copy
+   * @param {string} url - URL to display
+   */
+  function showShareModal(url) {
+    // Remove existing modal if any
+    $("#share-url-modal").remove();
+
+    const modal = $(`
+      <div id="share-url-modal" class="modal fade" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+              <h4 class="modal-title">分享链接</h4>
+            </div>
+            <div class="modal-body">
+              <p>请手动复制以下链接：</p>
+              <textarea id="share-url-text" class="form-control" rows="4" readonly style="word-break: break-all;">${url}</textarea>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-primary" id="btn-copy-url">复制链接</button>
+              <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `);
+
+    $("body").append(modal);
+
+    modal.modal("show");
+
+    // Select all text when clicking
+    $("#share-url-text").on("click", function () {
+      this.select();
+    });
+
+    // Copy button
+    $("#btn-copy-url").on("click", async function () {
+      const success = await copyToClipboard(url);
+      if (success) {
+        $(this).text("已复制！").addClass("btn-success").removeClass("btn-primary");
+        setTimeout(() => {
+          modal.modal("hide");
+        }, 1000);
+      }
+    });
+
+    // Clean up on close
+    modal.on("hidden.bs.modal", function () {
+      $(this).remove();
+    });
+  }
+
+  /**
+   * Load portfolio from URL parameters
+   * @returns {boolean} True if data was loaded from URL
+   */
+  function loadFromUrlParams() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const compressedData = urlParams.get("d");
+
+    if (!compressedData) {
+      return false;
+    }
+
+    const data = decompressPortfolioData(compressedData);
+
+    if (!data) {
+      console.warn("Failed to parse URL share data");
+      return false;
+    }
+
+    // Load the shared data
+    entries = data.entries;
+    currentPortfolio = {
+      portfolio: {
+        id: null,
+        name: data.name,
+        description: "通过分享链接加载",
+        total_amount: entries.reduce((sum, e) => sum + e.amount, 0),
+      },
+      entries: entries,
+    };
+
+    // Set incremental/redemption values
+    if (data.incremental > 0) {
+      $("#input-incremental").val(data.incremental);
+    }
+    if (data.redemption > 0) {
+      $("#input-redemption").val(data.redemption);
+    }
+
+    // Update major order and render
+    updateMajorOrderFromEntries();
+    renderPortfolioInfo();
+    renderTable();
+    showPortfolioView();
+
+    // Show loaded indicator
+    showShareToast(`已加载分享的组合：${data.name}`);
+
+    // Update page title
+    document.title = `${data.name} - 基金投资组合`;
+
+    return true;
+  }
 
   // API endpoints
   const API = {
@@ -53,8 +384,17 @@
 
   $(document).ready(function () {
     bindEvents();
+
+    // Check if there's shared data in URL first (works for both admin and visitor)
+    const loadedFromUrl = loadFromUrlParams();
+
     if (IS_ADMIN) {
-      loadPortfolios();
+      if (!loadedFromUrl) {
+        loadPortfolios();
+      } else {
+        // Also load portfolios dropdown for admin, but don't auto-select
+        loadPortfolios();
+      }
     } else {
       // visitor: do not load DB portfolios, hide admin-only controls
       $("#btn-save-all, #btn-delete-portfolio").hide();
@@ -62,12 +402,15 @@
       // show visitor banner and ensure unsaved indicator is hidden
       $("#visitor-banner").show();
       $("#unsaved-indicator").removeClass("show");
-      // show UI so visitor can use tools locally
-      entries = [];
-      pendingChanges = {};
-      updateMajorOrderFromEntries();
-      renderTable();
-      showPortfolioView();
+
+      if (!loadedFromUrl) {
+        // show UI so visitor can use tools locally
+        entries = [];
+        pendingChanges = {};
+        updateMajorOrderFromEntries();
+        renderTable();
+        showPortfolioView();
+      }
     }
   });
 
@@ -121,6 +464,9 @@
 
     // Save all changes
     $("#btn-save-all").on("click", saveAllChanges);
+
+    // Share portfolio
+    $("#btn-share").on("click", sharePortfolio);
 
     // Recalculate
     $("#btn-calculate").on("click", recalculateAll);

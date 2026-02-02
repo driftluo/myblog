@@ -2,8 +2,8 @@ use bytes::{BufMut, Bytes, BytesMut};
 use once_cell::sync::Lazy;
 use salvo::http::header;
 use salvo::{
-    http::{ResBody, StatusCode},
     Response,
+    http::{ResBody, StatusCode},
 };
 use std::io::{self, Write};
 

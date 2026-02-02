@@ -1,11 +1,11 @@
-use salvo::{http::StatusError, prelude::handler, Request, Response, Router};
+use salvo::{Request, Response, Router, http::StatusError, prelude::handler};
 
 use crate::{
-    api::{block_no_admin, JsonErrResponse, JsonOkResponse},
+    Routers,
+    api::{JsonErrResponse, JsonOkResponse, block_no_admin},
     db_wrapper::get_redis,
     models::articles::PublishedStatistics,
     utils::{parse_query, set_json_response},
-    Routers,
 };
 
 #[handler]

@@ -1,15 +1,15 @@
 use salvo::{
+    Request, Response, Router,
     http::{StatusCode, StatusError},
     prelude::handler,
-    Request, Response, Router,
 };
 
 use crate::{
+    Routers,
     api::block_no_admin,
     api::{JsonErrResponse, JsonOkResponse},
     models::tag::{TagCount, Tags},
     utils::{from_code, parse_json_body, parse_last_path, parse_query, set_json_response},
-    Routers,
 };
 
 #[handler]
@@ -70,16 +70,18 @@ pub struct Tag;
 impl Routers for Tag {
     fn build(self) -> Vec<Router> {
         use crate::api::PREFIX;
-        vec![Router::new()
-            .path(PREFIX.to_owned() + "tag")
-            .hoop(block_no_admin)
-            // http get {ip}/tag/view limit==5 offset==0
-            .push(Router::new().path("view").get(view_tag))
-            // http post {ip}/tag/new tag="Rust"
-            .push(Router::new().path("new").post(create_tag))
-            // http post {ip}/tag/delete/3
-            .push(Router::new().path("delete/{id}").post(delete_tag))
-            // http post :8888/tag/edit id:=2 tag="Linux&&Rust"
-            .push(Router::new().path("edit").post(edit_tag))]
+        vec![
+            Router::new()
+                .path(PREFIX.to_owned() + "tag")
+                .hoop(block_no_admin)
+                // http get {ip}/tag/view limit==5 offset==0
+                .push(Router::new().path("view").get(view_tag))
+                // http post {ip}/tag/new tag="Rust"
+                .push(Router::new().path("new").post(create_tag))
+                // http post {ip}/tag/delete/3
+                .push(Router::new().path("delete/{id}").post(delete_tag))
+                // http post :8888/tag/edit id:=2 tag="Linux&&Rust"
+                .push(Router::new().path("edit").post(edit_tag)),
+        ]
     }
 }

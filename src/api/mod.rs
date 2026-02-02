@@ -14,7 +14,7 @@ pub use admin_user_api::AdminUser;
 pub use user_api::User;
 pub use visitor_api::Visitor;
 
-use salvo::{prelude::handler, routing::FlowCtrl, Depot, Request, Response};
+use salvo::{Depot, Request, Response, prelude::handler, routing::FlowCtrl};
 use tokio::sync::RwLock;
 
 // todo: remove on delete all template

@@ -1,17 +1,17 @@
 use salvo::{
+    Depot, Request, Response, Router,
     http::{StatusCode, StatusError},
     prelude::handler,
-    Depot, Request, Response, Router,
 };
 use tera::Context;
 use uuid::Uuid;
 
 use crate::{
+    COOKIE, PERMISSION, Routers, WEB,
     db_wrapper::get_redis,
     models::{articles::ArticlesWithTag, notify::UserNotify, tag::TagCount, user::UserInfo},
     utils::{from_code, parse_last_path, visitor_log},
     web::render,
-    Routers, COOKIE, PERMISSION, WEB,
 };
 
 #[tracing::instrument]

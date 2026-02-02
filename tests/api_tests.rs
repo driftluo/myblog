@@ -9,7 +9,7 @@
 //! Run tests: cargo test --test api_tests -- --test-threads=1
 
 use reqwest::{Client, StatusCode};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 const BASE_URL: &str = "http://127.0.0.1:8080";
 const API_PREFIX: &str = "/api/v1";
@@ -153,10 +153,12 @@ mod visitor_api_tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body: Value = response.json().await.expect("Failed to parse JSON");
         assert_eq!(body["status"], false);
-        assert!(body["error"]
-            .as_str()
-            .unwrap()
-            .contains("Invalid password format"));
+        assert!(
+            body["error"]
+                .as_str()
+                .unwrap()
+                .contains("Invalid password format")
+        );
     }
 }
 

@@ -1,11 +1,12 @@
 use salvo::{
+    Depot, Request, Response, Router,
     http::{StatusCode, StatusError},
     prelude::handler,
-    Depot, Request, Response, Router,
 };
 
 use crate::{
-    api::{block_unlogin, JsonErrResponse, JsonOkResponse},
+    COOKIE, PERMISSION, Routers, USER_INFO,
+    api::{JsonErrResponse, JsonOkResponse, block_unlogin},
     models::{
         articles::ArticlesWithTag,
         comment::{DeleteComment, NewComments},
@@ -13,7 +14,6 @@ use crate::{
         user::{ChangePassword, EditUser, LoginUser, UserInfo},
     },
     utils::{from_code, parse_json_body, set_json_response},
-    Routers, COOKIE, PERMISSION, USER_INFO,
 };
 
 #[handler]
