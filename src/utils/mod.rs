@@ -159,13 +159,11 @@ where
         .headers()
         .get(header::CONTENT_TYPE)
         .and_then(|h| h.to_str().ok())
-    {
-        if ctype.starts_with("application/json") || ctype.starts_with("text/") {
+        && (ctype.starts_with("application/json") || ctype.starts_with("text/")) {
             let body = req.take_body();
             let bytes = body.collect().await.ok()?.to_bytes();
             return serde_json::from_slice(&bytes).ok();
         }
-    }
 
     None
 }
@@ -175,8 +173,7 @@ pub async fn parse_form_body<T>(req: &mut Request, name: &str) -> Option<String>
         .headers()
         .get(header::CONTENT_TYPE)
         .and_then(|h| h.to_str().ok())
-    {
-        if ctype == "application/x-www-form-urlencoded" {
+        && ctype == "application/x-www-form-urlencoded" {
             let body = req.take_body();
             let data = body.collect().await.ok()?.to_bytes();
             let form_iter = url::form_urlencoded::parse(&data);
@@ -186,7 +183,6 @@ pub async fn parse_form_body<T>(req: &mut Request, name: &str) -> Option<String>
                 }
             }
         }
-    }
 
     None
 }
@@ -234,8 +230,8 @@ pub async fn visitor_log(
     res: &mut Response,
     ctrl: &mut FlowCtrl,
 ) {
-    if let Some(ip) = req.header::<String>("X-Real-IP") {
-        if let Ok(key) = ::std::env::var("IPSTACK_KEY") {
+    if let Some(ip) = req.header::<String>("X-Real-IP")
+        && let Ok(key) = ::std::env::var("IPSTACK_KEY") {
             let timestamp = chrono::Utc::now();
             tokio::spawn(async move {
                 let url = format!("http://api.ipstack.com/{}?access_key={}", &ip, key,);
@@ -271,7 +267,6 @@ pub async fn visitor_log(
                 }
             });
         }
-    }
     ctrl.call_next(req, depot, res).await;
 }
 

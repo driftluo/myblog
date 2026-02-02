@@ -80,15 +80,14 @@ async fn article_view(
     match ArticlesWithTag::query_article(id, false).await {
         Ok(data) => {
             web.insert("article", &data);
-            if let Ok(cookie) = depot.remove::<String>(COOKIE) {
-                if let Ok(info) = get_redis().hget::<String>(&cookie, "info").await {
+            if let Ok(cookie) = depot.remove::<String>(COOKIE)
+                && let Ok(info) = get_redis().hget::<String>(&cookie, "info").await {
                     let info = serde_json::from_str::<UserInfo>(&info).unwrap();
 
                     UserNotify::remove_notifys_with_article_and_user(info.id, data.id).await;
                     let notify = UserNotify::get_notifys(info.id).await;
                     web.insert("notify", &notify);
                 }
-            }
             render(res, "visitor/article_view.html", &web)
         }
         Err(err) => return Err(from_code(StatusCode::NOT_FOUND, err)),

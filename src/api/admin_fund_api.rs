@@ -22,9 +22,9 @@ async fn list_portfolios(res: &mut Response) -> Result<(), StatusError> {
     match FundPortfolio::list_all().await {
         Ok(data) => {
             let simple: Vec<PortfolioSimple> = data.into_iter().map(|p| p.into()).collect();
-            set_json_response(res, 256, &JsonOkResponse::ok(simple))
+            set_json_response(res, 256, JsonOkResponse::ok(simple))
         }
-        Err(e) => set_json_response(res, 64, &JsonErrResponse::err(e)),
+        Err(e) => set_json_response(res, 64, JsonErrResponse::err(e)),
     }
     Ok(())
 }
@@ -34,8 +34,8 @@ async fn get_portfolio(req: &mut Request, res: &mut Response) -> Result<(), Stat
     let id = parse_last_path::<i32>(req)?;
 
     match PortfolioWithEntriesSimple::get(id).await {
-        Ok(data) => set_json_response(res, 1024, &JsonOkResponse::ok(data)),
-        Err(e) => set_json_response(res, 64, &JsonErrResponse::err(e)),
+        Ok(data) => set_json_response(res, 1024, JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 64, JsonErrResponse::err(e)),
     }
     Ok(())
 }
@@ -47,8 +47,8 @@ async fn create_portfolio(req: &mut Request, res: &mut Response) -> Result<(), S
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
 
     match FundPortfolio::create(body).await {
-        Ok(id) => set_json_response(res, 64, &JsonOkResponse::ok(id)),
-        Err(e) => set_json_response(res, 64, &JsonErrResponse::err(e)),
+        Ok(id) => set_json_response(res, 64, JsonOkResponse::ok(id)),
+        Err(e) => set_json_response(res, 64, JsonErrResponse::err(e)),
     }
     Ok(())
 }
@@ -60,8 +60,8 @@ async fn update_portfolio(req: &mut Request, res: &mut Response) -> Result<(), S
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
 
     match FundPortfolio::update(body).await {
-        Ok(_) => set_json_response(res, 32, &JsonOkResponse::status(true)),
-        Err(e) => set_json_response(res, 64, &JsonErrResponse::err(e)),
+        Ok(_) => set_json_response(res, 32, JsonOkResponse::status(true)),
+        Err(e) => set_json_response(res, 64, JsonErrResponse::err(e)),
     }
     Ok(())
 }
@@ -71,8 +71,8 @@ async fn delete_portfolio(req: &mut Request, res: &mut Response) -> Result<(), S
     let id = parse_last_path::<i32>(req)?;
 
     match FundPortfolio::delete(id).await {
-        Ok(_) => set_json_response(res, 32, &JsonOkResponse::status(true)),
-        Err(e) => set_json_response(res, 64, &JsonErrResponse::err(e)),
+        Ok(_) => set_json_response(res, 32, JsonOkResponse::status(true)),
+        Err(e) => set_json_response(res, 64, JsonErrResponse::err(e)),
     }
     Ok(())
 }
@@ -84,8 +84,8 @@ async fn list_entries(req: &mut Request, res: &mut Response) -> Result<(), Statu
     let portfolio_id = parse_last_path::<i32>(req)?;
 
     match FundEntry::list_by_portfolio(portfolio_id).await {
-        Ok(data) => set_json_response(res, 1024, &JsonOkResponse::ok(data)),
-        Err(e) => set_json_response(res, 64, &JsonErrResponse::err(e)),
+        Ok(data) => set_json_response(res, 1024, JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 64, JsonErrResponse::err(e)),
     }
     Ok(())
 }
@@ -108,17 +108,23 @@ async fn create_entry(req: &mut Request, res: &mut Response) -> Result<(), Statu
         for item in list {
             match FundEntry::create(item).await {
                 Ok(id) => ids.push(id),
-                Err(e) => return Ok(set_json_response(res, 64, &JsonErrResponse::err(e))),
+                Err(e) => {
+                    return {
+                        let _: () = set_json_response(res, 64, JsonErrResponse::err(e));
+                        Ok(())
+                    };
+                }
             }
         }
-        return Ok(set_json_response(res, 256, &JsonOkResponse::ok(ids)));
+        set_json_response(res, 256, JsonOkResponse::ok(ids));
+        return Ok(());
     }
 
     // Try single object
     if let Ok(item) = serde_json::from_slice::<NewFundEntry>(&body_bytes) {
         match FundEntry::create(item).await {
-            Ok(id) => set_json_response(res, 64, &JsonOkResponse::ok(id)),
-            Err(e) => set_json_response(res, 64, &JsonErrResponse::err(e)),
+            Ok(id) => set_json_response(res, 64, JsonOkResponse::ok(id)),
+            Err(e) => set_json_response(res, 64, JsonErrResponse::err(e)),
         }
         return Ok(());
     }
@@ -144,20 +150,22 @@ async fn update_entry(req: &mut Request, res: &mut Response) -> Result<(), Statu
         for item in list {
             match FundEntry::update(item).await {
                 Ok(pid) => portfolio_id = Some(pid),
-                Err(e) => return Ok(set_json_response(res, 64, &JsonErrResponse::err(e))),
+                Err(e) => {
+                    set_json_response(res, 64, JsonErrResponse::err(e));
+                    return Ok(());
+                }
             }
         }
-        return Ok(set_json_response(
-            res,
-            64,
-            &JsonOkResponse::ok(portfolio_id),
-        ));
+        return {
+            set_json_response(res, 64, JsonOkResponse::ok(portfolio_id));
+            Ok(())
+        };
     }
 
     if let Ok(item) = serde_json::from_slice::<UpdateFundEntry>(&body_bytes) {
         match FundEntry::update(item).await {
-            Ok(portfolio_id) => set_json_response(res, 64, &JsonOkResponse::ok(portfolio_id)),
-            Err(e) => set_json_response(res, 64, &JsonErrResponse::err(e)),
+            Ok(portfolio_id) => set_json_response(res, 64, JsonOkResponse::ok(portfolio_id)),
+            Err(e) => set_json_response(res, 64, JsonErrResponse::err(e)),
         }
         return Ok(());
     }
@@ -171,8 +179,8 @@ async fn delete_entry(req: &mut Request, res: &mut Response) -> Result<(), Statu
     let id = parse_last_path::<i32>(req)?;
 
     match FundEntry::delete(id).await {
-        Ok(portfolio_id) => set_json_response(res, 64, &JsonOkResponse::ok(portfolio_id)),
-        Err(e) => set_json_response(res, 64, &JsonErrResponse::err(e)),
+        Ok(portfolio_id) => set_json_response(res, 64, JsonOkResponse::ok(portfolio_id)),
+        Err(e) => set_json_response(res, 64, JsonErrResponse::err(e)),
     }
     Ok(())
 }
@@ -196,8 +204,8 @@ async fn batch_update_amounts(req: &mut Request, res: &mut Response) -> Result<(
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
 
     match FundEntry::batch_update_amounts(body.portfolio_id, body.updates).await {
-        Ok(_) => set_json_response(res, 32, &JsonOkResponse::status(true)),
-        Err(e) => set_json_response(res, 64, &JsonErrResponse::err(e)),
+        Ok(_) => set_json_response(res, 32, JsonOkResponse::status(true)),
+        Err(e) => set_json_response(res, 64, JsonErrResponse::err(e)),
     }
     Ok(())
 }
@@ -209,8 +217,8 @@ async fn batch_update_order(req: &mut Request, res: &mut Response) -> Result<(),
         .ok_or_else(|| from_code(StatusCode::BAD_REQUEST, "Json body is Incorrect"))?;
 
     match FundEntry::batch_update_order(body.portfolio_id, body.updates).await {
-        Ok(_) => set_json_response(res, 32, &JsonOkResponse::status(true)),
-        Err(e) => set_json_response(res, 64, &JsonErrResponse::err(e)),
+        Ok(_) => set_json_response(res, 32, JsonOkResponse::status(true)),
+        Err(e) => set_json_response(res, 64, JsonErrResponse::err(e)),
     }
     Ok(())
 }
