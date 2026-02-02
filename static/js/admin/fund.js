@@ -17,99 +17,109 @@
 
   // ============== URL Sharing Utilities ==============
 
-  /**
-   * Compress and encode portfolio data for URL sharing
-   * @param {Array} entries - Array of fund entries
-   * @param {Object} options - Additional options (incremental, redemption amounts)
-   * @returns {string} Compressed and URL-safe encoded string
-   */
-  function compressPortfolioData(entries, options = {}) {
-    // Create minimal data structure for sharing
-    const shareData = {
-      v: 1, // version for future compatibility
-      n: options.name || "分享的组合",
-      e: entries.map((entry) => ({
-        m: entry.major_category, // major_category
-        i: entry.minor_category || "", // minor_category
-        t: entry.fund_type || "", // fund_type
-        f: entry.fund_name, // fund_name
-        r: Math.round(entry.target_ratio * 10000) / 10000, // target_ratio (keep precision)
-        a: Math.round(entry.amount * 100) / 100, // amount
-      })),
-    };
+  // Major category encoding
+  const MAJOR_CATEGORY_MAP = { "股票": 0, "债券": 1, "大宗商品": 2, "现金": 3 };
+  const MAJOR_CATEGORY_REVERSE = ["股票", "债券", "大宗商品", "现金"];
 
-    // Add optional fields
-    if (options.incremental && options.incremental > 0) {
-      shareData.inc = options.incremental;
-    }
-    if (options.redemption && options.redemption > 0) {
-      shareData.red = options.redemption;
-    }
-
-    // Convert to JSON and compress
-    const jsonStr = JSON.stringify(shareData);
-
-    // Use LZString to compress and make URL-safe (access via window for global scope)
-    if (typeof window.LZString !== "undefined" && window.LZString.compressToEncodedURIComponent) {
-      return window.LZString.compressToEncodedURIComponent(jsonStr);
-    }
-
-    // Fallback: Base64 encode (less efficient)
-    console.warn("LZString not available, using Base64 fallback");
-    return btoa(encodeURIComponent(jsonStr));
+  // Base62 encoding for compact numbers (0-9a-zA-Z)
+  const B62 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  function toB62(n) {
+    if (n === 0) return "0";
+    let s = "";
+    while (n > 0) { s = B62[n % 62] + s; n = Math.floor(n / 62); }
+    return s;
+  }
+  function fromB62(s) {
+    let n = 0;
+    for (const c of s) n = n * 62 + B62.indexOf(c);
+    return n;
   }
 
   /**
-   * Decompress and decode portfolio data from URL parameter
-   * @param {string} compressed - Compressed and encoded string
-   * @returns {Object|null} Decompressed data object or null if failed
+   * Ultra-compact format:
+   * [inc~red~]major~minor~type~name~ratio~amount;...
+   * - Uses Base62 for numbers
+   * - '~' as field separator, ';' as entry separator
+   * - Header omitted if both 0
+   * - Empty minor/type encoded as empty string
+   */
+  function compressPortfolioData(entries, options = {}) {
+    const inc = Math.round(options.incremental || 0);
+    const red = Math.round(options.redemption || 0);
+    
+    const parts = [];
+    
+    // Header only if needed
+    if (inc > 0 || red > 0) {
+      parts.push(`${toB62(inc)}~${toB62(red)}~`);
+    }
+    
+    // Entries
+    const entryStrs = entries.map(entry => {
+      const major = MAJOR_CATEGORY_MAP[entry.major_category] ?? 0;
+      const minor = (entry.minor_category || "").replace(/[~;]/g, "");
+      const type = (entry.fund_type || "").replace(/[~;]/g, "");
+      const name = (entry.fund_name || "").replace(/[~;]/g, "");
+      const ratio = toB62(Math.round(entry.target_ratio * 10000));
+      const amount = toB62(Math.round(entry.amount));
+      return `${major}~${minor}~${type}~${name}~${ratio}~${amount}`;
+    });
+    
+    const str = parts.join("") + entryStrs.join(";");
+
+    if (typeof window.LZString !== "undefined") {
+      return window.LZString.compressToEncodedURIComponent(str);
+    }
+    return btoa(encodeURIComponent(str));
+  }
+
+  /**
+   * Decompress portfolio data
    */
   function decompressPortfolioData(compressed) {
     try {
-      let jsonStr;
+      let str;
+      if (typeof window.LZString !== "undefined") {
+        str = window.LZString.decompressFromEncodedURIComponent(compressed);
+      }
+      if (!str) return null;
 
-      // Try LZString decompression first (access via window for global scope)
-      if (typeof window.LZString !== "undefined" && window.LZString.decompressFromEncodedURIComponent) {
-        jsonStr = window.LZString.decompressFromEncodedURIComponent(compressed);
+      let incremental = 0, redemption = 0;
+      let entriesStr = str;
+      
+      // Check for header (starts with number~number~, no ';' before first entry)
+      const headerMatch = str.match(/^([0-9a-zA-Z]+)~([0-9a-zA-Z]+)~(?=\d)/);
+      if (headerMatch) {
+        incremental = fromB62(headerMatch[1]);
+        redemption = fromB62(headerMatch[2]);
+        entriesStr = str.slice(headerMatch[0].length);
       }
 
-      // Fallback to Base64 decode
-      if (!jsonStr) {
-        try {
-          jsonStr = decodeURIComponent(atob(compressed));
-        } catch (e) {
-          console.warn("Base64 decode failed", e);
-          return null;
-        }
+      // Parse entries
+      const entries = [];
+      const entryParts = entriesStr.split(";");
+      
+      for (let i = 0; i < entryParts.length; i++) {
+        const fields = entryParts[i].split("~");
+        if (fields.length < 6) continue;
+        
+        entries.push({
+          id: -(i + 1),
+          major_category: MAJOR_CATEGORY_REVERSE[parseInt(fields[0])] || "股票",
+          minor_category: fields[1] || null,
+          fund_type: fields[2] || null,
+          fund_name: fields[3] || "",
+          target_ratio: fromB62(fields[4]) / 10000,
+          amount: fromB62(fields[5]),
+          sort_index: i,
+        });
       }
-
-      if (!jsonStr) return null;
-
-      const data = JSON.parse(jsonStr);
-
-      // Validate version and structure
-      if (!data || !data.e || !Array.isArray(data.e)) {
-        console.warn("Invalid share data structure");
-        return null;
-      }
-
-      // Convert back to full entry format
-      const entries = data.e.map((e, idx) => ({
-        id: -(idx + 1), // Temporary negative IDs for local entries
-        major_category: e.m,
-        minor_category: e.i || null,
-        fund_type: e.t || null,
-        fund_name: e.f,
-        target_ratio: e.r,
-        amount: e.a,
-        sort_index: idx,
-      }));
 
       return {
-        name: data.n || "分享的组合",
+        name: "分享的组合",
         entries: entries,
-        incremental: data.inc || 0,
-        redemption: data.red || 0,
+        incremental: incremental,
+        redemption: redemption,
       };
     } catch (e) {
       console.error("Failed to decompress portfolio data", e);
