@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width,user-scalable=no" />
     <link rel="icon" type="image/webp" href="/images/head.webp" />
     <title>{% block title %}{% endblock title %}</title>
-    <script src="/js/jquery-3.2.1.min.js"></script>
+    <script src="/js/jquery-3.7.1.min.js"></script>
     <script src="/js/marked.js"></script>
     <script src="/js/highlight.pack.js"></script>
     <link href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" />
@@ -37,7 +37,7 @@
                             {% if tags %}
                             {% for tag in tags %}
                             <li class="list-inline-item">
-                                <a data-id={{ tag.id }} class="badge badge-pill badge-info" style="font-size:16px; padding:8px; cursor:pointer;">{{ tag.tag }}</a>
+                                <a data-id={{ tag.id }}>{{ tag.tag }}</a>
                             </li>
                             {% endfor %}
                             {% endif %}

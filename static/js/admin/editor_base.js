@@ -81,7 +81,11 @@ $("#add_tag").click(function () {
       .append("<span class='text-danger'>标签已存在或为空</span>");
   } else {
     $("#tag").modal("hide");
-    $("ul.tag").append("<li><a class='a_click'>" + tag_name + "</a></li>");
+    $("ul.tag").append(
+      "<li class='list-inline-item'><a class='a_click'>" +
+        tag_name +
+        "</a></li>",
+    );
   }
 });
 
