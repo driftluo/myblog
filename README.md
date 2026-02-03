@@ -93,22 +93,28 @@ if you want to login admin, the account is `admin`, password is `admin`
 
 This project includes `docker-compose.yml` to run the application together with Postgres and Redis using container-friendly settings.
 
-Quick start (recommended):
+### Architecture
+
+- **Network Isolation**: PostgreSQL and Redis are only accessible within the internal network (not exposed to the host). Only the `blog` service exposes port 8080 to the outside.
+- **Automatic Database Migration**: The `db-migrate` service automatically runs `sqlx migrate run` on startup to initialize the database schema.
+- **Health Checks**: Services include health checks to ensure proper startup order.
+
+### Quick Start
 
 1. Copy or create the compose env file. A compose-specific file named `.env.compose` is provided. Do NOT overwrite your development `.env`.
 
 ```bash
-# if you want to edit values, copy the example first:
+# If you want to edit values, copy the example first:
 cp .env.compose .env.compose.local
-# edit .env.compose.local as needed, then
-# (optional) move/rename to .env.compose if you prefer
+# Edit .env.compose.local as needed, then rename it
+mv .env.compose.local .env.compose
 ```
 
 2. Build and start services:
 
 ```bash
 docker compose up --build
-# or run in background
+# Or run in background
 docker compose up -d --build
 ```
 
@@ -118,18 +124,15 @@ docker compose up -d --build
 docker compose logs -f blog
 ```
 
-4. Database migrations (optional):
+### Notes
 
-If you want the `blog` container to run migrations, either exec into the container and run `sqlx migrate run` (requires `sqlx-cli` available), or run migrations from your host against the compose DB:
-
-```bash
-# run migrations from host (requires DATABASE_URL in .env.compose to point to compose db)
-sqlx database create
-sqlx migrate run
-```
-
-Notes
+- Database migrations run automatically via the `db-migrate` service. No manual migration is required.
+- PostgreSQL and Redis ports are NOT exposed to the host for security. They are only accessible within the Docker internal network.
+- The `blog` service will wait for:
+  - PostgreSQL to be healthy
+  - Redis to be healthy
+  - Database migrations to complete successfully
 - The project `.env` is reserved for native development and is not used by compose. Compose loads `.env.compose` into the `blog` container.
 - `.env.compose` is included in `.gitignore` to avoid committing secrets. Use `.env.example` or `.env.compose` as a template.
-- If you change service names or ports in `docker-compose.yml`, update `.env.compose` accordingly.
+- If you change service names in `docker-compose.yml`, update `.env.compose` accordingly.
 

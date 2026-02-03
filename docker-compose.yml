@@ -9,15 +9,45 @@ services:
       POSTGRES_DB: myblog_db
     volumes:
       - db_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myblog -d myblog_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:latest
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Database migration service, runs once on startup
+  db-migrate:
+    image: rust:latest
+    working_dir: /app
+    volumes:
+      - ./migrations:/app/migrations:ro
+    environment:
+      DATABASE_URL: postgres://myblog:myblog_pass@db:5432/myblog_db
+    networks:
+      - internal
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      bash -c "
+        cargo install sqlx-cli --no-default-features --features postgres &&
+        sqlx database create || true &&
+        sqlx migrate run
+      "
 
   blog:
     build:
@@ -26,11 +56,24 @@ services:
     env_file:
       - .env.compose
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      db-migrate:
+        condition: service_completed_successfully
     ports:
       - "8080:8080"
+    networks:
+      - internal
+      - external
     restart: unless-stopped
+
+networks:
+  internal:
+    internal: true  # Internal network, not exposed to host
+  external:
+    driver: bridge  # External network, used to expose blog service
 
 volumes:
   db_data:
