@@ -15,10 +15,33 @@
 (function () {
   "use strict";
 
+  // ============== Bootstrap 5 Modal Helpers ==============
+  // Cache modal instances for reuse
+  const modalInstances = {};
+
+  function getModal(selector) {
+    const el = document.querySelector(selector);
+    if (!el) return null;
+    if (!modalInstances[selector]) {
+      modalInstances[selector] = new bootstrap.Modal(el);
+    }
+    return modalInstances[selector];
+  }
+
+  function showModal(selector) {
+    const modal = getModal(selector);
+    if (modal) modal.show();
+  }
+
+  function hideModal(selector) {
+    const modal = getModal(selector);
+    if (modal) modal.hide();
+  }
+
   // ============== URL Sharing Utilities ==============
 
   // Major category encoding
-  const MAJOR_CATEGORY_MAP = { "股票": 0, "债券": 1, "大宗商品": 2, "现金": 3 };
+  const MAJOR_CATEGORY_MAP = { 股票: 0, 债券: 1, 大宗商品: 2, 现金: 3 };
   const MAJOR_CATEGORY_REVERSE = ["股票", "债券", "大宗商品", "现金"];
 
   // Base62 encoding for compact numbers (0-9a-zA-Z)
@@ -26,7 +49,10 @@
   function toB62(n) {
     if (n === 0) return "0";
     let s = "";
-    while (n > 0) { s = B62[n % 62] + s; n = Math.floor(n / 62); }
+    while (n > 0) {
+      s = B62[n % 62] + s;
+      n = Math.floor(n / 62);
+    }
     return s;
   }
   function fromB62(s) {
@@ -46,16 +72,16 @@
   function compressPortfolioData(entries, options = {}) {
     const inc = Math.round(options.incremental || 0);
     const red = Math.round(options.redemption || 0);
-    
+
     const parts = [];
-    
+
     // Header only if needed
     if (inc > 0 || red > 0) {
       parts.push(`${toB62(inc)}~${toB62(red)}~`);
     }
-    
+
     // Entries
-    const entryStrs = entries.map(entry => {
+    const entryStrs = entries.map((entry) => {
       const major = MAJOR_CATEGORY_MAP[entry.major_category] ?? 0;
       const minor = (entry.minor_category || "").replace(/[~;]/g, "");
       const type = (entry.fund_type || "").replace(/[~;]/g, "");
@@ -64,7 +90,7 @@
       const amount = toB62(Math.round(entry.amount));
       return `${major}~${minor}~${type}~${name}~${ratio}~${amount}`;
     });
-    
+
     const str = parts.join("") + entryStrs.join(";");
 
     if (typeof window.LZString !== "undefined") {
@@ -84,9 +110,10 @@
       }
       if (!str) return null;
 
-      let incremental = 0, redemption = 0;
+      let incremental = 0,
+        redemption = 0;
       let entriesStr = str;
-      
+
       // Check for header (starts with number~number~, no ';' before first entry)
       const headerMatch = str.match(/^([0-9a-zA-Z]+)~([0-9a-zA-Z]+)~(?=\d)/);
       if (headerMatch) {
@@ -98,11 +125,11 @@
       // Parse entries
       const entries = [];
       const entryParts = entriesStr.split(";");
-      
+
       for (let i = 0; i < entryParts.length; i++) {
         const fields = entryParts[i].split("~");
         if (fields.length < 6) continue;
-        
+
         entries.push({
           id: -(i + 1),
           major_category: MAJOR_CATEGORY_REVERSE[parseInt(fields[0])] || "股票",
@@ -133,9 +160,7 @@
    */
   function generateShareUrl() {
     const options = {
-      name: currentPortfolio
-        ? currentPortfolio.portfolio.name
-        : "分享的组合",
+      name: currentPortfolio ? currentPortfolio.portfolio.name : "分享的组合",
       incremental: parseFloat($("#input-incremental").val()) || 0,
       redemption: parseFloat($("#input-redemption").val()) || 0,
     };
@@ -259,8 +284,8 @@
         <div class="modal-dialog" role="document">
           <div class="modal-content">
             <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
               <h4 class="modal-title">分享链接</h4>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
               <p>请手动复制以下链接：</p>
@@ -268,7 +293,7 @@
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-primary" id="btn-copy-url">复制链接</button>
-              <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
             </div>
           </div>
         </div>
@@ -277,7 +302,8 @@
 
     $("body").append(modal);
 
-    modal.modal("show");
+    const bsModal = new bootstrap.Modal(modal[0]);
+    bsModal.show();
 
     // Select all text when clicking
     $("#share-url-text").on("click", function () {
@@ -288,9 +314,12 @@
     $("#btn-copy-url").on("click", async function () {
       const success = await copyToClipboard(url);
       if (success) {
-        $(this).text("已复制！").addClass("btn-success").removeClass("btn-primary");
+        $(this)
+          .text("已复制！")
+          .addClass("btn-success")
+          .removeClass("btn-primary");
         setTimeout(() => {
-          modal.modal("hide");
+          bsModal.hide();
         }, 1000);
       }
     });
@@ -373,6 +402,8 @@
   let currentPortfolio = null;
   let entries = [];
   let pendingChanges = {};
+  let pendingNewEntries = []; // 本地新增的条目（尚未保存到数据库）
+  let pendingDeleteIds = []; // 本地标记删除的条目ID（尚未从数据库删除）
   let deleteTarget = null;
   let deleteType = null;
   let entryRowCounter = 0;
@@ -437,7 +468,7 @@
 
     // New portfolio
     $("#btn-new-portfolio").on("click", () =>
-      $("#new-portfolio-modal").modal("show"),
+      showModal("#new-portfolio-modal"),
     );
     $("#btn-modal-create").on("click", createPortfolio);
 
@@ -449,7 +480,7 @@
         $("#delete-confirm-text").text(
           `确定要删除投资组合 "${currentPortfolio.portfolio.name}" 吗？所有相关数据将被删除。`,
         );
-        $("#delete-modal").modal("show");
+        showModal("#delete-modal");
       }
     });
 
@@ -518,6 +549,8 @@
         currentPortfolio = response.data;
         entries = currentPortfolio.entries;
         pendingChanges = {};
+        pendingNewEntries = [];
+        pendingDeleteIds = [];
 
         // Update major category order config to include all majors actually present
         updateMajorOrderFromEntries();
@@ -527,6 +560,7 @@
         renderPortfolioInfo();
         renderTable();
         showPortfolioView();
+        updateUnsavedIndicator();
       } else {
         alert("加载失败: " + response.data);
       }
@@ -553,7 +587,7 @@
       data: JSON.stringify({ name, description: description || null }),
       success: function (response) {
         if (response.status) {
-          $("#new-portfolio-modal").modal("hide");
+          hideModal("#new-portfolio-modal");
           $("#modal-portfolio-name").val("");
           $("#modal-portfolio-desc").val("");
           loadPortfolios();
@@ -572,13 +606,13 @@
       alert("只有管理员可以删除");
       deleteTarget = null;
       deleteType = null;
-      $("#delete-modal").modal("hide");
+      hideModal("#delete-modal");
       return;
     }
     if (deleteType === "portfolio" && deleteTarget) {
       $.post(API.deletePortfolio(deleteTarget), function (response) {
         if (response.status) {
-          $("#delete-modal").modal("hide");
+          hideModal("#delete-modal");
           loadPortfolios();
           clearPortfolioView();
           currentPortfolio = null;
@@ -587,14 +621,32 @@
         }
       });
     } else if (deleteType === "entry" && deleteTarget) {
-      $.post(API.deleteEntry(deleteTarget), function (response) {
-        if (response.status) {
-          $("#delete-modal").modal("hide");
-          loadPortfolio(response.data);
-        } else {
-          alert("删除失败: " + response.data);
+      // 本地删除条目，不立即调用API
+      const entryId = deleteTarget;
+
+      // 检查是否是本地新增的条目（负数ID）
+      const newEntryIndex = pendingNewEntries.findIndex(
+        (e) => e.id === entryId,
+      );
+      if (newEntryIndex !== -1) {
+        // 从本地新增列表中移除
+        pendingNewEntries.splice(newEntryIndex, 1);
+      } else {
+        // 已存在于数据库的条目，标记为待删除
+        if (!pendingDeleteIds.includes(entryId)) {
+          pendingDeleteIds.push(entryId);
         }
-      });
+      }
+
+      // 从entries数组中移除
+      entries = entries.filter((e) => e.id !== entryId);
+
+      // 清除该条目的pendingChanges
+      delete pendingChanges[entryId];
+
+      hideModal("#delete-modal");
+      renderTable();
+      updateUnsavedIndicator();
     }
     deleteTarget = null;
     deleteType = null;
@@ -636,8 +688,8 @@
                     <label>金额</label>
                     <input type="number" class="new-amount" value="0" step="0.01" style="width: 100px;">
                 </div>
-                <button type="button" class="btn btn-xs btn-danger btn-remove-row" data-row-id="${rowId}">
-                    <span class="glyphicon glyphicon-minus"></span>
+                <button type="button" class="btn btn-sm btn-danger btn-remove-row" data-row-id="${rowId}">
+                    <i class="bi bi-dash"></i>
                 </button>
             </div>
         `;
@@ -686,64 +738,37 @@
       return;
     }
 
-    if (!IS_ADMIN) {
-      // local-only add for visitors: assign temporary negative ids
-      if (!window.__localEntryIdCounter) window.__localEntryIdCounter = -1;
-      entriesToAdd.forEach((entry) => {
-        const localEntry = {
-          id: window.__localEntryIdCounter--,
-          portfolio_id: entry.portfolio_id,
-          major_category: entry.major_category,
-          minor_category: entry.minor_category,
-          fund_type: entry.fund_type,
-          fund_name: entry.fund_name,
-          target_ratio: entry.target_ratio,
-          amount: entry.amount,
-          sort_index: entries.length,
-        };
-        entries.push(localEntry);
-      });
-      // close form and re-render
-      $("#add-entry-form").slideUp();
-      renderTable();
-      return;
-    }
-
-    if (!currentPortfolio) return;
-
-    // Use batch create API: send all new entries in one request
-    $.ajax({
-      url: API.createEntry,
-      type: "POST",
-      contentType: "application/json",
-      data: JSON.stringify(entriesToAdd),
-      success: function (response) {
-        if (response && response.status) {
-          $("#add-entry-form").slideUp();
-          loadPortfolio(currentPortfolio.portfolio.id);
-          alert("添加成功");
-        } else {
-          alert(
-            "添加失败: " +
-              (response && (response.data || response.error)
-                ? response.data || response.error
-                : ""),
-          );
-        }
-      },
-      error: function () {
-        alert("添加失败");
-        $("#add-entry-form").slideUp();
-        if (currentPortfolio) loadPortfolio(currentPortfolio.portfolio.id);
-      },
+    // 本地添加条目，不立即调用API（管理员和访客都使用本地添加）
+    if (!window.__localEntryIdCounter) window.__localEntryIdCounter = -1;
+    entriesToAdd.forEach((entry) => {
+      const localEntry = {
+        id: window.__localEntryIdCounter--,
+        portfolio_id: entry.portfolio_id,
+        major_category: entry.major_category,
+        minor_category: entry.minor_category,
+        fund_type: entry.fund_type,
+        fund_name: entry.fund_name,
+        target_ratio: entry.target_ratio,
+        amount: entry.amount,
+        sort_index: entries.length,
+      };
+      entries.push(localEntry);
+      // 管理员模式下，跟踪本地新增的条目
+      if (IS_ADMIN) {
+        pendingNewEntries.push(localEntry);
+      }
     });
+    // close form and re-render
+    $("#add-entry-form").slideUp();
+    renderTable();
+    updateUnsavedIndicator();
   }
 
   function deleteEntry(id) {
     deleteTarget = id;
     deleteType = "entry";
     $("#delete-confirm-text").text("确定要删除这个基金条目吗？");
-    $("#delete-modal").modal("show");
+    showModal("#delete-modal");
   }
 
   function updateEntryField(entryId, field, value) {
@@ -782,24 +807,48 @@
     }
     const updates = [];
 
-    // Collect all pending entry field changes
+    // Collect all pending entry field changes (only for existing entries, not new ones)
     Object.keys(pendingChanges).forEach((entryId) => {
+      const id = parseInt(entryId);
+      // 跳过本地新增的条目（负数ID），它们会通过创建API处理
+      if (id < 0) return;
       const changes = pendingChanges[entryId];
       if (Object.keys(changes).length > 0) {
         updates.push({
-          id: parseInt(entryId),
+          id: id,
           ...changes,
         });
       }
     });
 
-    // Prepare order updates based on current entries order
-    const orderUpdates = entries.map((e, idx) => ({
-      id: e.id,
-      sort_index: idx,
+    // 准备要创建的新条目
+    const entriesToCreate = pendingNewEntries.map((entry) => ({
+      portfolio_id: currentPortfolio.portfolio.id,
+      major_category: entry.major_category,
+      minor_category: entry.minor_category,
+      fund_type: entry.fund_type,
+      fund_name: entry.fund_name,
+      target_ratio: entry.target_ratio,
+      amount: entry.amount,
     }));
 
-    if (updates.length === 0 && orderUpdates.length === 0) {
+    // 准备要删除的条目ID
+    const idsToDelete = [...pendingDeleteIds];
+
+    // Prepare order updates based on current entries order (only for existing entries)
+    const orderUpdates = entries
+      .filter((e) => e.id > 0) // 只包含已存在于数据库的条目
+      .map((e, idx) => ({
+        id: e.id,
+        sort_index: idx,
+      }));
+
+    const hasFieldUpdates = updates.length > 0;
+    const hasNewEntries = entriesToCreate.length > 0;
+    const hasDeletes = idsToDelete.length > 0;
+    const hasOrderUpdates = orderUpdates.length > 0;
+
+    if (!hasFieldUpdates && !hasNewEntries && !hasDeletes && !hasOrderUpdates) {
       alert("没有需要保存的更改");
       return;
     }
@@ -823,15 +872,20 @@
       console.warn("校验大类比例失败", e);
     }
 
-    // We'll send updates in a single batch request, plus one request for the batch order if needed.
+    // 计算总请求数
     let totalRequests =
-      (updates.length > 0 ? 1 : 0) + (orderUpdates.length > 0 ? 1 : 0);
+      (hasFieldUpdates ? 1 : 0) +
+      (hasNewEntries ? 1 : 0) +
+      (hasDeletes ? idsToDelete.length : 0) + // 每个删除一个请求
+      (hasOrderUpdates ? 1 : 0);
     let completed = 0;
     let failed = 0;
 
     function checkDone() {
       if (completed === totalRequests) {
         pendingChanges = {};
+        pendingNewEntries = [];
+        pendingDeleteIds = [];
         updateUnsavedIndicator();
         loadPortfolio(currentPortfolio.portfolio.id);
         if (failed > 0) {
@@ -842,8 +896,49 @@
       }
     }
 
-    // Send a single batch update request for all changed entries
-    if (updates.length > 0) {
+    // 如果没有请求需要发送，直接返回
+    if (totalRequests === 0) {
+      alert("没有需要保存的更改");
+      return;
+    }
+
+    // 1. 发送删除请求
+    if (hasDeletes) {
+      idsToDelete.forEach((id) => {
+        $.post(API.deleteEntry(id), function (response) {
+          if (!response.status) failed++;
+          completed++;
+          checkDone();
+        }).fail(function () {
+          failed++;
+          completed++;
+          checkDone();
+        });
+      });
+    }
+
+    // 2. 发送创建新条目请求
+    if (hasNewEntries) {
+      $.ajax({
+        url: API.createEntry,
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify(entriesToCreate),
+        success: function (response) {
+          if (!response || !response.status) failed++;
+          completed++;
+          checkDone();
+        },
+        error: function () {
+          failed++;
+          completed++;
+          checkDone();
+        },
+      });
+    }
+
+    // 3. Send a single batch update request for all changed entries
+    if (hasFieldUpdates) {
       $.ajax({
         url: API.updateEntry,
         type: "POST",
@@ -862,8 +957,8 @@
       });
     }
 
-    // Send batch order once (backend will persist sort_index)
-    if (orderUpdates.length > 0) {
+    // 4. Send batch order once (backend will persist sort_index)
+    if (hasOrderUpdates) {
       $.ajax({
         url: API.batchOrder,
         type: "POST",
@@ -896,9 +991,12 @@
       $("#btn-save-all").removeClass("has-changes");
       return;
     }
-    const hasChanges = Object.keys(pendingChanges).some(
+    const hasFieldChanges = Object.keys(pendingChanges).some(
       (id) => Object.keys(pendingChanges[id]).length > 0,
     );
+    const hasNewEntries = pendingNewEntries.length > 0;
+    const hasDeletedEntries = pendingDeleteIds.length > 0;
+    const hasChanges = hasFieldChanges || hasNewEntries || hasDeletedEntries;
 
     if (hasChanges) {
       $("#unsaved-indicator").addClass("show");
@@ -1177,8 +1275,8 @@
                 <td class="${calc.allocation > 0 ? "positive" : ""}">${allocationDisplay}</td>
                 <td>${redemptionDisplay}</td>
                 <td>
-                    <button class="btn btn-xs btn-danger btn-delete-entry" data-id="${entry.id}">
-                        <span class="glyphicon glyphicon-trash"></span>
+                    <button class="btn btn-sm btn-danger btn-delete-entry" data-id="${entry.id}">
+                        <i class="bi bi-trash"></i>
                     </button>
                 </td>
             </tr>

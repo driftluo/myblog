@@ -18,7 +18,17 @@ function getList() {
         }
         var html = template("tpl-article-list", result);
         $("div.col-md-8").append(html);
-        command.statusChange();
+
+        // If page is not scrollable yet and there's more content, load more
+        if (
+          result.data.length > 0 &&
+          $(document).height() <= $(window).height()
+        ) {
+          getList();
+        } else {
+          // Re-enable scroll detection
+          command.status = true;
+        }
       },
     );
   }
@@ -26,7 +36,7 @@ function getList() {
 
 // First visit, asynchronously access article list
 $(document).ready(function () {
-  command.statusChange(); // Set status to false to prevent duplicate scroll events
+  command.status = false; // Prevent duplicate scroll events during initial load
   getList();
 });
 
@@ -36,7 +46,7 @@ $(window).scroll(function () {
     $(window).scrollTop() + $(window).height() >= $(document).height() - 1 &&
     command.status
   ) {
-    command.statusChange();
+    command.status = false; // Prevent duplicate scroll events
     getList();
   }
 });

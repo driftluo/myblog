@@ -19,7 +19,7 @@
     {%- endif -%}
 
     .fund-container {
-        margin-top: 50px;
+        margin-top: 70px;
         padding: 0 20px;
     }
     
@@ -108,7 +108,7 @@
     }
     
     .fund-table th {
-        background: #f0f0f0;
+        background: #e2e3e5;
         font-weight: bold;
         position: sticky;
         top: 0;
@@ -296,7 +296,7 @@
 {% endblock css %}
 
 {% block body %}
-<div class="col-sm-12 col-md-12 col-xs-12 fund-container">
+<div class="col-12 fund-container">
     <h3>基金投资组合管理</h3>
     
     {%- if is_admin is defined and is_admin -%}
@@ -310,10 +310,10 @@
             </div>
             <div class="col-sm-4">
                 <button type="button" class="btn btn-success" id="btn-new-portfolio">
-                    <span class="glyphicon glyphicon-plus"></span> 新建组合
+                    <i class="bi bi-plus"></i> 新建组合
                 </button>
                 <button type="button" class="btn btn-danger" id="btn-delete-portfolio" disabled>
-                    <span class="glyphicon glyphicon-trash"></span> 删除组合
+                    <i class="bi bi-trash"></i> 删除组合
                 </button>
             </div>
         </div>
@@ -348,24 +348,24 @@
     <!-- Action Buttons -->
     <div class="btn-group-actions" id="action-buttons" style="display: none;">
         <button type="button" class="btn btn-success btn-sm" id="btn-add-entry">
-            <span class="glyphicon glyphicon-plus"></span> 添加基金
+            <i class="bi bi-plus"></i> 添加基金
         </button>
         {%- if is_admin is defined and not is_admin -%}
-        <a class="btn btn-default btn-sm" href="/index" id="btn-back-home">
-            <span class="glyphicon glyphicon-home"></span> 返回首页
+        <a class="btn btn-secondary btn-sm" href="/index" id="btn-back-home">
+            <i class="bi bi-house"></i> 返回首页
         </a>
         {%- endif -%}
         <button type="button" class="btn btn-primary btn-sm" id="btn-save-all">
-            <span class="glyphicon glyphicon-floppy-disk"></span> 保存所有更改
+            <i class="bi bi-floppy"></i> 保存所有更改
         </button>
         <button type="button" class="btn btn-info btn-sm" id="btn-calculate">
-            <span class="glyphicon glyphicon-refresh"></span> 重新计算
+            <i class="bi bi-arrow-clockwise"></i> 重新计算
         </button>
         <button type="button" class="btn btn-info btn-sm" id="btn-share">
-            <span class="glyphicon glyphicon-share"></span> 分享
+            <i class="bi bi-share"></i> 分享
         </button>
         <span class="unsaved-indicator" id="unsaved-indicator">
-            <span class="glyphicon glyphicon-exclamation-sign"></span> 有未保存的修改
+            <i class="bi bi-exclamation-circle"></i> 有未保存的修改
         </span>
         <div id="major-ratio-error" style="display:none; color: #d9534f; margin-left: 15px; font-weight: bold;"></div>
     </div>
@@ -381,11 +381,11 @@
                 <option value="大宗商品">大宗商品</option>
                 <option value="现金">现金</option>
             </select>
-            <button type="button" class="btn btn-xs btn-default" id="btn-move-major-up" title="上移">
-                <span class="glyphicon glyphicon-arrow-up"></span>
+            <button type="button" class="btn btn-sm btn-secondary" id="btn-move-major-up" title="上移">
+                <i class="bi bi-arrow-up"></i>
             </button>
-            <button type="button" class="btn btn-xs btn-default" id="btn-move-major-down" title="下移">
-                <span class="glyphicon glyphicon-arrow-down"></span>
+            <button type="button" class="btn btn-sm btn-secondary" id="btn-move-major-down" title="下移">
+                <i class="bi bi-arrow-down"></i>
             </button>
         </span>
         <span style="margin-left: 20px; margin-right: 10px;">
@@ -406,13 +406,13 @@
     
     <!-- Add Entry Form (Multiple) -->
     <div class="add-entry-form" id="add-entry-form">
-        <h5>批量添加基金 <button type="button" class="btn btn-xs btn-success" id="btn-add-more-row"><span class="glyphicon glyphicon-plus"></span> 添加一行</button></h5>
+        <h5>批量添加基金 <button type="button" class="btn btn-sm btn-success" id="btn-add-more-row"><i class="bi bi-plus"></i> 添加一行</button></h5>
         <div id="entry-rows-container">
             <!-- Entry rows will be added here -->
         </div>
         <div style="margin-top: 15px;">
             <button type="button" class="btn btn-success" id="btn-confirm-add-all">确认添加全部</button>
-            <button type="button" class="btn btn-default" id="btn-cancel-add">取消</button>
+            <button type="button" class="btn btn-secondary" id="btn-cancel-add">取消</button>
         </div>
     </div>
     
@@ -469,22 +469,22 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                 <h4 class="modal-title">新建投资组合</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="form-group">
-                    <label>组合名称 *</label>
+                <div class="mb-3">
+                    <label class="form-label">组合名称 *</label>
                     <input type="text" id="modal-portfolio-name" class="form-control" placeholder="如: 天天基金">
                 </div>
-                <div class="form-group">
-                    <label>描述</label>
+                <div class="mb-3">
+                    <label class="form-label">描述</label>
                     <textarea id="modal-portfolio-desc" class="form-control" rows="3"></textarea>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" id="btn-modal-create">创建</button>
-                <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
             </div>
         </div>
     </div>
@@ -495,15 +495,15 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                 <h4 class="modal-title">确认删除</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <p id="delete-confirm-text">确定要删除吗？</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-danger" id="btn-confirm-delete">确认删除</button>
-                <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
             </div>
         </div>
     </div>

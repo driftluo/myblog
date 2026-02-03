@@ -19,12 +19,16 @@
 {% block body %}
 <header>
     <div class="img">
-        <img src="/images/img_12.webp" class="img-responsive img-rounded"/><br>
-        <p class="text-right">--- 摄于 2017 年 9 月 藏川线前段</p>
+        <img src="/images/img_12.webp" class="img-fluid rounded"/><br>
+        <p class="text-end">--- 摄于 2017 年 9 月 藏川线前段</p>
     </div>
 </header>
-<div class="col-md-offset-1 col-md-10" data-id={{ article.id }}>
- {{ article.content | safe }}
+<div class="container">
+  <div class="row justify-content-center">
+    <div id="article-content" class="col-lg-10 col-md-11 col-12" data-id={{ article.id }}>
+      {{ article.content | safe }}
+    </div>
+  </div>
 </div>
 
 {% endblock body %}
@@ -33,12 +37,12 @@
 <script>
     "use strict";
     $(function () {
-        var id = $(".col-md-offset-1").attr("data-id");
+        var id = $("#article-content").attr("data-id");
         hightlight($("pre code"));
         $.getJSON("/api/v1/article/admin/view?id=" + id, function (result) {
-            $(".col-md-offset-1")
-                .append("<blockquote class='pull-right'><h5 class='post-meta'>Last Modified:</h5>" +
-                    "<p class='pull-right post-meta'>" + moment.utc(result.data.modify_time).local().format("YYYY-MM-DD HH:mm:ss") +
+            $("#article-content")
+                .append("<blockquote class='float-end'><h5 class='post-meta'>Last Modified:</h5>" +
+                    "<p class='float-end post-meta'>" + moment.utc(result.data.modify_time).local().format("YYYY-MM-DD HH:mm:ss") +
                     "</p></blockquote>");
             var tags = {data: []};
 
@@ -48,7 +52,7 @@
                 }
             });
             var html = template("tpl-tag-list", tags);
-            $(".col-md-offset-1").children().first().after(html)
+            $("#article-content").children().first().after(html)
         });
     });
 
@@ -62,8 +66,7 @@
     {% raw %}
     <div style="margin-bottom: 10px;">
         {{each data}}
-        <span class='label label-info' tag-id={{ $value[0] }}><span class='glyphicon glyphicon-tags'
-                                                                    style='margin-right: 5px;'></span>{{ $value[1] }}</span>
+        <span class='badge bg-info text-dark' tag-id={{ $value[0] }}><i class='bi bi-tags' style='margin-right: 5px;'></i>{{ $value[1] }}</span>
         {{/each}}
     </div>
     {% endraw %}

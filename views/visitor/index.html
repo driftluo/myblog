@@ -11,26 +11,29 @@ driftluo's blog
 
 {% block header %}
 <div class="img">
-    <img src="/images/img_5.webp" class="img-responsive img-rounded" alt="亚丁·牛奶海"/><br>
-    <p class="text-right">--- 摄于 2017 年 9 月 亚丁·牛奶海</p>
+    <img src="/images/img_5.webp" class="img-fluid rounded" alt="亚丁·牛奶海"/><br>
+    <p class="text-end">--- 摄于 2017 年 9 月 亚丁·牛奶海</p>
 </div>
 {% endblock header %}
 
 {% block body %}
-<div class="container col-md-8">
-
-</div>
-<div class="container col-md-4">
-    <ul>
-        {% if tags %}
-        {% for tag in tags %}
-        <li data-id={{ tag.id }} class="list-unstyled">
-            <button class="btn btn-primary tag" type="button">{{ tag.tag }}&nbsp;<span class="badge">{{ tag.count }}</span>
-            </button>
-        </li>
-        {% endfor %}
-        {% endif %}
-    </ul>
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+        </div>
+        <div class="col-md-4">
+            <ul class="list-unstyled d-flex flex-wrap gap-2">
+                {% if tags %}
+                {% for tag in tags %}
+                <li data-id={{ tag.id }}>
+                    <button class="btn btn-primary tag" type="button">{{ tag.tag }}&nbsp;<span class="badge bg-light text-dark">{{ tag.count }}</span>
+                    </button>
+                </li>
+                {% endfor %}
+                {% endif %}
+            </ul>
+        </div>
+    </div>
 </div>
 
 {% endblock body %}

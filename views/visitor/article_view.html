@@ -17,35 +17,51 @@
 
 {% block header %}
 <div class="img">
-    <img src="/images/img_12.webp" class="img-responsive img-rounded" alt="藏川线前段"/><br>
-    <p class="text-right">--- 摄于 2017 年 9 月 藏川线前段</p>
+    <img src="/images/img_12.webp" class="img-fluid rounded" alt="藏川线前段"/><br>
+    <p class="text-end">--- 摄于 2017 年 9 月 藏川线前段</p>
 </div>
 {% endblock header%}
 
 {% block body %}
-<div class="col-md-offset-1 col-md-10" data-id={{ article.id }}>
-  {{ article.content | safe }}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-lg-10 col-md-11 col-12" data-id={{ article.id }}>
+      {{ article.content | safe }}
+    </div>
+  </div>
 </div>
-<div class="col-sm-offset-1 col-sm-10 col-md-offset-1 col-md-10 col-xs-offset-1 col-xs-10 comment_ground">
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-lg-10 col-md-11 col-12 comment_ground">
     <h4>评论区</h4>
     <ul class="comment">
 
     </ul>
 
     <a id="load" style="display:block;cursor: pointer;"><p class="text-center">加载更多</p></a>
+    </div>
+  </div>
 </div>
 
 {% if user %}
-<div class=" col-md-offset-1 col-md-10" style="margin-top: 20px;">
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-lg-10 col-md-11 col-12" style="margin-top: 20px;">
     <div id="editor">
 
     </div>
 
-    <button class="btn btn-primary pull-right comment">评论</button>
+    <button class="btn btn-primary float-end comment">评论</button>
+    </div>
+  </div>
 </div>
 {% else %}
-<div class="col-md-offset-1 col-md-10" style="margin-top: 20px;">
-    <p>请<a href="/home">登录</a>后评论</p>
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-lg-10 col-md-11 col-12" style="margin-top: 20px;">
+      <p>请<a href="/home">登录</a>后评论</p>
+    </div>
+  </div>
 </div>
 {% endif %}
 <div class="alert alert-danger float_alert"></div>

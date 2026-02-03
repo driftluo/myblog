@@ -14,28 +14,27 @@ Home
 
 {% block body %}
 <div class="container">
-    <div class="container col-sm-2 col-md-2 body-information">
-        <nav class="navbar navbar-inverse side-navbar" id="sidebar-wrapper" role="navigation">
-            <ul class="nav sidebar-nav">
-                <li>
-                    <a href="#"><i class="fa fa-fw fa-home"></i> Home</a>
-                </li>
-                <li>
-                    <a id="information_btn"><i class="fa fa-fw fa-home"></i> Information</a>
-                </li>
-                <li>
-                    <a id="modify_btn"><i class="fa fa-fw fa-home"></i> Modify</a>
-                </li>
-                <li>
-                    <a id="change_password_btn"><i class="fa fa-fw fa-home"></i> Change Password</a>
-                </li>
-                <li>
-                    <a id="sign_out_btn"><i class="fa fa-fw fa-home"></i> Sign out</a>
-                </li>
-            </ul>
-        </nav>
-    </div>
-    <div class="container col-sm-8 col-md-8 body-information">
+    <div class="row">
+        <div class="col-sm-3 col-md-2 body-information">
+            <div class="list-group side-navbar bg-dark" id="sidebar-wrapper">
+                <a href="#" class="list-group-item list-group-item-action bg-dark text-light">
+                    <i class="bi bi-house-fill"></i> Home
+                </a>
+                <a id="information_btn" class="list-group-item list-group-item-action bg-dark text-light" style="cursor: pointer;">
+                    <i class="bi bi-info-circle"></i> Information
+                </a>
+                <a id="modify_btn" class="list-group-item list-group-item-action bg-dark text-light" style="cursor: pointer;">
+                    <i class="bi bi-pencil-square"></i> Modify
+                </a>
+                <a id="change_password_btn" class="list-group-item list-group-item-action bg-dark text-light" style="cursor: pointer;">
+                    <i class="bi bi-key"></i> Change Password
+                </a>
+                <a id="sign_out_btn" class="list-group-item list-group-item-action bg-dark text-light" style="cursor: pointer;">
+                    <i class="bi bi-box-arrow-right"></i> Sign out
+                </a>
+            </div>
+        </div>
+        <div class="col-sm-9 col-md-8 body-information">
         <div id="information">
 
         </div>
@@ -43,17 +42,17 @@ Home
             <h3>修改信息</h3>
             <hr/>
             <form>
-                <div class="form-group">
+                <div class="mb-3">
                     <label>昵称:</label><input id="nickname" type="text" class="form-control">
                 </div>
-                <div class="form-group">
+                <div class="mb-3">
                     <label>签名:</label><textarea id="say" class="form-control" rows="5"></textarea>
                 </div>
-                <div class="form-group">
+                <div class="mb-3">
                     <label>Email:</label><input id="email" type="text" class="form-control">
                 </div>
-                <div class="form-group">
-                    <button type="button" class="btn btn-success pull-right">保存</button>
+                <div class="mb-3">
+                    <button type="button" class="btn btn-success float-end">保存</button>
                 </div>
             </form>
         </div>
@@ -61,17 +60,17 @@ Home
             <h3>修改密码</h3>
             <hr/>
             <form>
-                <div class="form-group">
+                <div class="mb-3">
                     <label>旧密码:</label><input id="old_password" type="password" class="form-control" maxlength="20">
                 </div>
-                <div class="form-group">
+                <div class="mb-3">
                     <label>新密码:</label><input id="new_password" type="password" class="form-control" maxlength="20">
                 </div>
-                <div class="form-group">
+                <div class="mb-3">
                     <label>再次输入:</label><input id="re_password" type="password" class="form-control" maxlength="20">
                 </div>
-                <div class="form-group">
-                    <button type="button" class="btn btn-success pull-right">提交</button>
+                <div class="mb-3">
+                    <button type="button" class="btn btn-success float-end">提交</button>
                 </div>
             </form>
         </div>
@@ -79,6 +78,7 @@ Home
             <h3>确定退出？</h3>
             <hr/>
             <button type="button" class="btn btn-warning">退出</button>
+        </div>
         </div>
     </div>
 </div>

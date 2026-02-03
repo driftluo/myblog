@@ -1,6 +1,15 @@
 "use strict";
 var page = new Page("article");
 
+// Bootstrap 5 Modal Helper
+function showModal(selector) {
+  var el = document.querySelector(selector);
+  if (el) {
+    var modal = bootstrap.Modal.getOrCreateInstance(el);
+    modal.show();
+  }
+}
+
 $(function () {
   getArticleList();
 });
@@ -32,7 +41,7 @@ function getArticleList() {
   );
 }
 
-$("button.pull-right").click(function (event) {
+$("button.float-end").click(function (event) {
   event.preventDefault();
   window.location = "/admin/new";
 });
@@ -70,7 +79,7 @@ function publishButton() {
 function deleteButton() {
   $(".delete").on("click", function (event) {
     event.preventDefault();
-    $("#delete_modal").modal("show");
+    showModal("#delete_modal");
     var tr = $(this).parent().parent();
     var id = $(this).attr("data-id");
     $(".modal-delete").click(function () {

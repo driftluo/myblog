@@ -1,7 +1,19 @@
 .side-navbar {
-    background: rgba(217, 219, 252, 0.98);
-    color: #fff;
     border: hidden;
+    border-radius: 0.375rem;
+}
+
+.side-navbar .list-group-item {
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.side-navbar .list-group-item:hover {
+    background-color: #495057 !important;
+}
+
+.side-navbar .list-group-item i {
+    margin-right: 8px;
 }
 
 .body-information {

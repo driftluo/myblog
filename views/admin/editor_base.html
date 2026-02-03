@@ -12,14 +12,15 @@
     <script src="/js/jquery-3.7.1.min.js"></script>
     <script src="/js/marked.js"></script>
     <script src="/js/highlight.pack.js"></script>
-    <link href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" />
-    <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link href="//cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet" />
+    <script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+    <link href="//cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="/css/monokai_default.css">
     <link rel="stylesheet" href="/css/editor_base.css">
 </head>
 
 <body>
-        <div class="col-md-8 col-md-offset-2">
+        <div class="col-md-8 offset-md-2">
             <div class="card shadow-lg" style="margin-top:32px; margin-bottom:32px;">
                 <div class="card-body">
                     <h3 class="card-title">文章编辑</h3>
@@ -43,10 +44,10 @@
                             {% endif %}
                         </ul>
                         <button id="upload_btn" type="button" class="btn btn-sm btn-success" style="margin-top:8px;">
-                            <span class="glyphicon glyphicon-upload"></span> 上传附件
+                            <i class="bi bi-upload"></i> 上传附件
                         </button>
                         <button id="tag_btn" class="btn btn-sm btn-info" style="margin-top:8px; margin-left:8px;">
-                            <span class="glyphicon glyphicon-plus"></span> 添加标签
+                            <i class="bi bi-plus"></i> 添加标签
                         </button>
                     </div>
                     <ul class="nav nav-tabs" style="margin-top:20px;">
@@ -60,10 +61,10 @@
                     </div>
                     <div class="text-center" style="margin-top:24px;">
                         <button id="quit" type="button" class="btn btn-danger" style="margin-right:16px;">
-                            <span class="glyphicon glyphicon-trash"></span> 放弃
+                            <i class="bi bi-trash"></i> 放弃
                         </button>
                         <button id='submit' type="button" class="btn btn-success">
-                            <span class="glyphicon glyphicon-open"></span> 提交
+                            <i class="bi bi-box-arrow-up"></i> 提交
                         </button>
                     </div>
                 </div>
@@ -73,14 +74,14 @@
             <div class="modal-dialog" role="document">
                 <div class="modal-content border-danger">
                     <div class="modal-header bg-danger text-white">
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                         <h4 class="modal-title">错误</h4>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <p>标题或内容为空</p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-danger" data-dismiss="modal">关闭</button>
+                        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">关闭</button>
                     </div>
                 </div>
             </div>
@@ -89,14 +90,14 @@
             <div class="modal-dialog" role="document">
                 <div class="modal-content border-success">
                     <div class="modal-header bg-success text-white">
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                         <h4 class="modal-title">成功</h4>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <p>提交成功</p>
                     </div>
                     <div class="modal-footer">
-                        <button id="success_btn" type="button" class="btn btn-success" data-dismiss="modal">关闭</button>
+                        <button id="success_btn" type="button" class="btn btn-success" data-bs-dismiss="modal">关闭</button>
                     </div>
                 </div>
             </div>
@@ -106,17 +107,15 @@
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
-                            aria-hidden="true">&times;</span>
-                    </button>
                     <h4 class="modal-title">提示</h4>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <p>提交成功</p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-danger modal-upload" data-dismiss="modal">Upload</button>
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger modal-upload" data-bs-dismiss="modal">Upload</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 </div>
             </div>
         </div>
@@ -126,18 +125,16 @@
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
-                            aria-hidden="true">&times;</span>
-                    </button>
                     <h4 class="modal-title">提示</h4>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <br /><br />
-                    <input type="file" id="file" name="files" multiple class="btn btn-default" />
+                    <input type="file" id="file" name="files" multiple class="btn btn-secondary" />
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-danger modal-upload" data-dismiss="modal">Upload</button>
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger modal-upload" data-bs-dismiss="modal">Upload</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 </div>
             </div>
         </div>
@@ -147,22 +144,20 @@
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
-                            aria-hidden="true">&times;</span>
-                    </button>
                     <h4 class="modal-title">新标签</h4>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form>
-                        <div class="form-group">
-                            <label for="tag-name" class="control-label">名称:</label>
+                        <div class="mb-3">
+                            <label for="tag-name" class="form-label">名称:</label>
                             <input type="text" class="form-control" id="tag-name">
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
-                    <button id="add_tag" type="button" class="btn btn-primary">增加</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button id="add_tag" type="button" class="btn btn-primary">添加</button>
                 </div>
             </div>
         </div>

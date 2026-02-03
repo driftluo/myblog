@@ -22,7 +22,7 @@
     vertical-align: middle;
 }
 
-.my-navbar .glyphicon {
+.my-navbar .bi {
     vertical-align: baseline;
 }
 
@@ -69,6 +69,35 @@ button {
     margin-left: 20px;
 }
 
-li[data-id] {
-    float: left;
+/* 自定义表格样式 */
+.table {
+    --bs-table-bg: transparent;
+    --bs-table-striped-bg: rgba(0, 0, 0, 0.02);
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+    --bs-table-bg-type: rgba(0, 0, 0, 0.02);
+}
+
+/* Header image container */
+.img {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.img img {
+    width: 100%;
+    max-height: 400px;
+    object-fit: cover;
+}
+
+.img p {
+    margin-top: 5px;
+    color: #777;
+    font-style: italic;
 }

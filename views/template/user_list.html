@@ -10,15 +10,15 @@
         <td>{{ $value.create_time }}</td>
         <td>
             <button type="button" class="btn btn-primary btn-sm permission" data-id='{{ $value.id }}'>
-                <span class="glyphicon glyphicon-open"></span>
+                <i class="bi bi-shield-check"></i>
                 Permission
             </button>
             <button type="button" class="btn btn-info btn-sm disabled" data-id='{{ $value.id }}'>
-                <span class="glyphicon glyphicon-info-sign"></span>
+                <i class="bi bi-slash-circle"></i>
                 Disabled
             </button>
             <button type="button" class="btn btn-danger btn-sm delete" data-id='{{ $value.id }}'>
-                <span class="glyphicon glyphicon-trash"></span>
+                <i class="bi bi-trash"></i>
                 Delete
             </button>
         </td>
