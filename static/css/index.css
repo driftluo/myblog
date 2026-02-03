@@ -16,6 +16,12 @@
     vertical-align: middle;
 }
 
+/* Fine-tune Admin navigation iconfont alignment */
+.my-navbar a[href="/admin"] .iconfont {
+    top: -2px;
+    vertical-align: middle;
+}
+
 .my-navbar .glyphicon {
     vertical-align: baseline;
 }
