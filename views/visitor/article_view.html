@@ -5,12 +5,7 @@
 {% endblock title %}
 
 {% block css %}
-<script src='/js/highlight.pack.js'></script>
-<script src="/js/arttemplate.js"></script>
-<script src="/js/wangEditor.min.js"></script>
-<script src="/js/index/index_command.js"></script>
-<script src="/js/index/navigationBar.js"></script>
-<link href='/css/monokai_default.css' rel='stylesheet'/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/monokai.min.css" rel="stylesheet"/>
 <link href='/css/article_view.css' rel='stylesheet'/>
 {% include "template/visitor_article_view.html" %}
 {% endblock css %}
@@ -69,6 +64,20 @@
 {% endblock body %}
 
 {% block script %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/rust.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/go.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/c.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/cpp.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/bash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/sql.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/yaml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/dockerfile.min.js"></script>
+<script src="/js/arttemplate.js"></script>
+<script src="/js/wangEditor.min.js"></script>
+<script src="/js/index/index_command.js"></script>
+<script src="/js/index/navigationBar.js"></script>
 {% if user %}
 <script src="/js/article_view/wangeditor.js"></script>
 {% endif %}

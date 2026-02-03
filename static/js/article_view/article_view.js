@@ -15,7 +15,7 @@ $("#load").click(function () {
 // Highlight code
 function hightlight($doms) {
   $doms.each(function (i, block) {
-    hljs.highlightBlock(block);
+    hljs.highlightElement(block);
   });
 }
 

@@ -5,9 +5,7 @@
 {% endblock title %}
 
 {% block css %}
-<script src='/js/highlight.pack.js'></script>
-<script src="/js/arttemplate.js"></script>
-<link href='/css/monokai_default.css' rel='stylesheet'/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/monokai.min.css" rel="stylesheet"/>
 <link href='/css/article_view.css' rel='stylesheet'/>
 <style>
     pre {
@@ -34,6 +32,17 @@
 {% endblock body %}
 
 {% block script %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/rust.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/go.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/c.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/cpp.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/bash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/sql.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/yaml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/dockerfile.min.js"></script>
+<script src="/js/arttemplate.js"></script>
 <script>
     "use strict";
     $(function () {
@@ -58,7 +67,7 @@
 
     function hightlight($doms) {
         $doms.each(function(i, block) {
-            hljs.highlightBlock(block);
+            hljs.highlightElement(block);
         });
     }
 </script>
