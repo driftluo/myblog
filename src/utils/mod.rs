@@ -10,7 +10,10 @@ use rand::Rng;
 use salvo::http::header;
 use salvo::{
     Depot, Request, Response,
-    http::{ResBody, StatusCode, StatusError, cookie::Cookie},
+    http::{
+        ResBody, StatusCode, StatusError,
+        cookie::{Cookie, time},
+    },
     prelude::handler,
     routing::FlowCtrl,
 };
@@ -159,11 +162,12 @@ where
         .headers()
         .get(header::CONTENT_TYPE)
         .and_then(|h| h.to_str().ok())
-        && (ctype.starts_with("application/json") || ctype.starts_with("text/")) {
-            let body = req.take_body();
-            let bytes = body.collect().await.ok()?.to_bytes();
-            return serde_json::from_slice(&bytes).ok();
-        }
+        && (ctype.starts_with("application/json") || ctype.starts_with("text/"))
+    {
+        let body = req.take_body();
+        let bytes = body.collect().await.ok()?.to_bytes();
+        return serde_json::from_slice(&bytes).ok();
+    }
 
     None
 }
@@ -173,16 +177,17 @@ pub async fn parse_form_body<T>(req: &mut Request, name: &str) -> Option<String>
         .headers()
         .get(header::CONTENT_TYPE)
         .and_then(|h| h.to_str().ok())
-        && ctype == "application/x-www-form-urlencoded" {
-            let body = req.take_body();
-            let data = body.collect().await.ok()?.to_bytes();
-            let form_iter = url::form_urlencoded::parse(&data);
-            for (key, val) in form_iter {
-                if key == name {
-                    return Some(val.to_string());
-                }
+        && ctype == "application/x-www-form-urlencoded"
+    {
+        let body = req.take_body();
+        let data = body.collect().await.ok()?.to_bytes();
+        let form_iter = url::form_urlencoded::parse(&data);
+        for (key, val) in form_iter {
+            if key == name {
+                return Some(val.to_string());
             }
         }
+    }
 
     None
 }
@@ -231,42 +236,43 @@ pub async fn visitor_log(
     ctrl: &mut FlowCtrl,
 ) {
     if let Some(ip) = req.header::<String>("X-Real-IP")
-        && let Ok(key) = ::std::env::var("IPSTACK_KEY") {
-            let timestamp = chrono::Utc::now();
-            tokio::spawn(async move {
-                let url = format!("http://api.ipstack.com/{}?access_key={}", &ip, key,);
-                if let Ok(res) = reqwest::Client::new().get(&url).send().await {
-                    #[derive(serde::Deserialize, serde::Serialize)]
-                    struct Inner {
-                        country_name: Option<String>,
-                        region_name: Option<String>,
-                        city: Option<String>,
-                    }
-
-                    #[derive(serde::Deserialize, serde::Serialize)]
-                    struct Dump {
-                        ip: String,
-                        timestamp: chrono::DateTime<chrono::Utc>,
-                        #[serde(flatten)]
-                        inner: Inner,
-                    }
-
-                    if let Ok(data) = res.json::<Inner>().await {
-                        get_redis()
-                            .lua_push(
-                                "visitor_log",
-                                &serde_json::to_string(&Dump {
-                                    ip,
-                                    timestamp,
-                                    inner: data,
-                                })
-                                .unwrap(),
-                            )
-                            .await;
-                    }
+        && let Ok(key) = ::std::env::var("IPSTACK_KEY")
+    {
+        let timestamp = chrono::Utc::now();
+        tokio::spawn(async move {
+            let url = format!("http://api.ipstack.com/{}?access_key={}", &ip, key,);
+            if let Ok(res) = reqwest::Client::new().get(&url).send().await {
+                #[derive(serde::Deserialize, serde::Serialize)]
+                struct Inner {
+                    country_name: Option<String>,
+                    region_name: Option<String>,
+                    city: Option<String>,
                 }
-            });
-        }
+
+                #[derive(serde::Deserialize, serde::Serialize)]
+                struct Dump {
+                    ip: String,
+                    timestamp: chrono::DateTime<chrono::Utc>,
+                    #[serde(flatten)]
+                    inner: Inner,
+                }
+
+                if let Ok(data) = res.json::<Inner>().await {
+                    get_redis()
+                        .lua_push(
+                            "visitor_log",
+                            &serde_json::to_string(&Dump {
+                                ip,
+                                timestamp,
+                                inner: data,
+                            })
+                            .unwrap(),
+                        )
+                        .await;
+                }
+            }
+        });
+    }
     ctrl.call_next(req, depot, res).await;
 }
 

@@ -1,11 +1,11 @@
 use bytes::{BufMut, Bytes, BytesMut};
-use once_cell::sync::Lazy;
 use salvo::http::header;
 use salvo::{
     Response,
     http::{ResBody, StatusCode},
 };
 use std::io::{self, Write};
+use std::sync::LazyLock;
 
 mod admin;
 mod visitor;
@@ -13,7 +13,7 @@ mod visitor;
 pub use admin::Admin;
 pub use visitor::ArticleWeb;
 
-static TERA: Lazy<tera::Tera> = Lazy::new(|| tera::Tera::new("views/**/*").unwrap());
+static TERA: LazyLock<tera::Tera> = LazyLock::new(|| tera::Tera::new("views/**/*").unwrap());
 
 pub(crate) struct Cache(BytesMut);
 

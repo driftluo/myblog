@@ -19,91 +19,88 @@
 </head>
 
 <body>
-    <div class="col-md-8 col-md-offset-2">
-        {% if id %}
-        <h3>Title: </h3><input id="title" type="text" class="form-control" placeholder="标题" article-id={{ id }}>
-        {% else %}
-        <h3>Title: </h3><input id="title" type="text" class="form-control" placeholder="标题">
-        {% endif %}
-        <div>
-            <ul class="tag">
-                {% if tags %}
-                {% for tag in tags %}
-                <li><a data-id={{ tag.id }}>{{ tag.tag }}</a></li>
-                {% endfor %}
-                {% endif %}
-            </ul>
-            <button type="button" class="btn btn-sm btn-success pull-left">
-                <span class="glyphicon glyphicon-upload"></span>
-                Upload
-            </button>
-            <button id="tag_btn" class="btn btn-sm btn-info pull-right">
-                <span class="glyphicon glyphicon-plus"></span>
-                添加标签
-            </button>
-        </div>
-        <br />
-        <div style="margin-top: 20px;">
-            <ul class="nav nav-tabs">
-                <li role="presentation" class="active" id="editor_note"><a onclick="editorPage()">Editor</a></li>
-                <li role="presentation" id="preview_note"><a onclick="previewPage()">Preview</a></li>
-            </ul>
-        </div>
-        <div id="editor_page" style="display: block">
-            <textarea id="editor" class="form-control" rows="20"></textarea>
-        </div>
-        <div style="display: none" id="preview_page">
-
-        </div>
-
-        <div>
-            <button id="quit" type="button" class="btn btn-danger" style="margin-top: 15px;">
-                <span class="glyphicon glyphicon-trash"></span>
-                放弃
-            </button>
-
-            <button id='submit' type="button" class="btn btn-success pull-right" style="margin-top: 15px;">
-                <span class="glyphicon glyphicon-open"></span>
-                提交
-            </button>
-        </div>
+        <div class="col-md-8 col-md-offset-2">
+            <div class="card shadow-lg" style="margin-top:32px; margin-bottom:32px;">
+                <div class="card-body">
+                    <h3 class="card-title">文章编辑</h3>
+                    <div class="form-group">
+                        <label for="title">标题</label>
+                        {% if id %}
+                        <input id="title" type="text" class="form-control input-lg" placeholder="请输入标题" article-id={{ id }}>
+                        {% else %}
+                        <input id="title" type="text" class="form-control input-lg" placeholder="请输入标题">
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label>标签</label>
+                        <ul class="tag list-inline" style="margin-bottom:8px;">
+                            {% if tags %}
+                            {% for tag in tags %}
+                            <li class="list-inline-item">
+                                <a data-id={{ tag.id }} class="badge badge-pill badge-info" style="font-size:16px; padding:8px; cursor:pointer;">{{ tag.tag }}</a>
+                            </li>
+                            {% endfor %}
+                            {% endif %}
+                        </ul>
+                        <button id="upload_btn" type="button" class="btn btn-sm btn-success" style="margin-top:8px;">
+                            <span class="glyphicon glyphicon-upload"></span> 上传附件
+                        </button>
+                        <button id="tag_btn" class="btn btn-sm btn-info" style="margin-top:8px; margin-left:8px;">
+                            <span class="glyphicon glyphicon-plus"></span> 添加标签
+                        </button>
+                    </div>
+                    <ul class="nav nav-tabs" style="margin-top:20px;">
+                        <li role="presentation" class="active" id="editor_note"><a onclick="editorPage()">编辑器</a></li>
+                        <li role="presentation" id="preview_note"><a onclick="previewPage()">预览</a></li>
+                    </ul>
+                    <div id="editor_page" style="display: block; margin-top:16px;">
+                        <textarea id="editor" class="form-control" rows="16" style="border-radius:8px; border:2px solid #e3e3e3;"></textarea>
+                    </div>
+                    <div style="display: none; margin-top:16px;" id="preview_page">
+                    </div>
+                    <div class="text-center" style="margin-top:24px;">
+                        <button id="quit" type="button" class="btn btn-danger" style="margin-right:16px;">
+                            <span class="glyphicon glyphicon-trash"></span> 放弃
+                        </button>
+                        <button id='submit' type="button" class="btn btn-success">
+                            <span class="glyphicon glyphicon-open"></span> 提交
+                        </button>
+                    </div>
+                </div>
+            </div>
     </div>
-    <div id="mistake" class="modal fade" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
-                            aria-hidden="true">&times;</span>
-                    </button>
-                    <h4 class="modal-title">错误</h4>
-                </div>
-                <div class="modal-body">
-                    <p>标题或内容为空</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <div id="mistake" class="modal fade" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content border-danger">
+                    <div class="modal-header bg-danger text-white">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title">错误</h4>
+                    </div>
+                    <div class="modal-body">
+                        <p>标题或内容为空</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger" data-dismiss="modal">关闭</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    <div id="success" class="modal fade" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
-                            aria-hidden="true">&times;</span>
-                    </button>
-                    <h4 class="modal-title">成功</h4>
-                </div>
-                <div class="modal-body">
-                    <p>提交成功</p>
-                </div>
-                <div class="modal-footer">
-                    <button id="success_btn" type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <div id="success" class="modal fade" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content border-success">
+                    <div class="modal-header bg-success text-white">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title">成功</h4>
+                    </div>
+                    <div class="modal-body">
+                        <p>提交成功</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button id="success_btn" type="button" class="btn btn-success" data-dismiss="modal">关闭</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
     <div id="upload-success" class="modal fade" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">
@@ -136,7 +133,7 @@
                 </div>
                 <div class="modal-body">
                     <br /><br />
-                    <input type="file" id="file" multiple class="btn btn-default" />
+                    <input type="file" id="file" name="files" multiple class="btn btn-default" />
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-danger modal-upload" data-dismiss="modal">Upload</button>

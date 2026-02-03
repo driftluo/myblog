@@ -114,6 +114,8 @@ async fn update_publish(req: &mut Request, res: &mut Response) -> Result<(), Sta
 
 #[handler]
 async fn upload(req: &mut Request, res: &mut Response) {
+    // Set max size to 50MB
+    req.set_secure_max_size(50 * 1024 * 1024);
     match req.files("files").await {
         Some(files) => {
             let mut msgs = Vec::with_capacity(files.len());

@@ -1,11 +1,10 @@
-use once_cell::sync::OnceCell;
 use redis::aio::ConnectionManager;
 use sqlx::postgres::PgPool;
+use std::sync::OnceLock;
 use std::{env, fmt};
 
-static REDIS: OnceCell<RedisManager> = OnceCell::new();
-static POSTGRES: OnceCell<PgPool> = OnceCell::new();
-
+static REDIS: OnceLock<RedisManager> = OnceLock::new();
+static POSTGRES: OnceLock<PgPool> = OnceLock::new();
 pub struct RedisManager {
     pool: ConnectionManager,
     script: Option<redis::Script>,
@@ -412,12 +411,10 @@ pub async fn create_pg_pool() {
 
 #[inline]
 pub fn get_postgres() -> &'static PgPool {
-    // Safety: tt is already set when the program is initialized
-    unsafe { POSTGRES.get_unchecked() }
+    POSTGRES.get().expect("Postgres pool is not initialized")
 }
 
 #[inline]
 pub fn get_redis() -> &'static RedisManager {
-    // Safety: tt is already set when the program is initialized
-    unsafe { REDIS.get_unchecked() }
+    REDIS.get().expect("Redis pool is not initialized")
 }
