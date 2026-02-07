@@ -161,8 +161,8 @@
   function generateShareUrl() {
     const options = {
       name: currentPortfolio ? currentPortfolio.portfolio.name : "分享的组合",
-      incremental: parseFloat($("#input-incremental").val()) || 0,
-      redemption: parseFloat($("#input-redemption").val()) || 0,
+      incremental: parseMoneyInput($("#input-incremental").val()),
+      redemption: parseMoneyInput($("#input-redemption").val()),
     };
 
     const compressed = compressPortfolioData(entries, options);
@@ -360,6 +360,7 @@
       },
       entries: entries,
     };
+    loadMoneyUnitForCurrentPortfolio();
 
     // Update major order and render
     updateMajorOrderFromEntries();
@@ -406,6 +407,12 @@
   let deleteType = null;
   let entryRowCounter = 0;
   let pendingCellEditFocus = null;
+  let moneyUnit = "¥";
+  const SUPPORTED_MONEY_UNITS = ["¥", "$", "€", "£"];
+  const DEFAULT_MONEY_UNIT = "¥";
+  const MONEY_UNIT_STORAGE_PREFIX = "fund_money_unit_portfolio_";
+  const MONEY_UNIT_STORAGE_SHARED_KEY = "fund_money_unit_shared";
+  const MONEY_UNIT_STORAGE_LEGACY_KEY = "fund_money_unit";
   const IS_ADMIN =
     typeof window !== "undefined" &&
     (window.__is_admin === true ||
@@ -423,6 +430,7 @@
   // ============== Initialization ==============
 
   $(document).ready(function () {
+    initMoneyUnit();
     bindEvents();
 
     // Check if there's shared data in URL first (works for both admin and visitor)
@@ -499,6 +507,10 @@
         recalculateAll();
       });
 
+    $("#money-unit-select").on("change", function () {
+      setMoneyUnit($(this).val());
+    });
+
     // Add entry
     $("#btn-add-entry").on("click", function () {
       entryRowCounter = 0;
@@ -563,6 +575,7 @@
         updateMajorOrderFromEntries();
         // Apply locally saved order if present
         loadEntryOrder();
+        loadMoneyUnitForCurrentPortfolio();
 
         renderPortfolioInfo();
         renderTable();
@@ -736,7 +749,7 @@
         fund_name: fundName,
         target_ratio:
           parseFloat(row.find(".new-target-ratio").val()) / 100 || 0,
-        amount: parseFloat(row.find(".new-amount").val()) || 0,
+        amount: parseMoneyInput(row.find(".new-amount").val()),
       });
     });
 
@@ -1045,6 +1058,7 @@
     // Incremental and redemption amounts are not read from backend; used only in frontend
     $("#input-incremental").val("0.00");
     $("#input-redemption").val("0.00");
+    updateMoneyHeaderLabels();
   }
 
   function renderTable() {
@@ -1419,7 +1433,7 @@
       if (field === "target_ratio") {
         newValue = parseFloat(newValue) / 100 || 0;
       } else if (field === "amount") {
-        newValue = parseFloat(newValue) || 0;
+        newValue = parseMoneyInput(newValue);
       } else {
         newValue = newValue.trim();
       }
@@ -1588,8 +1602,8 @@
 
   function calculateAll() {
     const totalAmount = entries.reduce((sum, e) => sum + e.amount, 0);
-    const incrementalAmount = parseFloat($("#input-incremental").val()) || 0;
-    const redemptionAmount = parseFloat($("#input-redemption").val()) || 0;
+    const incrementalAmount = parseMoneyInput($("#input-incremental").val());
+    const redemptionAmount = parseMoneyInput($("#input-redemption").val());
     const newTotalAmount = totalAmount + incrementalAmount - redemptionAmount;
     // Rebalance base: if there is no incremental deposit and no redemption,
     // rebalancing should be an internal redistribution based on the current totalAmount
@@ -2253,12 +2267,12 @@
   }
 
   function formatCurrency(value) {
-    if (value === 0) return "¥0.00";
+    if (value === 0) return `${moneyUnit}0.00`;
     const prefix = value < 0 ? "-" : "";
     const formatted = Math.abs(value)
       .toFixed(2)
       .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-    return `${prefix}¥${formatted}`;
+    return `${prefix}${moneyUnit}${formatted}`;
   }
   // Format a number to two decimals with thousand separators (no currency symbol)
   function formatNumber(value) {
@@ -2276,8 +2290,94 @@
   }
 
   function formatMoneyInputValue(value) {
-    const num = parseFloat(value);
+    const num = parseMoneyInput(value);
     if (!Number.isFinite(num)) return "0.00";
     return num.toFixed(2);
+  }
+
+  // Parse money-like input safely: supports thousand separators and currency symbols.
+  function parseMoneyInput(value) {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+
+    let str = String(value).trim();
+    if (!str) return 0;
+    str = str.replace(/[，,\s￥¥$€£]/g, "");
+
+    const num = Number(str);
+    return Number.isFinite(num) ? num : 0;
+  }
+
+  function initMoneyUnit() {
+    loadMoneyUnitForCurrentPortfolio();
+    $("#money-unit-select").val(moneyUnit);
+    updateMoneyHeaderLabels();
+    if ($("#info-total").length) {
+      $("#info-total").text(formatCurrency(0));
+    }
+  }
+
+  function setMoneyUnit(unit) {
+    if (!SUPPORTED_MONEY_UNITS.includes(unit)) return;
+    moneyUnit = unit;
+    $("#money-unit-select").val(moneyUnit);
+    updateMoneyHeaderLabels();
+    if (currentPortfolio && currentPortfolio.portfolio) {
+      $("#info-total").text(formatCurrency(currentPortfolio.portfolio.total_amount));
+      renderTable();
+    } else if ($("#info-total").length) {
+      $("#info-total").text(formatCurrency(0));
+    }
+    saveMoneyUnitForCurrentPortfolio();
+  }
+
+  function getMoneyUnitStorageKeyForCurrentPortfolio() {
+    const id =
+      currentPortfolio &&
+      currentPortfolio.portfolio &&
+      currentPortfolio.portfolio.id;
+    if (id !== null && id !== undefined && id !== "") {
+      return `${MONEY_UNIT_STORAGE_PREFIX}${id}`;
+    }
+    return MONEY_UNIT_STORAGE_SHARED_KEY;
+  }
+
+  function loadMoneyUnitForCurrentPortfolio() {
+    try {
+      const key = getMoneyUnitStorageKeyForCurrentPortfolio();
+      let stored = localStorage.getItem(key);
+
+      // Backward compatibility for previous global key
+      if (!stored) {
+        stored = localStorage.getItem(MONEY_UNIT_STORAGE_LEGACY_KEY);
+      }
+
+      if (stored && SUPPORTED_MONEY_UNITS.includes(stored)) {
+        moneyUnit = stored;
+      } else {
+        moneyUnit = DEFAULT_MONEY_UNIT;
+      }
+    } catch (e) {
+      console.warn("读取金额单位设置失败", e);
+      moneyUnit = DEFAULT_MONEY_UNIT;
+    }
+    $("#money-unit-select").val(moneyUnit);
+    updateMoneyHeaderLabels();
+  }
+
+  function saveMoneyUnitForCurrentPortfolio() {
+    try {
+      const key = getMoneyUnitStorageKeyForCurrentPortfolio();
+      localStorage.setItem(key, moneyUnit);
+    } catch (e) {
+      console.warn("保存金额单位设置失败", e);
+    }
+  }
+
+  function updateMoneyHeaderLabels() {
+    $(".money-header").each(function () {
+      const label = $(this).data("label") || "";
+      $(this).text(`${label}(${moneyUnit})`);
+    });
   }
 })();

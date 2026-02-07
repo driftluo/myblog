@@ -76,6 +76,10 @@
         display: inline-block;
         margin-right: 30px;
     }
+
+    .fund-inputs #money-unit-select {
+        width: 90px;
+    }
     
     .fund-inputs label {
         font-weight: bold;
@@ -356,6 +360,15 @@
             <label for="input-redemption">赎回资金：</label>
             <input type="text" id="input-redemption" value="0.00" inputmode="decimal" autocomplete="off" placeholder="输入赎回资金">
         </div>
+        <div class="input-group">
+            <label for="money-unit-select">金额单位：</label>
+            <select id="money-unit-select">
+                <option value="¥">¥</option>
+                <option value="$">$</option>
+                <option value="€">€</option>
+                <option value="£">£</option>
+            </select>
+        </div>
     </div>
     
     <!-- Action Buttons -->
@@ -441,11 +454,11 @@
                     <th style="min-width: 60px;">计划比例</th>
                     <th>基金</th>
                     <th style="min-width: 70px;">实际比例</th>
-                    <th style="min-width: 90px;">金额</th>
+                    <th class="money-header" data-label="金额" style="min-width: 90px;">金额(¥)</th>
                     <th style="min-width: 70px;">偏离比例</th>
-                    <th style="min-width: 90px;">再平衡金额</th>
-                    <th style="min-width: 90px;">增量资金分配</th>
-                    <th style="min-width: 90px;">赎回资金分配</th>
+                    <th class="money-header" data-label="再平衡金额" style="min-width: 90px;">再平衡金额(¥)</th>
+                    <th class="money-header" data-label="增量资金分配" style="min-width: 90px;">增量资金分配(¥)</th>
+                    <th class="money-header" data-label="赎回资金分配" style="min-width: 90px;">赎回资金分配(¥)</th>
                     <th style="min-width: 50px;">操作</th>
                 </tr>
             </thead>
