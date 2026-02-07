@@ -79,7 +79,11 @@ impl Routers for Tag {
                 // http post {ip}/tag/new tag="Rust"
                 .push(Router::new().path("new").post(create_tag))
                 // http post {ip}/tag/delete/3
-                .push(Router::new().path("delete/{id}").post(delete_tag))
+                .push(
+                    Router::new()
+                        .path(r"delete/{id|[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}}")
+                        .post(delete_tag),
+                )
                 // http post :8888/tag/edit id:=2 tag="Linux&&Rust"
                 .push(Router::new().path("edit").post(edit_tag)),
         ]

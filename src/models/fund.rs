@@ -76,19 +76,28 @@ impl FundPortfolio {
 
     /// Update portfolio
     pub async fn update(data: UpdatePortfolio) -> Result<(), String> {
-        let mut query = String::from("UPDATE fund_portfolios SET name = name");
+        let mut set_clauses: Vec<String> = Vec::new();
         let mut param_index = 1;
 
         if data.name.is_some() {
-            query.push_str(&format!(", name = ${}", param_index));
+            set_clauses.push(format!("name = ${}", param_index));
             param_index += 1;
         }
         if data.description.is_some() {
-            query.push_str(&format!(", description = ${}", param_index));
+            set_clauses.push(format!("description = ${}", param_index));
             param_index += 1;
         }
 
-        query.push_str(&format!(" WHERE id = ${}", param_index));
+        // No fields to update: treat as a no-op success.
+        if set_clauses.is_empty() {
+            return Ok(());
+        }
+
+        let query = format!(
+            "UPDATE fund_portfolios SET {} WHERE id = ${}",
+            set_clauses.join(", "),
+            param_index
+        );
 
         let mut q = sqlx::query(&query);
 

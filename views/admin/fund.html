@@ -293,6 +293,40 @@
     }
     
     /* Share toast animation */
+    .share-toast {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #5cb85c;
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: max-content;
+        max-width: calc(100vw - 24px);
+        box-sizing: border-box;
+        padding: 0;
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        z-index: 9999;
+        font-weight: 700;
+        animation: fadeInUp 0.3s ease;
+    }
+
+    .share-toast::before,
+    .share-toast::after {
+        content: "";
+        flex: 0 0 24px;
+    }
+
+    .share-toast .share-toast-text {
+        display: block;
+        padding: 12px 0;
+        text-align: center;
+        white-space: nowrap;
+    }
+
     @keyframes fadeInUp {
         from {
             opacity: 0;
@@ -542,5 +576,6 @@
     // expose whether current render is admin or visitor
     window.__is_admin = {%- if is_admin is defined and is_admin -%}true{%- else -%}false{%- endif -%};
 </script>
+<script src="/js/admin/fund_calc_core.js"></script>
 <script src="/js/admin/fund.js"></script>
 {% endblock script %}

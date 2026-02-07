@@ -240,11 +240,17 @@ impl Routers for Visitor {
                 .get(list_all_article),
             // http {ip}/PREFIX/article/view_all/{tag_id}
             Router::new()
-                .path(PREFIX.to_owned() + "article/view_all/{tag_id}")
+                .path(
+                    PREFIX.to_owned()
+                        + r"article/view_all/{tag_id|[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}}",
+                )
                 .get(list_all_article_filter_by_tag),
             // http {ip}/PREFIX/article/view_comment/{id}
             Router::new()
-                .path(PREFIX.to_owned() + "article/view_comment/{id}")
+                .path(
+                    PREFIX.to_owned()
+                        + r"article/view_comment/{id|[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}}",
+                )
                 .get(list_comments),
             // http {ip}/PREFIX/article/view/<id>
             Router::new()

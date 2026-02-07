@@ -14,6 +14,10 @@
 
 (function () {
   "use strict";
+  const calcCore = typeof window !== "undefined" ? window.FundCalcCore : null;
+  if (!calcCore) {
+    throw new Error("FundCalcCore is required before loading fund.js");
+  }
 
   // ============== Bootstrap 5 Modal Helpers ==============
   // Cache modal instances for reuse
@@ -244,22 +248,8 @@
     // Remove existing toast if any
     $(".share-toast").remove();
 
-    const toast = $(
-      `<div class="share-toast" style="
-        position: fixed;
-        bottom: 30px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #5cb85c;
-        color: white;
-        padding: 12px 24px;
-        border-radius: 4px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        z-index: 9999;
-        font-weight: bold;
-        animation: fadeInUp 0.3s ease;
-      ">${message}</div>`,
-    );
+    const toast = $('<div class="share-toast"><span class="share-toast-text"></span></div>');
+    toast.find(".share-toast-text").text(message);
 
     $("body").append(toast);
 
@@ -375,7 +365,11 @@
     showPortfolioView();
 
     // Show loaded indicator
-    showShareToast(`已加载分享的组合：${data.name}`);
+    if (data.name && data.name !== "分享的组合") {
+      showShareToast(`已加载分享组合：${data.name}`);
+    } else {
+      showShareToast("已加载分享组合");
+    }
 
     // Update page title
     document.title = `${data.name} - 基金投资组合`;
@@ -1574,30 +1568,7 @@
 
   // Helper: distribute integer cents among items proportionally by weight
   function distributeCentsProportionalByWeight(items, totalCents) {
-    // items: [{id, weight}, ...]
-    const result = {};
-    items.forEach((it) => (result[it.id] = 0));
-    const totalWeight = items.reduce(
-      (s, it) => s + (it.weight > 0 ? it.weight : 0),
-      0,
-    );
-    if (!totalWeight || totalWeight <= 0) return result;
-    let allocated = 0;
-    let largest = null;
-    items.forEach((it) => {
-      if (it.weight > 0) {
-        const share = Math.round(totalCents * (it.weight / totalWeight) || 0);
-        result[it.id] = share;
-        allocated += share;
-        if (!largest || it.weight > largest.weight) largest = it;
-      }
-    });
-    const diff = totalCents - allocated;
-    if (diff !== 0) {
-      const targetId = largest ? largest.id : items[0] && items[0].id;
-      if (targetId) result[targetId] = (result[targetId] || 0) + diff;
-    }
-    return result;
+    return calcCore.distributeCentsProportionalByWeight(items, totalCents);
   }
 
   function calculateAll() {
@@ -1786,118 +1757,12 @@
     totalAmount,
     incrementalAmount,
   ) {
-    const result = {};
-    entries.forEach((e) => (result[e.id] = 0));
-
-    if (incrementalAmount <= 0 || totalAmount <= 0) return result;
-
-    const newTotalAmount = totalAmount + incrementalAmount;
-    const majorGroups = groupByMajorCategory(entries);
-
-    // Step 1: 计算每个大类的当前金额、目标金额、需要增加的金额
-    const majorData = {};
-    let totalNeedAllocate = 0; // 所有需要增加的大类的增加金额之和
-
-    Object.keys(majorGroups).forEach((majorCat) => {
-      const majorEntries = majorGroups[majorCat];
-      const targetRatio = majorEntries.reduce(
-        (sum, e) => sum + e.target_ratio,
-        0,
-      );
-      const currentAmount = majorEntries.reduce((sum, e) => sum + e.amount, 0);
-
-      // 分配后的目标金额
-      const targetAmountAfterAllocate = newTotalAmount * targetRatio;
-      // 需要增加的金额 = 目标金额 - 当前金额
-      const needAllocate = targetAmountAfterAllocate - currentAmount;
-
-      majorData[majorCat] = {
-        targetRatio,
-        currentAmount,
-        targetAmountAfterAllocate,
-        needAllocate,
-        entries: majorEntries,
-      };
-
-      // 只统计需要增加的大类（needAllocate > 0 表示当前持仓低于目标）
-      if (needAllocate > 0) {
-        totalNeedAllocate += needAllocate;
-      }
-    });
-
-    // 如果没有需要增加的大类，则不分配
-    if (totalNeedAllocate <= 0) return result;
-
-    // Step 2: 按需要增加金额的比例分配增量资金（使用分为单位的整数运算避免浮点累计误差）
-    const resultCents = {};
-    // init
-    entries.forEach((e) => (resultCents[e.id] = 0));
-
-    const incrementalCents = Math.round(incrementalAmount * 100);
-
-    Object.keys(majorData).forEach((majorCat) => {
-      const data = majorData[majorCat];
-      if (data.needAllocate <= 0) return;
-
-      const majorAllocation =
-        incrementalAmount * (data.needAllocate / totalNeedAllocate);
-      const majorAllocationCents = Math.round(majorAllocation * 100);
-
-      // build fundData for this major: use needAllocate as weight
-      const localFunds = [];
-      data.entries.forEach((entry) => {
-        if (entry.target_ratio > 0) {
-          const relativeTargetRatio = entry.target_ratio / data.targetRatio;
-          const targetAmountAfterAllocate =
-            (data.currentAmount + majorAllocation) * relativeTargetRatio;
-          const needAllocate = targetAmountAfterAllocate - entry.amount;
-          if (needAllocate > 0) {
-            localFunds.push({ id: entry.id, weight: needAllocate });
-          }
-        }
-      });
-
-      if (localFunds.length <= 0) return;
-
-      // distribute cents within major using shared helper
-      const majorDistributed = distributeCentsProportionalByWeight(
-        localFunds,
-        majorAllocationCents,
-      );
-      Object.keys(majorDistributed).forEach((id) => {
-        resultCents[id] = (resultCents[id] || 0) + majorDistributed[id];
-      });
-    });
-
-    // global residual
-    const allocatedTotalCents = Object.keys(resultCents).reduce(
-      (s, k) => s + (resultCents[k] || 0),
-      0,
+    return calcCore.calculateAllocationByMajorCategory(
+      entries,
+      totalAmount,
+      incrementalAmount,
+      sortConfig.majorOrder,
     );
-    const globalDiffCents = incrementalCents - allocatedTotalCents;
-    if (globalDiffCents !== 0) {
-      // absorb into the entry with largest allocated cents (or first entry)
-      let targetId = null;
-      let maxAllocated = -Infinity;
-      Object.keys(resultCents).forEach((k) => {
-        const v = resultCents[k] || 0;
-        if (v > maxAllocated) {
-          maxAllocated = v;
-          targetId = k;
-        }
-      });
-      if (!targetId && entries.length > 0) targetId = entries[0].id;
-      if (targetId) {
-        resultCents[targetId] = (resultCents[targetId] || 0) + globalDiffCents;
-      }
-    }
-
-    // convert back to float yuan amounts
-    Object.keys(resultCents).forEach((k) => {
-      result[k] = (resultCents[k] || 0) / 100;
-    });
-
-    return result;
   }
 
   /**
@@ -1911,178 +1776,12 @@
     totalAmount,
     redemptionAmount,
   ) {
-    // We'll accumulate in cents to avoid per-branch rounding issues
-    const result = {};
-    const resultCents = {};
-    entries.forEach((e) => {
-      resultCents[e.id] = 0;
-      result[e.id] = 0;
-    });
-
-    const newTotalAmount = totalAmount - redemptionAmount;
-    if (newTotalAmount <= 0) {
-      // 如果赎回后总额<=0，按持仓比例赎回（按分计算并吸收残差）
-      const totalRoundedCents = Math.round(totalAmount * 100);
-      let sumCents = 0;
-      let largest = null;
-      entries.forEach((entry) => {
-        if (entry.amount > 0) {
-          const cents = Math.round(entry.amount * 100);
-          resultCents[entry.id] = cents;
-          sumCents += cents;
-          if (!largest || entry.amount > largest.amount) largest = entry;
-        }
-      });
-      const diff = totalRoundedCents - sumCents;
-      if (diff !== 0 && largest) {
-        resultCents[largest.id] = (resultCents[largest.id] || 0) + diff;
-      }
-      Object.keys(resultCents).forEach((k) => {
-        result[k] = (resultCents[k] || 0) / 100;
-      });
-      return result;
-    }
-
-    const majorGroups = groupByMajorCategory(entries);
-
-    // Step 1: 计算每个大类的当前金额、目标比例、赎回后的目标金额
-    const majorData = {};
-    let totalNeedRedeem = 0; // 所有需要赎回的大类的赎回金额之和
-
-    Object.keys(majorGroups).forEach((majorCat) => {
-      const majorEntries = majorGroups[majorCat];
-      const targetRatio = majorEntries.reduce(
-        (sum, e) => sum + e.target_ratio,
-        0,
-      );
-      const currentAmount = majorEntries.reduce((sum, e) => sum + e.amount, 0);
-
-      // 赎回后的目标金额
-      const targetAmountAfterRedeem = newTotalAmount * targetRatio;
-      // 需要赎回的金额 = 当前金额 - 目标金额
-      const needRedeem = currentAmount - targetAmountAfterRedeem;
-
-      majorData[majorCat] = {
-        targetRatio,
-        currentAmount,
-        targetAmountAfterRedeem,
-        needRedeem,
-        entries: majorEntries,
-      };
-
-      // 只统计需要赎回的大类（needRedeem > 0 表示当前持仓超过目标）
-      if (needRedeem > 0) {
-        totalNeedRedeem += needRedeem;
-      }
-    });
-
-    // 如果没有需要赎回的大类，则按持仓比例赎回（按分分配）
-    if (totalNeedRedeem <= 0) {
-      Object.keys(majorGroups).forEach((majorCat) => {
-        const majorEntries = majorGroups[majorCat];
-        const majorAmount = majorEntries.reduce((sum, e) => sum + e.amount, 0);
-        if (majorAmount <= 0) return;
-
-        const majorRedemption = redemptionAmount * (majorAmount / totalAmount);
-        const majorRedemptionCents = Math.round(majorRedemption * 100);
-        const amtList = majorEntries
-          .filter((e) => e.amount > 0)
-          .map((e) => ({ id: e.id, weight: e.amount }));
-        const distributed = distributeCentsProportionalByWeight(
-          amtList,
-          majorRedemptionCents,
-        );
-        Object.keys(distributed).forEach((id) => {
-          resultCents[id] = (resultCents[id] || 0) + distributed[id];
-        });
-      });
-      Object.keys(resultCents).forEach((k) => {
-        result[k] = (resultCents[k] || 0) / 100;
-      });
-      return result;
-    }
-
-    // Step 2: 按需要赎回的比例分配赎回金额
-    Object.keys(majorData).forEach((majorCat) => {
-      const data = majorData[majorCat];
-
-      // 跳过不需要赎回的大类
-      if (data.needRedeem <= 0) return;
-
-      // 按需要赎回的比例分配赎回金额
-      const majorRedemption =
-        redemptionAmount * (data.needRedeem / totalNeedRedeem);
-      const majorRedemptionCents = Math.round(majorRedemption * 100);
-
-      // 计算大类内赎回后的目标金额
-      const majorAmountAfterRedeem = data.currentAmount - majorRedemption;
-
-      // 计算各基金需要赎回的金额（按 needRedeem 为权重），若均无需要则按持仓比例
-      const needList = [];
-      const majorEntries = data.entries;
-      majorEntries.forEach((entry) => {
-        if (entry.amount > 0) {
-          const relativeTargetRatio =
-            data.targetRatio > 0 ? entry.target_ratio / data.targetRatio : 0;
-          const targetAmountAfterRedeem =
-            majorAmountAfterRedeem * relativeTargetRatio;
-          const needRedeem = entry.amount - targetAmountAfterRedeem;
-          if (needRedeem > 0) {
-            needList.push({ id: entry.id, weight: needRedeem });
-          }
-        }
-      });
-
-      if (needList.length > 0) {
-        const distributed = distributeCentsProportionalByWeight(
-          needList,
-          majorRedemptionCents,
-        );
-        Object.keys(distributed).forEach((id) => {
-          resultCents[id] = (resultCents[id] || 0) + distributed[id];
-        });
-        return;
-      }
-
-      // fallback: 按持仓比例
-      const amtList = data.entries
-        .filter((e) => e.amount > 0)
-        .map((e) => ({ id: e.id, weight: e.amount }));
-      const distributed2 = distributeCentsProportionalByWeight(
-        amtList,
-        majorRedemptionCents,
-      );
-      Object.keys(distributed2).forEach((id) => {
-        resultCents[id] = (resultCents[id] || 0) + distributed2[id];
-      });
-    });
-    // 全局残差吸收：确保分配总和等于输入的赎回金额（以分为单位）
-    const redemptionTotalCents = Math.round(redemptionAmount * 100);
-    const allocatedTotalCents = Object.keys(resultCents).reduce(
-      (s, k) => s + (resultCents[k] || 0),
-      0,
+    return calcCore.calculateRedemptionByMajorCategory(
+      entries,
+      totalAmount,
+      redemptionAmount,
+      sortConfig.majorOrder,
     );
-    const globalDiff = redemptionTotalCents - allocatedTotalCents;
-    if (globalDiff !== 0) {
-      // 吸收到持仓最多的条目
-      let targetId = null;
-      let maxAmount = -Infinity;
-      entries.forEach((e) => {
-        if (e.amount > maxAmount) {
-          maxAmount = e.amount;
-          targetId = e.id;
-        }
-      });
-      if (!targetId && entries.length > 0) targetId = entries[0].id;
-      if (targetId)
-        resultCents[targetId] = (resultCents[targetId] || 0) + globalDiff;
-    }
-
-    // final convert
-    Object.keys(resultCents).forEach((k) => {
-      result[k] = (resultCents[k] || 0) / 100;
-    });
-    return result;
   }
 
   function recalculateAll() {
@@ -2093,28 +1792,7 @@
   // ============== Utilities ==============
 
   function groupByMajorCategory(entries) {
-    const groups = {};
-    entries.forEach((entry) => {
-      const cat = entry.major_category;
-      if (!groups[cat]) groups[cat] = [];
-      groups[cat].push(entry);
-    });
-
-    // Order majors according to configured `sortConfig.majorOrder`
-    const orderedGroups = {};
-    sortConfig.majorOrder.forEach((cat) => {
-      if (groups[cat]) {
-        orderedGroups[cat] = groups[cat];
-      }
-    });
-    // 添加不在配置中的大类
-    Object.keys(groups).forEach((cat) => {
-      if (!orderedGroups[cat]) {
-        orderedGroups[cat] = groups[cat];
-      }
-    });
-
-    return orderedGroups;
+    return calcCore.groupByMajorCategory(entries, sortConfig.majorOrder);
   }
 
   function groupByMinorCategory(entries) {

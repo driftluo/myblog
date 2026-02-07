@@ -175,7 +175,11 @@ impl Routers for AdminArticle {
                 // http post /article/new title=something raw_content=something
                 .push(Router::new().path("new").post(create_article))
                 // http post /article/delete/3
-                .push(Router::new().path("delete/{id}").post(delete_article))
+                .push(
+                    Router::new()
+                        .path(r"delete/{id|[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}}")
+                        .post(delete_article),
+                )
                 // http post /article/edit id:=1 title=something raw_content=something
                 .push(Router::new().path("edit").post(edit_article))
                 // http post /article/publish id:=5 published:=true
