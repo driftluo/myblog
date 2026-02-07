@@ -215,6 +215,19 @@
     
     .btn-group-actions {
         margin-bottom: 15px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-group-actions > .btn {
+        margin: 0;
+    }
+
+    .btn-group-actions > .unsaved-indicator,
+    .btn-group-actions > #major-ratio-error {
+        margin-left: 8px;
     }
     
     .add-entry-form {
@@ -337,11 +350,11 @@
     <div class="fund-inputs" id="fund-inputs" style="display: none;">
         <div class="input-group">
             <label for="input-incremental">增量资金：</label>
-            <input type="number" id="input-incremental" value="0" step="100" placeholder="输入增量资金">
+            <input type="text" id="input-incremental" value="0.00" inputmode="decimal" autocomplete="off" placeholder="输入增量资金">
         </div>
         <div class="input-group">
             <label for="input-redemption">赎回资金：</label>
-            <input type="number" id="input-redemption" value="0" step="100" placeholder="输入赎回资金">
+            <input type="text" id="input-redemption" value="0.00" inputmode="decimal" autocomplete="off" placeholder="输入赎回资金">
         </div>
     </div>
     
@@ -367,7 +380,7 @@
         <span class="unsaved-indicator" id="unsaved-indicator">
             <i class="bi bi-exclamation-circle"></i> 有未保存的修改
         </span>
-        <div id="major-ratio-error" style="display:none; color: #d9534f; margin-left: 15px; font-weight: bold;"></div>
+        <div id="major-ratio-error" style="display:none; color: #d9534f; font-weight: bold;"></div>
     </div>
     
     <!-- Sort Controls -->

@@ -361,17 +361,15 @@
       entries: entries,
     };
 
-    // Set incremental/redemption values
-    if (data.incremental > 0) {
-      $("#input-incremental").val(data.incremental);
-    }
-    if (data.redemption > 0) {
-      $("#input-redemption").val(data.redemption);
-    }
-
     // Update major order and render
     updateMajorOrderFromEntries();
     renderPortfolioInfo();
+    if (data.incremental > 0) {
+      $("#input-incremental").val(formatMoneyInputValue(data.incremental));
+    }
+    if (data.redemption > 0) {
+      $("#input-redemption").val(formatMoneyInputValue(data.redemption));
+    }
     renderTable();
     showPortfolioView();
 
@@ -407,6 +405,7 @@
   let deleteTarget = null;
   let deleteType = null;
   let entryRowCounter = 0;
+  let pendingCellEditFocus = null;
   const IS_ADMIN =
     typeof window !== "undefined" &&
     (window.__is_admin === true ||
@@ -488,9 +487,17 @@
     $("#btn-confirm-delete").on("click", confirmDelete);
 
     // Real-time calculation on incremental/redemption input
-    $("#input-incremental, #input-redemption").on("input", function () {
-      recalculateAll();
-    });
+    $("#input-incremental, #input-redemption")
+      .on("input", function () {
+        recalculateAll();
+      })
+      .on("focus", function () {
+        this.select();
+      })
+      .on("blur", function () {
+        $(this).val(formatMoneyInputValue($(this).val()));
+        recalculateAll();
+      });
 
     // Add entry
     $("#btn-add-entry").on("click", function () {
@@ -686,7 +693,7 @@
                 </div>
                 <div class="form-group">
                     <label>金额</label>
-                    <input type="number" class="new-amount" value="0" step="0.01" style="width: 100px;">
+                    <input type="text" class="new-amount" value="0" inputmode="decimal" autocomplete="off" style="width: 100px;">
                 </div>
                 <button type="button" class="btn btn-sm btn-danger btn-remove-row" data-row-id="${rowId}">
                     <i class="bi bi-dash"></i>
@@ -1036,8 +1043,8 @@
     $("#info-name").text(p.name);
     $("#info-total").text(formatCurrency(p.total_amount));
     // Incremental and redemption amounts are not read from backend; used only in frontend
-    $("#input-incremental").val(0);
-    $("#input-redemption").val(0);
+    $("#input-incremental").val("0.00");
+    $("#input-redemption").val("0.00");
   }
 
   function renderTable() {
@@ -1063,27 +1070,29 @@
 
     Object.keys(majorGroups).forEach((majorCat) => {
       const majorEntries = majorGroups[majorCat];
-      const minorGroups = groupByMinorCategory(majorEntries);
-      const minorKeys = Object.keys(minorGroups);
+      const orderedMajorEntries =
+        sortConfig.entrySortBy === "default"
+          ? majorEntries
+          : sortEntries(majorEntries);
+      const minorRuns = buildMinorRuns(orderedMajorEntries);
 
       // Calculate total rows for a major (data rows + minor subtotal rows)
-      let majorRowSpan = majorEntries.length;
-      minorKeys.forEach((minorCat) => {
-        if (minorCat !== "__none__" && minorGroups[minorCat].length > 1) {
+      let majorRowSpan = orderedMajorEntries.length;
+      minorRuns.forEach((run) => {
+        if (run.minorKey !== "__none__" && run.entries.length > 1) {
           majorRowSpan += 1; // add minor subtotal row
         }
       });
 
       let isFirstInMajor = true;
 
-      minorKeys.forEach((minorCat) => {
-        const minorEntries = minorGroups[minorCat];
+      minorRuns.forEach((run) => {
         const hasMinorSubtotal =
-          minorCat !== "__none__" && minorEntries.length > 1;
-        const minorRowSpan = minorEntries.length;
+          run.minorKey !== "__none__" && run.entries.length > 1;
+        const minorRowSpan = run.entries.length;
         let isFirstInMinor = true;
 
-        minorEntries.forEach((entry, idx) => {
+        run.entries.forEach((entry) => {
           const calc = calculated.entries[entry.id];
           const row = createEntryRow(
             entry,
@@ -1092,20 +1101,21 @@
             majorRowSpan,
             isFirstInMinor,
             minorRowSpan,
-            entry.minor_category,
+            run.minorCategory,
           );
           tbody.append(row);
           isFirstInMajor = false;
           isFirstInMinor = false;
         });
 
-        // Minor category subtotal (only if more than 1 entry in this minor category)
+        // Minor category subtotal (only if more than 1 entry in this contiguous run)
         if (hasMinorSubtotal) {
-          const minorSubtotal =
-            calculated.minorSubtotals[majorCat + "|" + minorCat];
-          if (minorSubtotal) {
-            tbody.append(createMinorSubtotalRow(minorCat, minorSubtotal));
-          }
+          const minorSubtotal = calculateMinorRunSubtotal(
+            run.entries,
+            calculated.total.amount,
+            calculated.entries,
+          );
+          tbody.append(createMinorSubtotalRow(run.minorCategory, minorSubtotal));
         }
       });
 
@@ -1121,6 +1131,7 @@
     bindCellEditEvents();
     // Enable drag & drop after binding events
     enableRowDragAndDrop();
+    restorePendingCellEditFocus();
   }
 
   // Drag & drop support for reordering entries
@@ -1353,70 +1364,157 @@
 
   function bindCellEditEvents() {
     // Editable cell click
-    $(".editable").on("click", function () {
-      const cell = $(this);
-      if (cell.find("input").length) return;
-
-      const row = cell.closest("tr");
-      const id = row.data("id");
-      const field = cell.data("field");
-      const entry = entries.find((e) => e.id === id);
-      if (!entry) return;
-
-      // If this is a merged minor-category cell, expand it first
-      if (field === "minor_category" && cell.hasClass("minor-merged")) {
-        expandMinorCells(cell);
-        return; // after expansion events are rebound; user can click again to edit
-      }
-
-      let currentValue;
-      if (field === "target_ratio") {
-        currentValue = (entry.target_ratio * 100).toFixed(2);
-      } else if (field === "amount") {
-        currentValue = entry.amount;
-      } else {
-        currentValue = entry[field] || "";
-      }
-
-      const inputType =
-        field === "amount" || field === "target_ratio" ? "number" : "text";
-      const step =
-        field === "target_ratio" ? "0.01" : field === "amount" ? "0.01" : "";
-      const input = $(
-        `<input type="${inputType}" ${step ? `step="${step}"` : ""} value="${currentValue}">`,
-      );
-      cell.html(input);
-      input.focus().select();
-
-      input.on("blur", function () {
-        let newValue = $(this).val();
-
-        if (field === "target_ratio") {
-          newValue = parseFloat(newValue) / 100 || 0;
-        } else if (field === "amount") {
-          newValue = parseFloat(newValue) || 0;
-        } else {
-          newValue = newValue.trim();
-        }
-
-        updateEntryField(id, field, newValue);
-
-        // 小类编辑完成后，重新渲染表格以合并同类项
-        if (field === "minor_category") {
-          renderTable();
-        }
+    $(".editable")
+      .off("click")
+      .on("click", function () {
+        activateCellEditor($(this));
       });
-
-      input.on("keypress", function (e) {
-        if (e.which === 13) $(this).blur();
-      });
-    });
 
     // Delete entry button
-    $(".btn-delete-entry").on("click", function () {
-      const id = $(this).data("id");
-      deleteEntry(id);
+    $(".btn-delete-entry")
+      .off("click")
+      .on("click", function () {
+        const id = $(this).data("id");
+        deleteEntry(id);
+      });
+  }
+
+  function activateCellEditor(cell) {
+    if (cell.find("input").length) return;
+
+    const row = cell.closest("tr");
+    const id = row.data("id");
+    const field = cell.data("field");
+    const entry = entries.find((e) => e.id === id);
+    if (!entry) return;
+
+    // If this is a merged minor-category cell, expand it first
+    if (field === "minor_category" && cell.hasClass("minor-merged")) {
+      expandMinorCells(cell);
+      return; // after expansion events are rebound; user can click again to edit
+    }
+
+    let currentValue;
+    if (field === "target_ratio") {
+      currentValue = (entry.target_ratio * 100).toFixed(2);
+    } else if (field === "amount") {
+      currentValue = Number(entry.amount || 0).toFixed(2);
+    } else {
+      currentValue = entry[field] || "";
+    }
+
+    const inputType = field === "target_ratio" ? "number" : "text";
+    const step = field === "target_ratio" ? "0.01" : "";
+    const extraAttrs =
+      field === "amount" ? 'inputmode="decimal" autocomplete="off"' : "";
+    const input = $(
+      `<input type="${inputType}" ${step ? `step="${step}"` : ""} ${extraAttrs} value="${currentValue}">`,
+    );
+    cell.html(input);
+    input.focus().select();
+
+    input.on("blur", function () {
+      let newValue = $(this).val();
+
+      if (field === "target_ratio") {
+        newValue = parseFloat(newValue) / 100 || 0;
+      } else if (field === "amount") {
+        newValue = parseFloat(newValue) || 0;
+      } else {
+        newValue = newValue.trim();
+      }
+
+      updateEntryField(id, field, newValue);
+
+      // 小类编辑完成后，重新渲染表格以合并同类项
+      if (field === "minor_category") {
+        renderTable();
+      }
     });
+
+    input.on("keydown", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const nextRow = e.shiftKey
+          ? row.prevAll("tr[data-id]").first()
+          : row.nextAll("tr[data-id]").first();
+        if (nextRow.length && nextRow.data("id") !== undefined) {
+          setPendingCellEditFocus(nextRow.data("id"), field);
+        } else {
+          pendingCellEditFocus = null;
+        }
+        $(this).blur();
+        return;
+      }
+
+      if (e.key === "Tab") {
+        e.preventDefault();
+        const direction = e.shiftKey ? -1 : 1;
+        if (!setPendingCellEditFocusByCellOrder(cell, direction)) {
+          pendingCellEditFocus = null;
+        }
+        $(this).blur();
+        return;
+      }
+
+      if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+        e.preventDefault();
+        const targetRow =
+          e.key === "ArrowUp"
+            ? row.prevAll("tr[data-id]").first()
+            : row.nextAll("tr[data-id]").first();
+        if (targetRow.length && targetRow.data("id") !== undefined) {
+          setPendingCellEditFocus(targetRow.data("id"), field);
+        } else {
+          pendingCellEditFocus = null;
+        }
+        $(this).blur();
+      }
+    });
+  }
+
+  function restorePendingCellEditFocus() {
+    if (!pendingCellEditFocus) return;
+    const target = pendingCellEditFocus;
+    pendingCellEditFocus = null;
+
+    const row = $(`#fund-table-body tr[data-id="${target.entryId}"]`).first();
+    if (!row.length) return;
+
+    let cell = row.find(`td.editable[data-field="${target.field}"]`).first();
+    if (!cell.length) {
+      cell = row.find("td.editable").first();
+    }
+    if (!cell.length) return;
+
+    activateCellEditor(cell);
+  }
+
+  function setPendingCellEditFocus(entryId, field) {
+    pendingCellEditFocus = {
+      entryId: entryId,
+      field: field,
+    };
+  }
+
+  function setPendingCellEditFocusByCellOrder(cell, direction) {
+    const editableCells = $("#fund-table-body tr[data-id] td.editable");
+    if (!editableCells.length) return false;
+
+    const currentEl = cell.get(0);
+    const currentIndex = editableCells.toArray().indexOf(currentEl);
+    if (currentIndex < 0) return false;
+
+    const targetCell = editableCells.eq(currentIndex + direction);
+    if (!targetCell.length) return false;
+
+    const targetRow = targetCell.closest("tr[data-id]");
+    const targetId = targetRow.data("id");
+    const targetField = targetCell.data("field");
+    if (targetId === undefined || !targetField) return false;
+
+    setPendingCellEditFocus(targetId, targetField);
+    return true;
   }
 
   // 拆开合并的小类单元格，让每行都有独立的小类单元格可编辑
@@ -2021,6 +2119,53 @@
     return groups;
   }
 
+  function buildMinorRuns(majorEntries) {
+    const runs = [];
+
+    majorEntries.forEach((entry) => {
+      const minorKey = entry.minor_category || "__none__";
+      const lastRun = runs[runs.length - 1];
+
+      if (lastRun && lastRun.minorKey === minorKey) {
+        lastRun.entries.push(entry);
+      } else {
+        runs.push({
+          minorKey: minorKey,
+          minorCategory: entry.minor_category || "",
+          entries: [entry],
+        });
+      }
+    });
+
+    return runs;
+  }
+
+  function calculateMinorRunSubtotal(minorEntries, totalAmount, calcEntries) {
+    const subtotal = {
+      targetRatio: 0,
+      amount: 0,
+      actualRatio: 0,
+      deviation: 0,
+      rebalance: 0,
+      allocation: 0,
+      redemption: 0,
+    };
+
+    minorEntries.forEach((entry) => {
+      const calc = calcEntries[entry.id] || {};
+      subtotal.targetRatio += entry.target_ratio || 0;
+      subtotal.amount += entry.amount || 0;
+      subtotal.rebalance += calc.rebalance || 0;
+      subtotal.allocation += calc.allocation || 0;
+      subtotal.redemption += calc.redemption || 0;
+    });
+
+    subtotal.actualRatio = totalAmount > 0 ? subtotal.amount / totalAmount : 0;
+    subtotal.deviation = subtotal.targetRatio - subtotal.actualRatio;
+
+    return subtotal;
+  }
+
   // Entry sorting function
   function sortEntries(entries) {
     if (sortConfig.entrySortBy === "default") {
@@ -2128,5 +2273,11 @@
   // Format a decimal ratio as percentage with two decimals
   function formatPercent(value) {
     return (value * 100).toFixed(2) + "%";
+  }
+
+  function formatMoneyInputValue(value) {
+    const num = parseFloat(value);
+    if (!Number.isFinite(num)) return "0.00";
+    return num.toFixed(2);
   }
 })();
