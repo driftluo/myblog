@@ -248,7 +248,9 @@
     // Remove existing toast if any
     $(".share-toast").remove();
 
-    const toast = $('<div class="share-toast"><span class="share-toast-text"></span></div>');
+    const toast = $(
+      '<div class="share-toast"><span class="share-toast-text"></span></div>',
+    );
     toast.find(".share-toast-text").text(message);
 
     $("body").append(toast);
@@ -395,8 +397,9 @@
   let currentPortfolio = null;
   let entries = [];
   let pendingChanges = {};
-  let pendingNewEntries = []; // 本地新增的条目（尚未保存到数据库）
-  let pendingDeleteIds = []; // 本地标记删除的条目ID（尚未从数据库删除）
+  let pendingNewEntries = []; // Locally added entries (not yet saved to database)
+  let pendingDeleteIds = []; // Locally marked deleted entry IDs (not yet deleted from database)
+  let pendingSortChange = false; // Whether sort order has changed
   let deleteTarget = null;
   let deleteType = null;
   let entryRowCounter = 0;
@@ -564,6 +567,7 @@
         pendingChanges = {};
         pendingNewEntries = [];
         pendingDeleteIds = [];
+        pendingSortChange = false;
 
         // Update major category order config to include all majors actually present
         updateMajorOrderFromEntries();
@@ -635,27 +639,27 @@
         }
       });
     } else if (deleteType === "entry" && deleteTarget) {
-      // 本地删除条目，不立即调用API
+      // Local delete, don't call API immediately
       const entryId = deleteTarget;
 
-      // 检查是否是本地新增的条目（负数ID）
+      // Check if it's a locally added entry (negative ID)
       const newEntryIndex = pendingNewEntries.findIndex(
         (e) => e.id === entryId,
       );
       if (newEntryIndex !== -1) {
-        // 从本地新增列表中移除
+        // Remove from locally added list
         pendingNewEntries.splice(newEntryIndex, 1);
       } else {
-        // 已存在于数据库的条目，标记为待删除
+        // Existing DB entries, mark as pending delete
         if (!pendingDeleteIds.includes(entryId)) {
           pendingDeleteIds.push(entryId);
         }
       }
 
-      // 从entries数组中移除
+      // Remove from entries array
       entries = entries.filter((e) => e.id !== entryId);
 
-      // 清除该条目的pendingChanges
+      // Clear pending changes for this entry
       delete pendingChanges[entryId];
 
       hideModal("#delete-modal");
@@ -752,7 +756,7 @@
       return;
     }
 
-    // 本地添加条目，不立即调用API（管理员和访客都使用本地添加）
+    // Local add entry, don't call API immediately (both admin and visitor use local add)
     if (!window.__localEntryIdCounter) window.__localEntryIdCounter = -1;
     entriesToAdd.forEach((entry) => {
       const localEntry = {
@@ -767,7 +771,7 @@
         sort_index: entries.length,
       };
       entries.push(localEntry);
-      // 管理员模式下，跟踪本地新增的条目
+      // In admin mode, track locally added entries
       if (IS_ADMIN) {
         pendingNewEntries.push(localEntry);
       }
@@ -824,7 +828,7 @@
     // Collect all pending entry field changes (only for existing entries, not new ones)
     Object.keys(pendingChanges).forEach((entryId) => {
       const id = parseInt(entryId);
-      // 跳过本地新增的条目（负数ID），它们会通过创建API处理
+      // Skip locally added entries (negative ID), they're handled via create API
       if (id < 0) return;
       const changes = pendingChanges[entryId];
       if (Object.keys(changes).length > 0) {
@@ -835,7 +839,7 @@
       }
     });
 
-    // 准备要创建的新条目
+    // Prepare entries to create
     const entriesToCreate = pendingNewEntries.map((entry) => ({
       portfolio_id: currentPortfolio.portfolio.id,
       major_category: entry.major_category,
@@ -846,12 +850,12 @@
       amount: entry.amount,
     }));
 
-    // 准备要删除的条目ID
+    // Prepare entry IDs to delete
     const idsToDelete = [...pendingDeleteIds];
 
     // Prepare order updates based on current entries order (only for existing entries)
     const orderUpdates = entries
-      .filter((e) => e.id > 0) // 只包含已存在于数据库的条目
+      .filter((e) => e.id > 0) // Only include entries existing in database
       .map((e, idx) => ({
         id: e.id,
         sort_index: idx,
@@ -886,11 +890,11 @@
       console.warn("校验大类比例失败", e);
     }
 
-    // 计算总请求数
+    // Calculate total requests
     let totalRequests =
       (hasFieldUpdates ? 1 : 0) +
       (hasNewEntries ? 1 : 0) +
-      (hasDeletes ? idsToDelete.length : 0) + // 每个删除一个请求
+      (hasDeletes ? idsToDelete.length : 0) + // One request per delete
       (hasOrderUpdates ? 1 : 0);
     let completed = 0;
     let failed = 0;
@@ -900,6 +904,9 @@
         pendingChanges = {};
         pendingNewEntries = [];
         pendingDeleteIds = [];
+        pendingSortChange = false;
+        // Clear localStorage order cache since DB is now up-to-date
+        clearEntryOrderCache();
         updateUnsavedIndicator();
         loadPortfolio(currentPortfolio.portfolio.id);
         if (failed > 0) {
@@ -910,13 +917,13 @@
       }
     }
 
-    // 如果没有请求需要发送，直接返回
+    // If no requests to send, return directly
     if (totalRequests === 0) {
       alert("没有需要保存的更改");
       return;
     }
 
-    // 1. 发送删除请求
+    // 1. Send delete requests
     if (hasDeletes) {
       idsToDelete.forEach((id) => {
         $.post(API.deleteEntry(id), function (response) {
@@ -931,7 +938,7 @@
       });
     }
 
-    // 2. 发送创建新条目请求
+    // 2. Send create new entries request
     if (hasNewEntries) {
       $.ajax({
         url: API.createEntry,
@@ -1010,7 +1017,11 @@
     );
     const hasNewEntries = pendingNewEntries.length > 0;
     const hasDeletedEntries = pendingDeleteIds.length > 0;
-    const hasChanges = hasFieldChanges || hasNewEntries || hasDeletedEntries;
+    const hasChanges =
+      hasFieldChanges ||
+      hasNewEntries ||
+      hasDeletedEntries ||
+      pendingSortChange;
 
     if (hasChanges) {
       $("#unsaved-indicator").addClass("show");
@@ -1123,7 +1134,9 @@
             calculated.total.amount,
             calculated.entries,
           );
-          tbody.append(createMinorSubtotalRow(run.minorCategory, minorSubtotal));
+          tbody.append(
+            createMinorSubtotalRow(run.minorCategory, minorSubtotal),
+          );
         }
       });
 
@@ -1199,6 +1212,8 @@
 
       // Persist order for this portfolio
       saveEntryOrder();
+      pendingSortChange = true;
+      updateUnsavedIndicator();
 
       // Re-render to ensure grouping/rowspan correct
       renderTable();
@@ -1222,6 +1237,16 @@
     }
   }
 
+  function clearEntryOrderCache() {
+    if (!currentPortfolio) return;
+    try {
+      const key = `fund_order_${currentPortfolio.portfolio.id}`;
+      localStorage.removeItem(key);
+    } catch (e) {
+      console.warn("清除排序缓存失败", e);
+    }
+  }
+
   function loadEntryOrder() {
     if (!currentPortfolio) return;
     try {
@@ -1230,6 +1255,18 @@
       if (!raw) return;
       const ids = JSON.parse(raw);
       if (!Array.isArray(ids)) return;
+
+      // Check if cached order differs from DB order
+      const dbOrder = entries.map((e) => e.id);
+      const orderChanged =
+        ids.length !== dbOrder.length || ids.some((id, i) => id !== dbOrder[i]);
+
+      if (!orderChanged) {
+        // Cache matches DB, no need to apply or mark dirty
+        clearEntryOrderCache();
+        return;
+      }
+
       const idToEntry = {};
       entries.forEach((e) => (idToEntry[e.id] = e));
       const reordered = [];
@@ -1241,6 +1278,8 @@
         if (!reordered.includes(e)) reordered.push(e);
       });
       entries = reordered;
+      // Mark as dirty since localStorage order differs from DB
+      pendingSortChange = true;
     } catch (e) {
       console.warn("加载排序失败", e);
     }
@@ -1434,7 +1473,7 @@
 
       updateEntryField(id, field, newValue);
 
-      // 小类编辑完成后，重新渲染表格以合并同类项
+      // After minor category edit, re-render table to merge same categories
       if (field === "minor_category") {
         renderTable();
       }
@@ -1525,7 +1564,7 @@
     return true;
   }
 
-  // 拆开合并的小类单元格，让每行都有独立的小类单元格可编辑
+  // Unmerge minor category cells so each row has independent editable cell
   function expandMinorCells(mergedCell) {
     const rowspan = parseInt(mergedCell.attr("data-minor-rowspan")) || 1;
     const minorValue = mergedCell.text();
@@ -1898,13 +1937,15 @@
     const newIdx = idx + direction;
     if (newIdx < 0 || newIdx >= sortConfig.majorOrder.length) return;
 
-    // 交换位置
+    // Swap positions
     [sortConfig.majorOrder[idx], sortConfig.majorOrder[newIdx]] = [
       sortConfig.majorOrder[newIdx],
       sortConfig.majorOrder[idx],
     ];
 
     updateMajorOrderSelect();
+    pendingSortChange = true;
+    updateUnsavedIndicator();
     renderTable();
   }
 
@@ -1923,18 +1964,18 @@
 
   // Update `sortConfig.majorOrder` based on majors currently present in entries
   function updateMajorOrderFromEntries() {
-    // 获取所有实际存在的大类
+    // Get all major categories actually present
     const actualMajors = new Set();
     entries.forEach((e) => {
       if (e && e.major_category) actualMajors.add(e.major_category);
     });
 
-    // 保留已有顺序中存在的大类
+    // Keep existing major categories in current order
     const newOrder = sortConfig.majorOrder.filter((cat) =>
       actualMajors.has(cat),
     );
 
-    // 添加新出现的大类（不在已有顺序中的）
+    // Add new major categories not in current order
     actualMajors.forEach((cat) => {
       if (!newOrder.includes(cat)) {
         newOrder.push(cat);
@@ -2001,7 +2042,9 @@
     $("#money-unit-select").val(moneyUnit);
     updateMoneyHeaderLabels();
     if (currentPortfolio && currentPortfolio.portfolio) {
-      $("#info-total").text(formatCurrency(currentPortfolio.portfolio.total_amount));
+      $("#info-total").text(
+        formatCurrency(currentPortfolio.portfolio.total_amount),
+      );
       renderTable();
     } else if ($("#info-total").length) {
       $("#info-total").text(formatCurrency(0));
