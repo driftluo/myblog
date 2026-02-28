@@ -116,8 +116,8 @@ async fn update_publish(req: &mut Request, res: &mut Response) -> Result<(), Sta
 async fn upload(req: &mut Request, res: &mut Response) {
     // Set max size to 50MB
     req.set_secure_max_size(50 * 1024 * 1024);
-    match req.files("files").await {
-        Some(files) => {
+    match req.try_files("files").await {
+        Ok(Some(files)) => {
             let mut msgs = Vec::with_capacity(files.len());
             for file in files {
                 let dest = match file.name() {
@@ -136,8 +136,12 @@ async fn upload(req: &mut Request, res: &mut Response) {
             }
             set_json_response(res, 32, JsonOkResponse::ok(msgs))
         }
-        None => {
+        Ok(None) => {
             set_json_response(res, 32, JsonErrResponse::err("file not found in request"));
+            res.status_code(StatusCode::BAD_REQUEST);
+        }
+        Err(e) => {
+            set_json_response(res, 32, JsonErrResponse::err(e.to_string()));
             res.status_code(StatusCode::BAD_REQUEST);
         }
     }
