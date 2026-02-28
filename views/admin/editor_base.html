@@ -23,7 +23,7 @@
                     <div class="form-group">
                         <label for="title">标题</label>
                         {% if id %}
-                        <input id="title" type="text" class="form-control input-lg" placeholder="请输入标题" article-id={{ id }}>
+                        <input id="title" type="text" class="form-control input-lg" placeholder="请输入标题" article-id="{{ id }}">
                         {% else %}
                         <input id="title" type="text" class="form-control input-lg" placeholder="请输入标题">
                         {% endif %}
@@ -34,7 +34,7 @@
                             {% if tags %}
                             {% for tag in tags %}
                             <li class="list-inline-item">
-                                <a data-id={{ tag.id }}>{{ tag.tag }}</a>
+                                <a data-id="{{ tag.id }}">{{ tag.tag }}</a>
                             </li>
                             {% endfor %}
                             {% endif %}
@@ -47,8 +47,8 @@
                         </button>
                     </div>
                     <ul class="nav nav-tabs" style="margin-top:20px;">
-                        <li role="presentation" class="active" id="editor_note"><a onclick="editorPage()">编辑器</a></li>
-                        <li role="presentation" id="preview_note"><a onclick="previewPage()">预览</a></li>
+                        <li role="presentation" class="nav-item" id="editor_note"><a class="nav-link active" onclick="editorPage()">编辑器</a></li>
+                        <li role="presentation" class="nav-item" id="preview_note"><a class="nav-link" onclick="previewPage()">预览</a></li>
                     </ul>
                     <div id="editor_page" style="display: block; margin-top:16px;">
                         <textarea id="editor" class="form-control" rows="16" style="border-radius:8px; border:2px solid #e3e3e3;"></textarea>

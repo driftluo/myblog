@@ -25,7 +25,7 @@ driftluo's blog
             <ul class="list-unstyled d-flex flex-wrap gap-2">
                 {% if tags %}
                 {% for tag in tags %}
-                <li data-id={{ tag.id }}>
+                <li data-id="{{ tag.id }}">
                     <button class="btn btn-primary tag" type="button">{{ tag.tag }}&nbsp;<span class="badge bg-light text-dark">{{ tag.count }}</span>
                     </button>
                 </li>

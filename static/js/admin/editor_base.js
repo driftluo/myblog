@@ -1,4 +1,19 @@
 "use strict";
+// Bootstrap 5 Modal Helpers
+function showModal(selector) {
+  var el = document.querySelector(selector);
+  if (el) {
+    bootstrap.Modal.getOrCreateInstance(el).show();
+  }
+}
+
+function hideModal(selector) {
+  var el = document.querySelector(selector);
+  if (el) {
+    bootstrap.Modal.getOrCreateInstance(el).hide();
+  }
+}
+
 marked.setOptions({
   renderer: new marked.Renderer(),
   gfm: true,
@@ -15,16 +30,16 @@ marked.setOptions({
 
 function editorPage() {
   $("#preview_page").css("display", "none");
-  $("#preview_note").removeClass("active");
+  $("#preview_note .nav-link").removeClass("active");
   $("#editor_page").css("display", "block");
-  $("#editor_note").addClass("active");
+  $("#editor_note .nav-link").addClass("active");
 }
 
 function previewPage() {
   $("#editor_page").css("display", "none");
-  $("#editor_note").removeClass("active");
+  $("#editor_note .nav-link").removeClass("active");
   $("#preview_page").css("display", "block");
-  $("#preview_note").addClass("active");
+  $("#preview_note .nav-link").addClass("active");
   var html = marked($("#editor").val());
   $("#preview_page").html(html);
   $("pre code").addClass("hljs");
@@ -62,7 +77,7 @@ $("ul.tag").on("click", "li", function () {
 });
 $("#tag_btn").on("click", function () {
   $("#tag-name").val("");
-  $("#tag").modal("show");
+  showModal("#tag");
 });
 $("#add_tag").click(function () {
   var tag_name = $("#tag-name")
@@ -80,7 +95,7 @@ $("#add_tag").click(function () {
       .prev()
       .append("<span class='text-danger'>标签已存在或为空</span>");
   } else {
-    $("#tag").modal("hide");
+    hideModal("#tag");
     $("ul.tag").append(
       "<li class='list-inline-item'><a class='a_click'>" +
         tag_name +
@@ -91,7 +106,7 @@ $("#add_tag").click(function () {
 
 $("#upload_btn").click(function (event) {
   event.preventDefault();
-  $("#upload_modal").modal("show");
+  showModal("#upload_modal");
 });
 
 $(document).ready(function () {

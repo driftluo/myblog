@@ -72,7 +72,7 @@ function deleteButton() {
     showModal("#delete_modal");
     var tr = $(this).parent().parent();
     var id = $(this).attr("data-id");
-    $(".modal-delete").click(function () {
+    $(".modal-delete").off("click").on("click", function () {
       $.ajax({
         url: "/api/v1/tag/delete/" + id,
         type: "post",
@@ -99,7 +99,7 @@ function modifyButton() {
     var pre_tag_element = $(this).parent().prev().prev().children();
     $("#modify-tag-name").val(pre_tag);
     var id = $(this).attr("data-id");
-    $("#modify_tag").click(function () {
+    $("#modify_tag").off("click").on("click", function () {
       var tag_name = $("#modify-tag-name")
         .val()
         .replace(/(^\s*)|(\s*$)/g, "");

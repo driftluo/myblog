@@ -39,3 +39,40 @@ ul.tag li a {
 pre {
     padding: 0px;
 }
+
+/* Preview table styles */
+#preview_page table {
+    padding: 0;
+    border-collapse: collapse;
+    border-spacing: 0;
+    font-size: 1em;
+    font: inherit;
+    border: 0;
+    margin: 1.2em 0;
+    width: 100%;
+}
+
+#preview_page table tr {
+    border: 0;
+    border-top: 1px solid #CCC;
+    background-color: white;
+    margin: 0;
+    padding: 0;
+}
+
+#preview_page table tr:nth-child(2n) {
+    background-color: #F8F8F8;
+}
+
+#preview_page table tr th,
+#preview_page table tr td {
+    font-size: 1em;
+    border: 1px solid #CCC;
+    margin: 0;
+    padding: 0.5em 1em;
+}
+
+#preview_page table tr th {
+    font-weight: bold;
+    background-color: #F0F0F0;
+}

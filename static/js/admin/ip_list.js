@@ -10,13 +10,11 @@ function get_ip() {
         if (result.data.length < 25) {
             $("#next").attr({ "disabled": "disabled" });
         }
-        var ip_list = [];
         for(var i = 0; i < result.data.length; i++){
             var data = JSON.parse(result.data[i]);
             data.timestamp = moment.utc(data.timestamp).local().format("YYYY-MM-DD HH:mm:ss");
             var html = template("tpl-ip", data);
-            $("tbody").append(html);
-            ip_list.push(data.ip)
+            $('tbody').append(html);
         }
     })
 }

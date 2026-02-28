@@ -1,4 +1,13 @@
 "use strict";
+
+// Bootstrap 5 Modal Helper
+function showModal(selector) {
+  var el = document.querySelector(selector);
+  if (el) {
+    bootstrap.Modal.getOrCreateInstance(el).show();
+  }
+}
+
 $("#submit").click(function (event) {
   event.preventDefault();
   var title = $("#title").val();
@@ -27,7 +36,7 @@ $("#submit").click(function (event) {
     })
     .toArray();
   if (title === "" || content === "") {
-    $("#mistake").modal("show");
+    showModal("#mistake");
   } else {
     $.ajax({
       url: "/api/v1/article/edit",
@@ -44,7 +53,7 @@ $("#submit").click(function (event) {
       headers: { "Content-Type": "application/json" },
       success: function (res) {
         if (res.status) {
-          $("#success").modal("show");
+          showModal("#success");
         }
       },
     });

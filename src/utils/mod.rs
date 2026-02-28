@@ -206,7 +206,7 @@ pub fn set_json_response<T: serde::Serialize>(res: &mut Response, size: usize, j
 pub fn set_plain_text_response(res: &mut Response, text: bytes::BytesMut) {
     res.headers_mut().insert(
         header::CONTENT_TYPE,
-        header::HeaderValue::from_static("application/plain; charset=utf-8"),
+        header::HeaderValue::from_static("text/plain; charset=utf-8"),
     );
     res.body(ResBody::Once(text.freeze()));
     res.status_code(StatusCode::OK);

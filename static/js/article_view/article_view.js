@@ -84,7 +84,7 @@ function getComments() {
         command.order * 10,
       function (result) {
         command.add();
-        if (result.data.length < 5) {
+        if (result.data.length < 10) {
           command.change();
           $("#load").children().text("没有更多了");
         }
@@ -94,8 +94,8 @@ function getComments() {
             .local()
             .format();
           result.data[index]["admin"] = result.admin;
-          if (result.user) {
-            result.data[index]["user"] = result.user;
+          if (result.user_id) {
+            result.data[index]["user"] = result.user_id;
           }
         }
         var html = template("tpl-comment-list", result);

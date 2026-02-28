@@ -82,7 +82,7 @@ function deleteButton() {
     showModal("#delete_modal");
     var tr = $(this).parent().parent();
     var id = $(this).attr("data-id");
-    $(".modal-delete").click(function () {
+    $(".modal-delete").off("click").on("click", function () {
       $.ajax({
         url: "/api/v1/article/delete/" + id,
         type: "post",
