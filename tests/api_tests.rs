@@ -243,7 +243,11 @@ mod visitor_api_tests {
 
         let visitor = create_client();
         let view_url = format!("{}{}/article/view?id={}", BASE_URL, API_PREFIX, article_id);
-        let view_resp = visitor.get(&view_url).send().await.expect("Article view failed");
+        let view_resp = visitor
+            .get(&view_url)
+            .send()
+            .await
+            .expect("Article view failed");
         assert_eq!(view_resp.status(), StatusCode::OK);
         let view_body: Value = view_resp.json().await.expect("Parse article view");
         assert_eq!(view_body["status"], true);
@@ -288,7 +292,10 @@ mod visitor_api_tests {
     #[ignore = "requires running server"]
     async fn test_login_with_github_invalid_code() {
         let client = create_client();
-        let url = format!("{}{}/login_with_github?code=invalid_code_for_test", BASE_URL, API_PREFIX);
+        let url = format!(
+            "{}{}/login_with_github?code=invalid_code_for_test",
+            BASE_URL, API_PREFIX
+        );
 
         let response = client.get(&url).send().await.expect("Request failed");
         assert_eq!(response.status(), StatusCode::NOT_ACCEPTABLE);
@@ -419,6 +426,7 @@ mod auth_tests {
 #[cfg(test)]
 mod admin_api_tests {
     use super::*;
+    use tokio::time::{Duration, sleep};
 
     /// Login and return authenticated client
     async fn login_as_admin() -> Client {
@@ -500,6 +508,350 @@ mod admin_api_tests {
         let _ = client.post(&delete_url).send().await;
     }
 
+    /// Returns all published articles. The API returns them in descending
+    /// create_time order, so `first()` is the newest and `last()` is the oldest.
+    async fn list_published_articles(client: &Client) -> Vec<Value> {
+        let mut offset = 0;
+        let mut articles = Vec::new();
+
+        loop {
+            let list_url = format!(
+                "{}{}/article/view_all?limit=50&offset={}",
+                BASE_URL, API_PREFIX, offset
+            );
+            let list_resp = client
+                .get(&list_url)
+                .send()
+                .await
+                .expect("List published article failed");
+            assert_eq!(list_resp.status(), StatusCode::OK);
+
+            let list_body: Value = list_resp
+                .json()
+                .await
+                .expect("Parse published article list");
+            assert_eq!(list_body["status"], true);
+
+            let batch = list_body["data"]
+                .as_array()
+                .expect("Published article list should be an array");
+            let batch_len = batch.len();
+            articles.extend(batch.iter().cloned());
+
+            if batch_len < 50 {
+                break;
+            }
+            offset += 50;
+        }
+
+        articles
+    }
+
+    #[tokio::test]
+    #[ignore = "requires running server and valid admin account"]
+    async fn test_article_navigation_endpoints() {
+        let admin = login_as_admin().await;
+        let prefix = unique_suffix();
+
+        let previous_id = create_temp_article(&admin, &format!("Nav Prev {}", prefix), true).await;
+        sleep(Duration::from_millis(20)).await;
+
+        let current_id =
+            create_temp_article(&admin, &format!("Nav Current {}", prefix), true).await;
+        sleep(Duration::from_millis(20)).await;
+
+        let unpublished_id =
+            create_temp_article(&admin, &format!("Nav Draft {}", prefix), false).await;
+        sleep(Duration::from_millis(20)).await;
+
+        let next_id = create_temp_article(&admin, &format!("Nav Next {}", prefix), true).await;
+
+        let visitor = create_client();
+        let visitor_url = format!(
+            "{}{}/article/navigation?id={}",
+            BASE_URL, API_PREFIX, current_id
+        );
+        let visitor_resp = visitor
+            .get(&visitor_url)
+            .send()
+            .await
+            .expect("visitor navigation request failed");
+        assert_eq!(visitor_resp.status(), StatusCode::OK);
+        let visitor_body: Value = visitor_resp
+            .json()
+            .await
+            .expect("parse visitor navigation response");
+        assert_eq!(visitor_body["status"], true);
+        assert_eq!(visitor_body["data"]["previous"]["id"], previous_id);
+        assert_eq!(
+            visitor_body["data"]["previous"]["title"],
+            format!("Nav Prev {}", prefix)
+        );
+        assert_eq!(visitor_body["data"]["next"]["id"], next_id);
+        assert_eq!(
+            visitor_body["data"]["next"]["title"],
+            format!("Nav Next {}", prefix)
+        );
+
+        let published_articles = list_published_articles(&visitor).await;
+        assert!(
+            published_articles.len() >= 3,
+            "expected at least three published articles"
+        );
+
+        let oldest_published_id = published_articles
+            .last()
+            .and_then(|article| article["id"].as_str())
+            .expect("oldest published article id missing");
+        let newest_published_id = published_articles
+            .first()
+            .and_then(|article| article["id"].as_str())
+            .expect("newest published article id missing");
+
+        let first_url = format!(
+            "{}{}/article/navigation?id={}",
+            BASE_URL, API_PREFIX, oldest_published_id
+        );
+        let first_resp = visitor
+            .get(&first_url)
+            .send()
+            .await
+            .expect("first article navigation request failed");
+        assert_eq!(first_resp.status(), StatusCode::OK);
+        let first_body: Value = first_resp
+            .json()
+            .await
+            .expect("parse first article navigation response");
+        assert_eq!(first_body["status"], true);
+        assert!(first_body["data"]["previous"].is_null());
+
+        let last_url = format!(
+            "{}{}/article/navigation?id={}",
+            BASE_URL, API_PREFIX, newest_published_id
+        );
+        let last_resp = visitor
+            .get(&last_url)
+            .send()
+            .await
+            .expect("last article navigation request failed");
+        assert_eq!(last_resp.status(), StatusCode::OK);
+        let last_body: Value = last_resp
+            .json()
+            .await
+            .expect("parse last article navigation response");
+        assert_eq!(last_body["status"], true);
+        assert!(last_body["data"]["next"].is_null());
+
+        let unpublished_url = format!(
+            "{}{}/article/navigation?id={}",
+            BASE_URL, API_PREFIX, unpublished_id
+        );
+        let unpublished_resp = visitor
+            .get(&unpublished_url)
+            .send()
+            .await
+            .expect("unpublished article navigation request failed");
+        assert_eq!(unpublished_resp.status(), StatusCode::OK);
+        let unpublished_body: Value = unpublished_resp
+            .json()
+            .await
+            .expect("parse unpublished article navigation response");
+        assert_eq!(unpublished_body["status"], false);
+        assert_eq!(unpublished_body["error"], "Article not found");
+
+        let admin_url = format!(
+            "{}{}/article/admin/navigation?id={}",
+            BASE_URL, API_PREFIX, unpublished_id
+        );
+        let admin_resp = admin
+            .get(&admin_url)
+            .send()
+            .await
+            .expect("admin navigation request failed");
+        assert_eq!(admin_resp.status(), StatusCode::OK);
+        let admin_body: Value = admin_resp
+            .json()
+            .await
+            .expect("parse admin navigation response");
+        assert_eq!(admin_body["status"], true);
+        assert_eq!(admin_body["data"]["previous"]["id"], current_id);
+        assert_eq!(admin_body["data"]["next"]["id"], next_id);
+
+        delete_article_if_exists(&admin, &previous_id).await;
+        delete_article_if_exists(&admin, &current_id).await;
+        delete_article_if_exists(&admin, &unpublished_id).await;
+        delete_article_if_exists(&admin, &next_id).await;
+    }
+
+    #[tokio::test]
+    #[ignore = "requires running server and valid admin account"]
+    async fn test_admin_notify_page_receives_comment_notification() {
+        let admin_client = login_as_admin().await;
+        let prefix = unique_suffix();
+        let article_title = format!("Notify Article {}", prefix);
+        let article_id = create_temp_article(&admin_client, &article_title, true).await;
+
+        let user_client = create_client();
+        let account = format!("notify_user_{}", prefix);
+        let nickname = format!("NotifyUser{}", prefix);
+        let email = format!("{}@example.com", account);
+        let register_url = format!("{}{}/user/new", BASE_URL, API_PREFIX);
+        let register_resp = user_client
+            .post(&register_url)
+            .json(&json!({
+                "account": account,
+                "password": format_password("userpass123"),
+                "nickname": nickname,
+                "say": "notify test",
+                "email": email
+            }))
+            .send()
+            .await
+            .expect("Register notify test user failed");
+        assert_eq!(register_resp.status(), StatusCode::OK);
+        let register_body: Value = register_resp
+            .json()
+            .await
+            .expect("Parse register notify test user");
+        assert_eq!(register_body["status"], true);
+
+        let user_view_url = format!("{}{}/user/view", BASE_URL, API_PREFIX);
+        let user_view_resp = user_client
+            .get(&user_view_url)
+            .send()
+            .await
+            .expect("View notify test user failed");
+        assert_eq!(user_view_resp.status(), StatusCode::OK);
+        let user_view_body: Value = user_view_resp.json().await.expect("Parse notify test user");
+        assert_eq!(user_view_body["status"], true);
+        let user_id = user_view_body["data"]["id"]
+            .as_str()
+            .expect("notify test user id missing")
+            .to_string();
+
+        let comment_content = format!("notify comment {}", prefix);
+        let comment_url = format!("{}{}/comment/new", BASE_URL, API_PREFIX);
+        let comment_resp = user_client
+            .post(&comment_url)
+            .json(&json!({
+                "comment": comment_content,
+                "article_id": article_id
+            }))
+            .send()
+            .await
+            .expect("Create notify test comment failed");
+        assert_eq!(comment_resp.status(), StatusCode::OK);
+        let comment_body: Value = comment_resp
+            .json()
+            .await
+            .expect("Parse notify test comment");
+        assert_eq!(comment_body["status"], true);
+
+        let notify_page_url = format!("{}/admin/notify", BASE_URL);
+        let notify_page_resp = admin_client
+            .get(&notify_page_url)
+            .send()
+            .await
+            .expect("Load admin notify page failed");
+        assert_eq!(notify_page_resp.status(), StatusCode::OK);
+        let notify_page_html = notify_page_resp
+            .text()
+            .await
+            .expect("Read admin notify page html");
+        assert!(
+            notify_page_html.contains(&article_title),
+            "notify page should contain article title"
+        );
+        assert!(
+            notify_page_html.contains(&nickname),
+            "notify page should contain sender nickname"
+        );
+        assert!(
+            notify_page_html.contains("评论"),
+            "notify page should contain comment notification type"
+        );
+        assert!(
+            notify_page_html.contains(&format!("/article/{}", article_id)),
+            "notify page should link to article"
+        );
+
+        let article_view_url = format!("{}/article/{}", BASE_URL, article_id);
+        let article_view_resp = admin_client
+            .get(&article_view_url)
+            .send()
+            .await
+            .expect("Open article from notify page failed");
+        assert_eq!(article_view_resp.status(), StatusCode::OK);
+
+        let notify_page_after_click_resp = admin_client
+            .get(&notify_page_url)
+            .send()
+            .await
+            .expect("Reload admin notify page after click failed");
+        assert_eq!(notify_page_after_click_resp.status(), StatusCode::OK);
+        let notify_page_after_click_html = notify_page_after_click_resp
+            .text()
+            .await
+            .expect("Read admin notify page html after click");
+        assert!(
+            !notify_page_after_click_html.contains(&article_title),
+            "notify page should no longer contain clicked article notification"
+        );
+
+        let comments_url = format!(
+            "{}{}/article/view_comment/{}?limit=50&offset=0",
+            BASE_URL, API_PREFIX, article_id
+        );
+        let comments_resp = admin_client
+            .get(&comments_url)
+            .send()
+            .await
+            .expect("List notify test comments failed");
+        assert_eq!(comments_resp.status(), StatusCode::OK);
+        let comments_body: Value = comments_resp
+            .json()
+            .await
+            .expect("Parse notify test comments");
+        assert_eq!(comments_body["status"], true);
+        let comment = comments_body["data"]
+            .as_array()
+            .and_then(|arr| arr.iter().find(|c| c["comment"] == comment_content))
+            .expect("Notify test comment not found");
+        let comment_id = comment["id"]
+            .as_str()
+            .expect("notify test comment id missing")
+            .to_string();
+
+        let delete_comment_url = format!("{}{}/comment/delete", BASE_URL, API_PREFIX);
+        let delete_comment_resp = admin_client
+            .post(&delete_comment_url)
+            .json(&json!({
+                "comment_id": comment_id,
+                "user_id": user_id
+            }))
+            .send()
+            .await
+            .expect("Delete notify test comment failed");
+        assert_eq!(delete_comment_resp.status(), StatusCode::OK);
+        let delete_comment_body: Value = delete_comment_resp
+            .json()
+            .await
+            .expect("Parse delete notify test comment");
+        assert_eq!(delete_comment_body["status"], true);
+
+        delete_article_if_exists(&admin_client, &article_id).await;
+
+        let delete_user_url = format!("{}{}/user/delete/{}", BASE_URL, API_PREFIX, user_id);
+        let delete_user_resp = admin_client
+            .post(&delete_user_url)
+            .send()
+            .await
+            .expect("Delete notify test user failed");
+        assert_eq!(delete_user_resp.status(), StatusCode::OK);
+        let delete_user_body: Value = delete_user_resp.json().await.expect("Parse delete user");
+        assert_eq!(delete_user_body["status"], true);
+    }
+
     #[tokio::test]
     #[ignore = "requires running server and valid admin account"]
     async fn test_admin_article_list() {
@@ -525,8 +877,15 @@ mod admin_api_tests {
         let article_id = create_temp_article(&client, &title, false).await;
 
         // admin/view
-        let view_url = format!("{}{}/article/admin/view?id={}", BASE_URL, API_PREFIX, article_id);
-        let view_resp = client.get(&view_url).send().await.expect("admin view failed");
+        let view_url = format!(
+            "{}{}/article/admin/view?id={}",
+            BASE_URL, API_PREFIX, article_id
+        );
+        let view_resp = client
+            .get(&view_url)
+            .send()
+            .await
+            .expect("admin view failed");
         assert_eq!(view_resp.status(), StatusCode::OK);
         let view_body: Value = view_resp.json().await.expect("Parse admin view");
         assert_eq!(view_body["status"], true);
@@ -653,7 +1012,9 @@ mod admin_api_tests {
         assert_eq!(resp.status(), StatusCode::OK);
         let portfolios_body: Value = resp.json().await.expect("Parse portfolio list");
         assert_eq!(portfolios_body["status"], true);
-        let portfolios = portfolios_body["data"].as_array().expect("data should be array");
+        let portfolios = portfolios_body["data"]
+            .as_array()
+            .expect("data should be array");
         assert!(portfolios.iter().any(|p| p["id"] == portfolio_id));
 
         // 2. Create two entries
@@ -746,7 +1107,8 @@ mod admin_api_tests {
         assert!(arr.len() >= 4);
 
         // 3.1 Get portfolio with entries
-        let get_portfolio_url = format!("{}{}/fund/portfolio/{}", BASE_URL, API_PREFIX, portfolio_id);
+        let get_portfolio_url =
+            format!("{}{}/fund/portfolio/{}", BASE_URL, API_PREFIX, portfolio_id);
         let resp = client
             .get(&get_portfolio_url)
             .send()
@@ -842,7 +1204,10 @@ mod admin_api_tests {
             .await
             .expect("List portfolios after amount update failed");
         assert_eq!(resp.status(), StatusCode::OK);
-        let portfolios_after_update: Value = resp.json().await.expect("Parse portfolio list after update");
+        let portfolios_after_update: Value = resp
+            .json()
+            .await
+            .expect("Parse portfolio list after update");
         assert_eq!(portfolios_after_update["status"], true);
         let p = portfolios_after_update["data"]
             .as_array()
@@ -922,7 +1287,10 @@ mod admin_api_tests {
             .send()
             .await
             .expect("Invalid create portfolio request failed");
-        assert_eq!(invalid_create_portfolio_resp.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(
+            invalid_create_portfolio_resp.status(),
+            StatusCode::BAD_REQUEST
+        );
 
         let create_portfolio_url = format!("{}{}/fund/portfolio", BASE_URL, API_PREFIX);
         let create_resp = client
@@ -974,7 +1342,10 @@ mod admin_api_tests {
             .send()
             .await
             .expect("Invalid update portfolio request failed");
-        assert_eq!(invalid_update_portfolio_resp.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(
+            invalid_update_portfolio_resp.status(),
+            StatusCode::BAD_REQUEST
+        );
 
         let batch_order_url = format!("{}{}/fund/entries/batch-order", BASE_URL, API_PREFIX);
         let invalid_batch_order_resp = client
@@ -1028,10 +1399,16 @@ mod admin_api_tests {
             .await
             .expect("Update missing entry failed");
         assert_eq!(update_resp.status(), StatusCode::OK);
-        let update_body: Value = update_resp.json().await.expect("Parse update missing entry");
+        let update_body: Value = update_resp
+            .json()
+            .await
+            .expect("Parse update missing entry");
         assert_eq!(update_body["status"], false);
 
-        let delete_entry_url = format!("{}{}/fund/entry/delete/{}", BASE_URL, API_PREFIX, missing_id);
+        let delete_entry_url = format!(
+            "{}{}/fund/entry/delete/{}",
+            BASE_URL, API_PREFIX, missing_id
+        );
         let delete_entry_resp = client
             .post(&delete_entry_url)
             .send()
@@ -1485,10 +1862,8 @@ mod admin_api_tests {
             .await
             .expect("List comments failed");
         assert_eq!(list_comments_resp.status(), StatusCode::OK);
-        let list_comments_body: Value = list_comments_resp
-            .json()
-            .await
-            .expect("Parse comment list");
+        let list_comments_body: Value =
+            list_comments_resp.json().await.expect("Parse comment list");
         assert_eq!(list_comments_body["status"], true);
         let comment = list_comments_body["data"]
             .as_array()

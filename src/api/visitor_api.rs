@@ -117,6 +117,18 @@ async fn view_article(req: &mut Request, res: &mut Response) -> Result<(), Statu
 }
 
 #[handler]
+async fn view_article_navigation(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
+    let id = parse_query::<Uuid>(req, "id")?;
+
+    match ArticlesWithTag::query_navigation(id, false).await {
+        Ok(data) => set_json_response(res, 64, JsonOkResponse::ok(data)),
+        Err(err) => set_json_response(res, 32, JsonErrResponse::err(err)),
+    }
+
+    Ok(())
+}
+
+#[handler]
 async fn login(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let body = parse_json_body::<LoginUser>(req)
         .await
@@ -256,6 +268,10 @@ impl Routers for Visitor {
             Router::new()
                 .path(PREFIX.to_owned() + "article/view")
                 .get(view_article),
+            // http {ip}/PREFIX/article/navigation?id=<id>
+            Router::new()
+                .path(PREFIX.to_owned() + "article/navigation")
+                .get(view_article_navigation),
             // http {ip}/PREFIX/login_with_github
             Router::new()
                 .path(PREFIX.to_owned() + "login_with_github")

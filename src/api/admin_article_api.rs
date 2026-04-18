@@ -49,6 +49,20 @@ async fn admin_view_article(req: &mut Request, res: &mut Response) -> Result<(),
 }
 
 #[handler]
+async fn admin_view_article_navigation(
+    req: &mut Request,
+    res: &mut Response,
+) -> Result<(), StatusError> {
+    let id = parse_query::<uuid::Uuid>(req, "id")?;
+
+    match ArticlesWithTag::query_navigation(id, true).await {
+        Ok(data) => set_json_response(res, 64, JsonOkResponse::ok(data)),
+        Err(e) => set_json_response(res, 32, JsonErrResponse::err(e)),
+    }
+    Ok(())
+}
+
+#[handler]
 async fn admin_view_raw_article(req: &mut Request, res: &mut Response) -> Result<(), StatusError> {
     let id = parse_query::<uuid::Uuid>(req, "id")?;
 
@@ -158,6 +172,12 @@ impl Routers for AdminArticle {
                 .hoop(block_no_admin)
                 // http get /article/admin/view?id==4
                 .push(Router::new().path("admin/view").get(admin_view_article))
+                // http get /article/admin/navigation?id==4
+                .push(
+                    Router::new()
+                        .path("admin/navigation")
+                        .get(admin_view_article_navigation),
+                )
                 // http get /article/admin/view_raw?id==4
                 .push(
                     Router::new()

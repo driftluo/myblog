@@ -18,13 +18,13 @@ sqlx = { version = "0.8", features = [
 tokio = { version = "1.0", features = ["full"] }
 redis = { version = "1", features = ["tokio-comp", "connection-manager"] }
 futures = "0.3"
-reqwest = { version = "0.12", features = [
+reqwest = { version = "0.13", features = [
     "json",
-    "rustls-tls",
+    "rustls",
 ], default-features = false }
 serde_urlencoded = "0.7.0"
 url = "2"
-salvo = { version = "0.89", features = ["cookie", "serve-static"] }
+salvo = { version = "0.92", features = ["cookie", "serve-static"] }
 tera = "1"
 bytes = "1"
 tracing = "0.1"
@@ -43,9 +43,9 @@ serde = { version = "1", features = ["rc"] }
 http-body-util = "0.1"
 
 [dev-dependencies]
-reqwest = { version = "0.12", features = [
+reqwest = { version = "0.13", features = [
     "json",
-    "rustls-tls",
+    "rustls",
     "cookies",
     "multipart",
 ], default-features = false }

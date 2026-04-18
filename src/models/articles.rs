@@ -224,6 +224,18 @@ pub struct ArticlesWithTag {
     pub modify_time: NaiveDateTime,
 }
 
+#[derive(sqlx::FromRow, Debug, Clone, Deserialize, Serialize)]
+pub struct ArticleNavigationItem {
+    pub id: Uuid,
+    pub title: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct ArticleNavigation {
+    pub previous: Option<ArticleNavigationItem>,
+    pub next: Option<ArticleNavigationItem>,
+}
+
 impl ArticlesWithTag {
     pub async fn delete_with_id(id: Uuid) -> Result<u64, String> {
         Relations::delete_all(id, true).await;
@@ -272,6 +284,18 @@ impl ArticlesWithTag {
             .map(|r| r.rows_affected())
             .map_err(|e| format!("{}", e))
     }
+
+    pub async fn query_navigation(id: Uuid, admin: bool) -> Result<ArticleNavigation, String> {
+        let navigation = ArticleNavigationRow::query(id).await.map_err(|e| match e {
+            sqlx::Error::RowNotFound => "Article not found".to_string(),
+            other => format!("{}", other),
+        })?;
+        if !admin && !navigation.current_published {
+            return Err("Article not found".to_string());
+        }
+
+        Ok(navigation.into_navigation())
+    }
 }
 
 #[derive(sqlx::FromRow)]
@@ -285,6 +309,65 @@ struct RawArticlesWithTag {
     pub tags: Vec<Option<String>>,
     pub create_time: NaiveDateTime,
     pub modify_time: NaiveDateTime,
+}
+
+#[derive(sqlx::FromRow)]
+struct ArticleNavigationRow {
+    current_published: bool,
+    previous_id: Option<Uuid>,
+    previous_title: Option<String>,
+    next_id: Option<Uuid>,
+    next_title: Option<String>,
+}
+
+impl ArticleNavigationRow {
+    async fn query(id: Uuid) -> sqlx::Result<Self> {
+        sqlx::query_as(
+            r#"
+            WITH current_article AS (
+                SELECT id, published
+                FROM articles
+                WHERE id = $1
+            ),
+            ordered_articles AS (
+                SELECT
+                    a.id,
+                    lag(a.id) OVER article_order AS previous_id,
+                    lag(a.title) OVER article_order AS previous_title,
+                    lead(a.id) OVER article_order AS next_id,
+                    lead(a.title) OVER article_order AS next_title
+                FROM articles a
+                JOIN current_article current ON true
+                WHERE a.published = true OR a.id = current.id
+                WINDOW article_order AS (ORDER BY a.create_time ASC, a.id ASC)
+            )
+            SELECT
+                current.published AS current_published,
+                ordered.previous_id,
+                ordered.previous_title,
+                ordered.next_id,
+                ordered.next_title
+            FROM current_article current
+            JOIN ordered_articles ordered ON ordered.id = current.id
+            "#,
+        )
+        .bind(id)
+        .fetch_one(get_postgres())
+        .await
+    }
+
+    fn into_navigation(self) -> ArticleNavigation {
+        let previous = match (self.previous_id, self.previous_title) {
+            (Some(id), Some(title)) => Some(ArticleNavigationItem { id, title }),
+            _ => None,
+        };
+        let next = match (self.next_id, self.next_title) {
+            (Some(id), Some(title)) => Some(ArticleNavigationItem { id, title }),
+            _ => None,
+        };
+
+        ArticleNavigation { previous, next }
+    }
 }
 
 impl RawArticlesWithTag {

@@ -3,7 +3,7 @@
 test: test-frontend test-api
 
 test-frontend:
-	node --test tests/frontend/fund_calc_core.test.js
+	node --test tests/frontend/*.test.js
 
 test-api:
 	@set -euo pipefail; \

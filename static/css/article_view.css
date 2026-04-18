@@ -2,6 +2,156 @@ pre {
     padding: 0px;
 }
 
+.article-navigation {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 120px minmax(0, 1fr);
+    align-items: stretch;
+    gap: 14px;
+    margin: 38px 0 18px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(119, 119, 119, 0.18);
+}
+
+.article-nav-button {
+    position: relative;
+    display: flex;
+    min-height: 78px;
+    padding: 14px 16px;
+    border: 1px solid rgba(180, 166, 150, 0.42);
+    border-radius: 12px;
+    background:
+        linear-gradient(135deg, rgba(255, 252, 247, 0.98), rgba(255, 255, 255, 0.98));
+    color: #2f2f2f;
+    overflow: hidden;
+    text-decoration: none;
+    box-shadow: 0 6px 18px rgba(47, 47, 47, 0.04);
+    transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        border-color 0.18s ease,
+        background 0.18s ease;
+}
+
+.article-nav-button::after {
+    content: "";
+    position: absolute;
+    inset: auto 14px 10px 14px;
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(255, 117, 25, 0), rgba(255, 117, 25, 0.45));
+    opacity: 0;
+    transform: scaleX(0.6);
+    transform-origin: left;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.article-nav-button:hover {
+    color: #2f2f2f;
+    border-color: rgba(255, 117, 25, 0.32);
+    background:
+        linear-gradient(135deg, rgba(255, 247, 239, 0.98), rgba(255, 255, 255, 1));
+    box-shadow: 0 10px 22px rgba(255, 117, 25, 0.08);
+    transform: translateY(-1px);
+}
+
+.article-nav-button:hover::after {
+    opacity: 1;
+    transform: scaleX(1);
+}
+
+.article-nav-button-wide {
+    flex-direction: column;
+    justify-content: center;
+}
+
+.article-nav-button-center {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-width: 0;
+    text-align: center;
+    background:
+        linear-gradient(135deg, rgba(255, 248, 238, 0.98), rgba(255, 253, 249, 0.98));
+    border-color: rgba(255, 117, 25, 0.26);
+    color: #4f3a28;
+    box-shadow: 0 6px 18px rgba(255, 117, 25, 0.06);
+}
+
+.article-nav-button-center:hover {
+    color: #4f3a28;
+    background:
+        linear-gradient(135deg, rgba(255, 243, 225, 0.98), rgba(255, 250, 242, 0.98));
+    border-color: rgba(255, 117, 25, 0.38);
+    box-shadow: 0 10px 22px rgba(255, 117, 25, 0.1);
+}
+
+.article-nav-button-center::after {
+    display: none;
+}
+
+.article-nav-previous {
+    align-items: flex-start;
+}
+
+.article-nav-next {
+    align-items: flex-end;
+    text-align: right;
+}
+
+.article-nav-next::after {
+    background: linear-gradient(90deg, rgba(255, 117, 25, 0.45), rgba(255, 117, 25, 0));
+    transform-origin: right;
+}
+
+.article-nav-label {
+    color: #ff7519;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+}
+
+.article-nav-button-center .article-nav-label {
+    color: #ff7519;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+}
+
+.article-nav-title {
+    margin-top: 7px;
+    color: #444;
+    font-size: 15px;
+    line-height: 1.45;
+    word-break: break-word;
+}
+
+.article-nav-button-center .article-nav-title {
+    color: #7a6858;
+    font-size: 12px;
+}
+
+.article-nav-button.is-disabled {
+    color: #aaa;
+    background: rgba(250, 250, 248, 0.7);
+    border-color: rgba(180, 166, 150, 0.18);
+    box-shadow: none;
+    cursor: default;
+    opacity: 0.72;
+    pointer-events: none;
+    transform: none;
+}
+
+.article-nav-button.is-disabled::after {
+    display: none;
+}
+
+.article-nav-button.is-disabled .article-nav-label {
+    color: #aaa;
+}
+
+.article-nav-button.is-disabled .article-nav-title {
+    color: #aaa;
+}
+
 .comment li p a {
     color: #ff7519;
     margin-right: 10px;
@@ -86,4 +236,20 @@ table tr th, table tr td {
 table tr th {
     font-weight: bold;
     background-color: #F0F0F0;
+}
+
+@media (max-width: 768px) {
+    .article-navigation {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        margin-top: 30px;
+    }
+
+    .article-nav-button-center {
+        min-height: 58px;
+    }
+
+    .article-nav-button {
+        min-height: 68px;
+    }
 }

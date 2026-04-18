@@ -1,5 +1,7 @@
 "use strict";
 $(function () {
+  var $article = $("#article-content");
+  loadArticleNavigation($article);
   getTagAndModifyTime();
   hightlight($("pre code"));
   getComments();
@@ -53,7 +55,7 @@ $("body").on("click", "ul.comment li a.reply", function () {
 });
 
 function getTagAndModifyTime() {
-  var $article = $(".container .row > div[data-id]");
+  var $article = $("#article-content");
   var id = $article.attr("data-id");
   $.getJSON("/api/v1/article/view?id=" + id, function (result) {
     $article.append(
@@ -76,7 +78,7 @@ function getTagAndModifyTime() {
 
 function getComments() {
   if (command.command) {
-    var id = $(".container .row > div[data-id]").attr("data-id");
+    var id = $("#article-content").attr("data-id");
     $.getJSON(
       "/api/v1/article/view_comment/" +
         id +

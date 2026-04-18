@@ -20,8 +20,28 @@
 {% block body %}
 <div class="container">
   <div class="row justify-content-center">
-    <div class="col-lg-10 col-md-11 col-12" data-id="{{ article.id }}">
+    <div id="article-content" class="col-lg-10 col-md-11 col-12" data-id="{{ article.id }}" data-view-mode="visitor">
       {{ article.content | safe }}
+    </div>
+  </div>
+</div>
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-lg-10 col-md-11 col-12">
+      <div class="article-navigation">
+        <a class="article-nav-button article-nav-button-wide article-nav-previous is-disabled" href="javascript:void(0)" aria-disabled="true" aria-label="上一篇">
+          <span class="article-nav-label">&larr; 上一篇</span>
+          <span class="article-nav-title">暂无更早文章</span>
+        </a>
+        <a class="article-nav-button article-nav-button-center article-nav-catalog" href="/list">
+          <span class="article-nav-label">目录</span>
+          <span class="article-nav-title">全部文章</span>
+        </a>
+        <a class="article-nav-button article-nav-button-wide article-nav-next is-disabled" href="javascript:void(0)" aria-disabled="true" aria-label="下一篇">
+          <span class="article-nav-label">下一篇 &rarr;</span>
+          <span class="article-nav-title">暂无更新文章</span>
+        </a>
+      </div>
     </div>
   </div>
 </div>
@@ -78,6 +98,7 @@
 <script src="/js/wangEditor.min.js"></script>
 <script src="/js/index/index_command.js"></script>
 <script src="/js/index/navigationBar.js"></script>
+<script src="/js/article_view/article_navigation.js"></script>
 {% if user %}
 <script src="/js/article_view/wangeditor.js"></script>
 {% endif %}
